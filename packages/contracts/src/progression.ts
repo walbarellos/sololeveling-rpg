@@ -2,7 +2,7 @@
  * Progressão — funções puras compartilhadas entre servidor e cliente.
  * Valores iniciais para tuning (ver simulação Monte Carlo antes de fechar números).
  */
-import type { HunterRank } from "./index";
+import type { HunterRank } from "./base";
 
 export const MAX_LEVEL = 100;
 

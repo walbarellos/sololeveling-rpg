@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { BattleRewardsSchema, HunterRankSchema } from "./base";
+export * from "./base";
 
 export const TileCoordSchema = z.object({
   x: z.number().int().min(0),
@@ -8,9 +10,6 @@ export type TileCoord = z.infer<typeof TileCoordSchema>;
 
 export const DirectionSchema = z.enum(["UP", "DOWN", "LEFT", "RIGHT"]);
 export type Direction = z.infer<typeof DirectionSchema>;
-
-export const HunterRankSchema = z.enum(["E", "D", "C", "B", "A", "S"]);
-export type HunterRank = z.infer<typeof HunterRankSchema>;
 
 export const HunterClassSchema = z.enum([
   "WARRIOR",
@@ -117,19 +116,6 @@ export const BattlePlayerParticipantSchema = BattleParticipantSchema.extend({
   stats: PlayerStatsSchema.optional()
 });
 export type BattlePlayerParticipant = z.infer<typeof BattlePlayerParticipantSchema>;
-
-export const BattleRewardsSchema = z.object({
-  expGained: z.number().int().nonnegative(),
-  levelBefore: z.number().int().positive(),
-  levelAfter: z.number().int().positive(),
-  expBefore: z.number().int().nonnegative(),
-  expAfter: z.number().int().nonnegative(),
-  /** Nível travado pelo rank: o EXP fica retido até a prova de rank. */
-  capped: z.boolean(),
-  /** Cap de nível do rank atual (para a mensagem de "prova pendente"). */
-  levelCap: z.number().int().positive()
-});
-export type BattleRewards = z.infer<typeof BattleRewardsSchema>;
 
 /**
  * Evento estruturado de combate, na ordem em que aconteceu no turno.

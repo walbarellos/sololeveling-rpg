@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BattleRewardsSchema, HunterRankSchema, type HunterRank } from "./index";
+import { BattleRewardsSchema, HunterRankSchema, type HunterRank } from "./base";
 
 export const RANK_ORDER: Readonly<Record<HunterRank, number>> = {
   E: 0,

@@ -275,16 +275,11 @@ btnFlee?.addEventListener("click", () => {
   socket.emit(ClientEvents.BattleFleeRequest, { battleId: currentBattle.battleId });
 });
 
-// Calculator Toggle
+// Calculator / Tactics Toggle (abre a Academia Hunter com fórmulas e regras)
 btnCalcToggle?.addEventListener("click", () => {
-  alert(
-    `[PREVISÃO TÁTICA - REGRAS DE COMBATE]:\n\n` +
-    `• Classe Ativa: ${currentHunterClass}\n` +
-    `• Bônus Crítico: Assassino (35%) · Mago (25%) · Healer/Guerreiro (15%)\n` +
-    `• Mitigação de Bloqueio: Reduz dano recebido em 50%\n` +
-    `• Esquiva: Anula 100% do Dano no Turno!\n` +
-    `• Recuo Tático: Limite de 20 turnos (sem perda de EXP nem morte)`
-  );
+  closeAllModals();
+  academyModal?.classList.remove("hidden");
+  setActiveNav(menuAcademy);
 });
 
 // Return to Map Button Handler
