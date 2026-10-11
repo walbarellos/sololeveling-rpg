@@ -150,6 +150,117 @@ const btnClaimText = document.querySelector<HTMLSpanElement>("#btn-claim-text")!
 const btnCancelMission = document.querySelector<HTMLButtonElement>("#btn-cancel-mission")!;
 const missionsList = document.querySelector<HTMLDivElement>("#missions-list")!;
 
+// Sidebar Elements
+const sidebarPortrait = document.querySelector<HTMLImageElement>("#sidebar-portrait");
+const sidebarHunterNick = document.querySelector<HTMLDivElement>("#sidebar-hunter-nick");
+const sidebarHunterClass = document.querySelector<HTMLDivElement>("#sidebar-hunter-class");
+const sidebarHunterRank = document.querySelector<HTMLSpanElement>("#sidebar-hunter-rank");
+const sidebarHunterLevel = document.querySelector<HTMLSpanElement>("#sidebar-hunter-level");
+const sidebarHpText = document.querySelector<HTMLSpanElement>("#sidebar-hp-text");
+const sidebarHpBar = document.querySelector<HTMLDivElement>("#sidebar-hp-bar");
+const sidebarMpText = document.querySelector<HTMLSpanElement>("#sidebar-mp-text");
+const sidebarMpBar = document.querySelector<HTMLDivElement>("#sidebar-mp-bar");
+const sidebarExpFill = document.querySelector<HTMLDivElement>("#sidebar-exp-fill");
+const sidebarExpText = document.querySelector<HTMLSpanElement>("#sidebar-exp-text");
+const sidebarMissionBadge = document.querySelector<HTMLSpanElement>("#sidebar-mission-badge");
+
+// Sidebar Navigation Menu Buttons
+const menuStatus = document.querySelector<HTMLButtonElement>("#menu-status");
+const menuMissions = document.querySelector<HTMLButtonElement>("#menu-missions");
+const menuMap = document.querySelector<HTMLButtonElement>("#menu-map");
+const menuAcademy = document.querySelector<HTMLButtonElement>("#menu-academy");
+
+// Profile / Status Modal Elements
+const profileModal = document.querySelector<HTMLDivElement>("#profile-modal");
+const btnProfileClose = document.querySelector<HTMLButtonElement>("#btn-profile-close");
+const profilePortraitImg = document.querySelector<HTMLImageElement>("#profile-portrait-img");
+const profileNickDisplay = document.querySelector<HTMLSpanElement>("#profile-nick-display");
+const profileClassDisplay = document.querySelector<HTMLSpanElement>("#profile-class-display");
+const profileRankDisplay = document.querySelector<HTMLSpanElement>("#profile-rank-display");
+const profileLevelVal = document.querySelector<HTMLSpanElement>("#profile-level-val");
+const profileExpVal = document.querySelector<HTMLSpanElement>("#profile-exp-val");
+const profileAtkPhys = document.querySelector<HTMLSpanElement>("#profile-atk-phys");
+const profileAtkMag = document.querySelector<HTMLSpanElement>("#profile-atk-mag");
+const profileCrit = document.querySelector<HTMLSpanElement>("#profile-crit");
+const profileDodge = document.querySelector<HTMLSpanElement>("#profile-dodge");
+const profileBlock = document.querySelector<HTMLSpanElement>("#profile-block");
+const profileMaxHp = document.querySelector<HTMLSpanElement>("#profile-max-hp");
+const profileMaxMp = document.querySelector<HTMLSpanElement>("#profile-max-mp");
+const profileMult = document.querySelector<HTMLSpanElement>("#profile-mult");
+
+// Academy Modal Elements
+const academyModal = document.querySelector<HTMLDivElement>("#academy-modal");
+const btnAcademyClose = document.querySelector<HTMLButtonElement>("#btn-academy-close");
+
+// Sidebar Navigation Handlers
+function setActiveNav(activeBtn: HTMLButtonElement | null) {
+  [menuStatus, menuMissions, menuMap, menuAcademy].forEach((b) => b?.classList.remove("active"));
+  activeBtn?.classList.add("active");
+}
+
+function closeAllModals() {
+  missionsModal?.classList.add("hidden");
+  profileModal?.classList.add("hidden");
+  academyModal?.classList.add("hidden");
+  setActiveNav(menuMap);
+}
+
+menuStatus?.addEventListener("click", () => {
+  const isHidden = profileModal?.classList.contains("hidden");
+  closeAllModals();
+  if (isHidden) {
+    updateProfileModal();
+    profileModal?.classList.remove("hidden");
+    setActiveNav(menuStatus);
+  }
+});
+
+btnProfileClose?.addEventListener("click", () => {
+  profileModal?.classList.add("hidden");
+  setActiveNav(menuMap);
+});
+
+menuMissions?.addEventListener("click", () => {
+  const isHidden = missionsModal?.classList.contains("hidden");
+  closeAllModals();
+  if (isHidden) {
+    missionsModal?.classList.remove("hidden");
+    setActiveNav(menuMissions);
+  }
+});
+
+btnMissionsClose?.addEventListener("click", () => {
+  missionsModal?.classList.add("hidden");
+  setActiveNav(menuMap);
+});
+
+btnMissionsToggle?.addEventListener("click", () => {
+  const isHidden = missionsModal?.classList.contains("hidden");
+  closeAllModals();
+  if (isHidden) {
+    missionsModal?.classList.remove("hidden");
+    setActiveNav(menuMissions);
+  }
+});
+
+menuMap?.addEventListener("click", () => {
+  closeAllModals();
+});
+
+menuAcademy?.addEventListener("click", () => {
+  const isHidden = academyModal?.classList.contains("hidden");
+  closeAllModals();
+  if (isHidden) {
+    academyModal?.classList.remove("hidden");
+    setActiveNav(menuAcademy);
+  }
+});
+
+btnAcademyClose?.addEventListener("click", () => {
+  academyModal?.classList.add("hidden");
+  setActiveNav(menuMap);
+});
+
 // Class Selector Handler
 classSelect?.addEventListener("change", () => {
   currentHunterClass = classSelect.value as HunterClass;
@@ -167,11 +278,12 @@ btnFlee?.addEventListener("click", () => {
 // Calculator Toggle
 btnCalcToggle?.addEventListener("click", () => {
   alert(
-    `📊 CALCULADORA TÁTICA (Estilo NG):\n` +
+    `[PREVISÃO TÁTICA - REGRAS DE COMBATE]:\n\n` +
     `• Classe Ativa: ${currentHunterClass}\n` +
     `• Bônus Crítico: Assassino (35%) · Mago (25%) · Healer/Guerreiro (15%)\n` +
-    `• Mitigação de Bloqueio: -50% Dano\n` +
-    `• Esquiva: Anula 100% do Dano no Turno!`
+    `• Mitigação de Bloqueio: Reduz dano recebido em 50%\n` +
+    `• Esquiva: Anula 100% do Dano no Turno!\n` +
+    `• Recuo Tático: Limite de 20 turnos (sem perda de EXP nem morte)`
   );
 });
 
@@ -272,11 +384,43 @@ function applyPlayerStats(stats?: PlayerStats) {
   attrDef.textContent = `${Math.round(stats.dodgeChance * 100)}% / ${Math.round(stats.blockChance * 100)}%`;
 }
 
+const CLASS_TITLES: Record<HunterClass, string> = {
+  BATTLE_HEALER: "Curandeiro de Combate (Sagrado)",
+  ASSASSIN: "Assassino de Sombras (Físico/Ágil)",
+  WARRIOR: "Guerreiro Guardião (Físico/Tanque)",
+  MAGE: "Mago Dimensional (Mágico/Arcano)"
+};
+
+function updateProfileModal() {
+  const me = lastMe;
+  if (!me) return;
+  if (profilePortraitImg) profilePortraitImg.src = portraitUrl(CLASS_PORTRAIT[me.hunterClass]);
+  if (profileNickDisplay) profileNickDisplay.textContent = me.name;
+  if (profileClassDisplay) profileClassDisplay.textContent = CLASS_TITLES[me.hunterClass];
+  if (profileRankDisplay) {
+    profileRankDisplay.textContent = `RANK ${me.rank}`;
+    profileRankDisplay.className = `rank-tag rank-${me.rank.toLowerCase()}`;
+  }
+  if (profileLevelVal) profileLevelVal.textContent = `Lv ${me.level}`;
+  if (profileExpVal) profileExpVal.textContent = `${me.exp} / ${me.expToNext} (Cap: Lv ${me.levelCap})`;
+  if (me.stats) {
+    if (profileAtkPhys) profileAtkPhys.textContent = `${me.stats.physicalAtk}`;
+    if (profileAtkMag) profileAtkMag.textContent = `${me.stats.magicalAtk}`;
+    if (profileCrit) profileCrit.textContent = `${Math.round(me.stats.critChance * 100)}%`;
+    if (profileDodge) profileDodge.textContent = `${Math.round(me.stats.dodgeChance * 100)}%`;
+    if (profileBlock) profileBlock.textContent = `${Math.round(me.stats.blockChance * 100)}%`;
+    if (profileMaxHp) profileMaxHp.textContent = `${me.maxHp} HP`;
+    if (profileMaxMp) profileMaxMp.textContent = `${me.maxMp} MP`;
+    if (profileMult) profileMult.textContent = `${(1 + 0.09 * (me.level - 1)).toFixed(2)}x`;
+  }
+}
+
 function applyHud(me: PlayerSnapshot) {
   currentHunterClass = me.hunterClass;
   headerHunterNick.textContent = me.name;
   headerHunterResources.textContent = `HP: ${me.hp}/${me.maxHp} · MP: ${me.mp}/${me.maxMp}`;
   hunterRankBadge.textContent = `RANK ${me.rank}`;
+  hunterRankBadge.className = `rank-tag rank-${me.rank.toLowerCase()}`;
   if (classSelect && classSelect.value !== me.hunterClass) {
     classSelect.value = me.hunterClass;
   }
@@ -290,6 +434,24 @@ function applyHud(me: PlayerSnapshot) {
   hudExpText.textContent = capped
     ? `EXP ${me.exp} / ${me.expToNext} · TRAVADO: prova de rank`
     : `EXP ${me.exp} / ${me.expToNext}`;
+
+  // Sincroniza o Menu Lateral (Sidebar)
+  if (sidebarPortrait) sidebarPortrait.src = portraitUrl(CLASS_PORTRAIT[me.hunterClass]);
+  if (sidebarHunterNick) sidebarHunterNick.textContent = me.name;
+  if (sidebarHunterClass) sidebarHunterClass.textContent = CLASS_TITLES[me.hunterClass];
+  if (sidebarHunterRank) {
+    sidebarHunterRank.textContent = `RANK ${me.rank}`;
+    sidebarHunterRank.className = `sidebar-rank-tag rank-${me.rank.toLowerCase()}`;
+  }
+  if (sidebarHunterLevel) sidebarHunterLevel.textContent = `Lv ${me.level}`;
+  if (sidebarHpText) sidebarHpText.textContent = `${me.hp} / ${me.maxHp}`;
+  if (sidebarHpBar) sidebarHpBar.style.width = `${Math.max(0, (100 * me.hp) / me.maxHp)}%`;
+  if (sidebarMpText) sidebarMpText.textContent = `${me.mp} / ${me.maxMp}`;
+  if (sidebarMpBar) sidebarMpBar.style.width = `${Math.max(0, (100 * me.mp) / me.maxMp)}%`;
+  if (sidebarExpFill) sidebarExpFill.style.width = `${Math.min(100, (100 * me.exp) / me.expToNext)}%`;
+  if (sidebarExpText) sidebarExpText.textContent = `${me.exp} / ${me.expToNext} EXP`;
+
+  updateProfileModal();
 
   if (currentMissionsState) {
     renderMissionsModal(currentMissionsState);
@@ -321,6 +483,7 @@ function formatDurationLabel(ms: number): string {
 function updateMissionTicker() {
   if (!currentMissionsState?.activeRun) {
     missionHudBadge?.classList.add("hidden");
+    sidebarMissionBadge?.classList.add("hidden");
     activeMissionContainer?.classList.add("hidden");
     return;
   }
@@ -341,7 +504,12 @@ function updateMissionTicker() {
       missionHudBadge.classList.remove("hidden");
       missionHudBadge.classList.add("ready");
     }
-    if (activeMissionStatus) activeMissionStatus.textContent = "✨ Missão concluída! Pronto para coletar.";
+    if (sidebarMissionBadge) {
+      sidebarMissionBadge.textContent = "PRONTO!";
+      sidebarMissionBadge.classList.remove("hidden");
+      sidebarMissionBadge.classList.add("ready");
+    }
+    if (activeMissionStatus) activeMissionStatus.textContent = "Missão concluída! Pronto para coletar.";
     if (activeMissionTimer) activeMissionTimer.textContent = "00:00";
     if (activeMissionCard) activeMissionCard.classList.add("ready");
     if (btnClaimMission) btnClaimMission.disabled = false;
@@ -353,7 +521,12 @@ function updateMissionTicker() {
       missionHudBadge.classList.remove("hidden");
       missionHudBadge.classList.remove("ready");
     }
-    if (activeMissionStatus) activeMissionStatus.textContent = "⏳ Em andamento…";
+    if (sidebarMissionBadge) {
+      sidebarMissionBadge.textContent = formatted;
+      sidebarMissionBadge.classList.remove("hidden");
+      sidebarMissionBadge.classList.remove("ready");
+    }
+    if (activeMissionStatus) activeMissionStatus.textContent = "Em andamento…";
     if (activeMissionTimer) activeMissionTimer.textContent = formatted;
     if (activeMissionCard) activeMissionCard.classList.remove("ready");
     if (btnClaimMission) btnClaimMission.disabled = true;
@@ -387,17 +560,17 @@ function renderMissionsModal(state: MissionsState) {
       const parts: string[] = [];
       if (!isRankOk) parts.push(`Rank ${mission.minRank}`);
       if (!isLevelOk) parts.push(`Nível ${mission.minLevel}`);
-      reqsText = `🔒 Requer ${parts.join(" e ")}`;
+      reqsText = `Requer ${parts.join(" e ")}`;
     }
 
     card.innerHTML = `
       <div class="mission-card-left">
-        <div class="mission-item-icon">${mission.icon ?? "📜"}</div>
+        <div class="mission-item-icon">[${mission.minRank}]</div>
         <div class="mission-item-details">
           <div class="mission-item-top">
             <span class="mission-item-name">${mission.name}</span>
-            <span class="mission-badge-time">⏱️ ${formatDurationLabel(mission.durationMs)}</span>
-            <span class="mission-badge-exp">✨ +${potentialExp} EXP</span>
+            <span class="mission-badge-time">${formatDurationLabel(mission.durationMs)}</span>
+            <span class="mission-badge-exp">+${potentialExp} EXP</span>
           </div>
           <span class="mission-item-desc">${mission.description}</span>
           ${reqsText ? `<span class="mission-item-reqs">${reqsText}</span>` : ""}
@@ -420,17 +593,6 @@ function renderMissionsModal(state: MissionsState) {
   }
 }
 
-btnMissionsToggle?.addEventListener("click", () => {
-  missionsModal?.classList.toggle("hidden");
-  if (missionsModal && !missionsModal.classList.contains("hidden")) {
-    socket.emit(ClientEvents.MissionsRequest);
-  }
-});
-
-btnMissionsClose?.addEventListener("click", () => {
-  missionsModal?.classList.add("hidden");
-});
-
 btnClaimMission?.addEventListener("click", () => {
   if (!currentMissionsState?.activeRun) return;
   socket.emit(ClientEvents.ClaimMissionRequest, { runId: currentMissionsState.activeRun.runId });
@@ -450,7 +612,7 @@ socket.on(ServerEvents.MissionsState, (raw: unknown) => {
 socket.on(ServerEvents.MissionClaimResult, (raw: unknown) => {
   const parsed = MissionClaimResultSchema.safeParse(raw);
   if (!parsed.success) return;
-  status.textContent = `📜 ${parsed.data.message}`;
+  status.textContent = parsed.data.message;
 });
 
 socket.on(ServerEvents.BattleSnapshot, (raw: unknown) => {
@@ -475,12 +637,12 @@ socket.on(ServerEvents.BattleEnded, (raw: unknown) => {
 socket.on(ServerEvents.SessionReplaced, () => {
   connection.textContent = "○ Sessão aberta em outra aba";
   connection.style.color = "#fbbf24";
-  status.textContent = "⚠️ Este personagem foi aberto em outra aba. Use ?slot=2 na URL para um segundo jogador local.";
+  status.textContent = "[AVISO] Este personagem foi aberto em outra aba. Use ?slot=2 na URL para um segundo jogador local.";
 });
 
 socket.on(ServerEvents.Error, (raw: unknown) => {
   const error = raw as { message?: string };
-  status.textContent = `⚠️ ${error?.message ?? "Ação rejeitada pelo servidor"}`;
+  status.textContent = `[ERRO] ${error?.message ?? "Ação rejeitada pelo servidor"}`;
   worldScene?.onServerError((raw as { code?: string })?.code);
 });
 
@@ -547,31 +709,31 @@ function renderBattleArena(b: BattleSnapshot, locked = pending > 0) {
 
     if (entry.includes("[CRÍTICO]")) {
       badgeClass = "badge-crit";
-      badgeText = "CRÍTICO ⚡";
-    } else if (entry.includes("[ESQUIVOU]")) {
+      badgeText = "CRÍTICO";
+    } else if (entry.includes("[ESQUIVOU]") || entry.includes("[ESQUIVA]")) {
       badgeClass = "badge-dodge";
-      badgeText = "ESQUIVA 💨";
+      badgeText = "ESQUIVA";
     } else if (entry.includes("[BLOQUEIO]")) {
       badgeClass = "badge-block";
-      badgeText = "BLOQUEIO 🛡️";
+      badgeText = "BLOQUEIO";
     } else if (entry.includes("[CURA]")) {
       badgeClass = "badge-heal";
-      badgeText = "CURA 💚";
+      badgeText = "CURA";
     } else if (entry.includes("[DANO]")) {
       badgeClass = "badge-damage";
-      badgeText = "DANO ⚔️";
+      badgeText = "DANO";
     } else if (entry.includes("[VITÓRIA]")) {
       badgeClass = "badge-crit";
-      badgeText = "VITÓRIA 🏆";
+      badgeText = "VITÓRIA";
     } else if (entry.includes("[RECUO TÁTICO]")) {
       badgeClass = "badge-block";
-      badgeText = "RECUO ⚖️";
+      badgeText = "RECUO";
     } else if (entry.includes("[EMPATE]")) {
       badgeClass = "badge-dodge";
-      badgeText = "EMPATE ⚖️";
+      badgeText = "EMPATE";
     } else if (entry.includes("[DERROTA]")) {
       badgeClass = "badge-damage";
-      badgeText = "DERROTA 💀";
+      badgeText = "DERROTA";
     }
 
     const cleanText = entry.replace(/\[.*?\]\s*/g, "");
@@ -603,7 +765,7 @@ function renderBattleArena(b: BattleSnapshot, locked = pending > 0) {
       <span class="skill-glyph">${icon.svg}</span>
       <span class="skill-name">${skill.name}</span>
       <span class="skill-cost ${notEnoughMp ? "skill-cost-low" : ""}">${notEnoughMp ? "sem MP" : cost}</span>
-      ${onCooldown ? `<span class="skill-cd">⏳${skill.currentCooldown}</span>` : ""}
+      ${onCooldown ? `<span class="skill-cd">CD: ${skill.currentCooldown}</span>` : ""}
     `;
 
     const showInfo = () => {
@@ -630,30 +792,30 @@ function showBattleOutcome(b: BattleSnapshot) {
   battleResultModal.classList.remove("hidden");
 
   if (b.result === "VICTORY") {
-    resultIcon.textContent = "🏆";
-    resultTitle.textContent = "VITÓRIA GLORIOSA!";
+    resultIcon.innerHTML = `<span class="result-badge-text tag-win">[VITÓRIA]</span>`;
+    resultTitle.textContent = "VITÓRIA GLORIOSA";
     resultTitle.style.color = "#facc15";
-    resultDesc.textContent = `A besta [${b.enemy.rank}] ${b.enemy.name} foi exterminada com sucesso.`;
+    resultDesc.textContent = `A besta [${b.enemy.rank}] ${b.enemy.name} foi eliminada com sucesso.`;
   } else if (b.result === "DRAW") {
-    resultIcon.textContent = "⚖️";
+    resultIcon.innerHTML = `<span class="result-badge-text tag-draw">[EMPATE]</span>`;
     if (b.drawReason === "TURN_LIMIT" || (b.player.hp > 0 && b.enemy.hp > 0)) {
-      resultTitle.textContent = "RECUO TÁTICO!";
+      resultTitle.textContent = "RECUO TÁTICO";
       resultTitle.style.color = "#38bdf8";
       resultDesc.textContent = `Limite de ${b.maxTurns} turnos atingido! O combate terminou sem vencedor e você recuou taticamente.`;
     } else {
-      resultTitle.textContent = "EMPATE EM COMBATE!";
+      resultTitle.textContent = "EMPATE EM COMBATE";
       resultTitle.style.color = "#38bdf8";
       resultDesc.textContent = "Golpe fatal simultâneo! Ambos os combatentes sucumbiram na mesma rodada.";
     }
   } else if (b.result === "DEFEAT") {
-    resultIcon.textContent = "💀";
-    resultTitle.textContent = "DERROTA NA MASMORRA!";
+    resultIcon.innerHTML = `<span class="result-badge-text tag-lose">[DERROTA]</span>`;
+    resultTitle.textContent = "DERROTA NA MASMORRA";
     resultTitle.style.color = "#ef4444";
     resultDesc.textContent = "Você sofreu ferimentos graves e foi resgatado na entrada do Gate.";
   } else if (b.result === "FLED") {
-    resultIcon.textContent = "🏃";
-    resultTitle.textContent = "FUGA BEM-SUCEDIDA!";
-    resultTitle.style.color = "#a855f7";
+    resultIcon.innerHTML = `<span class="result-badge-text tag-flee">[FUGA]</span>`;
+    resultTitle.textContent = "FUGA BEM-SUCEDIDA";
+    resultTitle.style.color = "#94a3b8";
     resultDesc.textContent = "Você rompeu o engajamento e recuou para um quadrante seguro do mapa.";
   }
 
@@ -777,7 +939,7 @@ async function playEvent(e: BattleEvent, b: BattleSnapshot) {
     pulse(battleScreen, "shake");
     await sleep(750);
   } else if (e.kind === "BLOCK") {
-    floatText(box, `-${e.amount} 🛡`, "float-block");
+    floatText(box, `-${e.amount} [BLOQ]`, "float-block");
     pulse(box, "hit-flash");
     await sleep(600);
   } else {
@@ -1045,7 +1207,7 @@ class WorldScene extends Phaser.Scene {
     if (now - this.lastBattleRequestAt < 500) return; // evita spam enquanto o servidor responde
     this.lastBattleRequestAt = now;
     this.cancelPursuit();
-    status.textContent = `⚔️ Iniciando confronto com [${enemy.rank}] ${enemy.name}…`;
+    status.textContent = `Iniciando confronto com [${enemy.rank}] ${enemy.name}…`;
     socket.emit(ClientEvents.StartBattleRequest, { targetEnemyId: enemy.id });
   }
 
@@ -1066,7 +1228,7 @@ class WorldScene extends Phaser.Scene {
       return;
     }
     this.goal = { type: "enemy", id: nearest.id };
-    status.textContent = `🏃 Indo até [${nearest.rank}] ${nearest.name}… (Esc cancela)`;
+    status.textContent = `Indo até [${nearest.rank}] ${nearest.name}… (Esc cancela)`;
   }
 
   private handlePointerClick(pointer: Phaser.Input.Pointer) {
@@ -1082,7 +1244,7 @@ class WorldScene extends Phaser.Scene {
         this.startBattleWith(clicked);
       } else {
         this.goal = { type: "enemy", id: clicked.id };
-        status.textContent = `🏃 Indo até [${clicked.rank}] ${clicked.name}… (Esc cancela)`;
+        status.textContent = `Indo até [${clicked.rank}] ${clicked.name}… (Esc cancela)`;
       }
       return;
     }
@@ -1132,7 +1294,7 @@ class WorldScene extends Phaser.Scene {
       if (this.awaiting || Date.now() - this.lastInputTime < STEP_INTERVAL_MS) return;
       const dir = this.nextStepToward(me.position, (x, y) => chebyshev({ x, y }, enemy.position) <= 1, blocked);
       if (!dir) {
-        status.textContent = "⚠️ Sem caminho livre até o monstro.";
+        status.textContent = "Sem caminho livre até o monstro.";
         return this.cancelPursuit();
       }
       this.sendStep(dir);
@@ -1177,7 +1339,7 @@ class WorldScene extends Phaser.Scene {
         .setText(`[E] Combater ${target.name}`)
         .setPosition(target.position.x * tileSize + tileSize / 2, target.position.y * tileSize - 4)
         .setVisible(true);
-      if (!this.goal) status.textContent = `⚔️ ${target.name} ao alcance — aperte [E] ou clique nele para combater`;
+      if (!this.goal) status.textContent = `${target.name} ao alcance — aperte [E] ou clique nele para combater`;
     } else {
       this.hint.setVisible(false);
     }

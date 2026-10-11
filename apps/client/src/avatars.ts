@@ -102,76 +102,100 @@ export const AVATARS = {
     </svg>
   `,
 
-  // Monstros da Masmorra
+  // Monstros da Masmorra (Estética Dark Fantasy Gritty / Solo Leveling)
   SLIME: `
     <svg viewBox="0 0 120 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="slimeBio" cx="40%" cy="35%" r="60%">
-          <stop offset="0%" stop-color="#6ee7b7"/>
-          <stop offset="50%" stop-color="#10b981"/>
-          <stop offset="100%" stop-color="#064e3b"/>
+        <radialGradient id="slimeCoreGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ef4444" stop-opacity="0.9"/>
+          <stop offset="60%" stop-color="#991b1b" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#022c22" stop-opacity="0"/>
         </radialGradient>
+        <linearGradient id="slimeSkin" x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%" stop-color="#14532d"/>
+          <stop offset="45%" stop-color="#064e3b"/>
+          <stop offset="85%" stop-color="#022c22"/>
+          <stop offset="100%" stop-color="#05140d"/>
+        </linearGradient>
       </defs>
-      <circle cx="60" cy="60" r="54" fill="#062e22" stroke="#059669" stroke-width="2"/>
-      <!-- Corpo da Gosma Gelatinosa -->
-      <path d="M28 85 C22 55, 38 35, 60 32 C82 35, 98 55, 92 85 C88 100, 32 100, 28 85 Z" fill="url(#slimeBio)"/>
-      <!-- Brilho Gelatinoso -->
-      <ellipse cx="48" cy="46" rx="8" ry="4" fill="#d1fae5" opacity="0.6" transform="rotate(-15 48 46)"/>
-      <!-- Núcleo de Mana da Besta -->
-      <circle cx="60" cy="65" r="9" fill="#f43f5e" filter="drop-shadow(0 0 6px #e11d48)"/>
-      <!-- Olhos e Expressão Monstruosa -->
-      <circle cx="45" cy="58" r="4" fill="#064e3b"/>
-      <circle cx="46" cy="57" r="1.5" fill="#f8fafc"/>
-      <circle cx="75" cy="58" r="4" fill="#064e3b"/>
-      <circle cx="76" cy="57" r="1.5" fill="#f8fafc"/>
+      <rect width="120" height="120" fill="#070d0a" rx="4"/>
+      <!-- Poça ácida base -->
+      <ellipse cx="60" cy="100" rx="46" ry="12" fill="#021c13"/>
+      <!-- Forma abissal disforme com pontas e gotas -->
+      <path d="M22 96 C16 70, 26 44, 46 36 C54 32, 66 32, 74 36 C94 44, 104 70, 98 96 C84 104, 36 104, 22 96 Z" fill="url(#slimeSkin)" stroke="#166534" stroke-width="2"/>
+      <!-- Gotas viscosas e deformações -->
+      <path d="M30 70 Q24 82 20 86 Q26 88 32 80 Z" fill="#14532d"/>
+      <path d="M90 70 Q96 82 100 86 Q94 88 88 80 Z" fill="#14532d"/>
+      <path d="M50 34 Q60 22 66 32 Z" fill="#15803d"/>
+      <!-- Núcleo de mana instável pulsante -->
+      <circle cx="60" cy="68" r="18" fill="url(#slimeCoreGlow)"/>
+      <polygon points="60,54 68,66 60,78 52,66" fill="#f87171" stroke="#fca5a5" stroke-width="1.5"/>
+      <circle cx="60" cy="66" r="4" fill="#ffffff"/>
+      <!-- Fendas espectrais / olhos predatórios -->
+      <path d="M42 56 Q50 54 54 58 Q48 60 42 56 Z" fill="#bbf7d0" opacity="0.85"/>
+      <path d="M78 56 Q70 54 66 58 Q72 60 78 56 Z" fill="#bbf7d0" opacity="0.85"/>
     </svg>
   `,
 
   GOBLIN: `
     <svg viewBox="0 0 120 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="goblinSkin" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#84cc16"/>
-          <stop offset="60%" stop-color="#4d7c0f"/>
-          <stop offset="100%" stop-color="#1a2e05"/>
+        <linearGradient id="goblinLeather" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#3f2e1e"/>
+          <stop offset="100%" stop-color="#1c120c"/>
         </linearGradient>
       </defs>
-      <circle cx="60" cy="60" r="54" fill="#142006" stroke="#4d7c0f" stroke-width="2"/>
-      <!-- Orelhas Grandes Pontudas -->
-      <path d="M38 52 L12 40 L34 68 Z" fill="#65a30d" stroke="#365314" stroke-width="2"/>
-      <path d="M82 52 L108 40 L86 68 Z" fill="#65a30d" stroke="#365314" stroke-width="2"/>
-      <!-- Cabeça e Nariz Feio -->
-      <ellipse cx="60" cy="64" rx="26" ry="24" fill="url(#goblinSkin)"/>
-      <polygon points="56,66 64,66 60,78" fill="#365314"/>
-      <!-- Olhos Amarelos Cruéis -->
-      <ellipse cx="48" cy="56" rx="5" ry="4" fill="#fef08a"/>
-      <circle cx="48" cy="56" r="2" fill="#854d0e"/>
-      <ellipse cx="72" cy="56" rx="5" ry="4" fill="#fef08a"/>
-      <circle cx="72" cy="56" r="2" fill="#854d0e"/>
-      <!-- Presas Inferiores -->
-      <path d="M48 84 Q60 88 72 84 L70 80 Q60 84 50 80 Z" fill="#0f172a"/>
-      <polygon points="51,82 54,76 57,82" fill="#fef9c3"/>
-      <polygon points="63,82 66,76 69,82" fill="#fef9c3"/>
+      <rect width="120" height="120" fill="#0d0e09" rx="4"/>
+      <!-- Orelhas pontudas e rasgadas de combate -->
+      <path d="M36 48 L8 32 L28 66 Z" fill="#365314" stroke="#1a2e05" stroke-width="2"/>
+      <path d="M84 48 L112 32 L92 66 Z" fill="#365314" stroke="#1a2e05" stroke-width="2"/>
+      <polygon points="14,35 18,40 12,42" fill="#0d0e09"/>
+      <!-- Cabeça angulosa e ameaçadora -->
+      <path d="M34 50 Q60 38 86 50 L84 82 Q60 96 36 82 Z" fill="#4d7c0f" stroke="#1e3a09" stroke-width="2"/>
+      <!-- Queixo pronunciado e cicatriz -->
+      <line x1="42" y1="52" x2="52" y2="76" stroke="#1e3a09" stroke-width="2"/>
+      <!-- Olhos amarelos cruéis de predador -->
+      <polygon points="44,56 54,58 46,64" fill="#facc15"/>
+      <line x1="46" y1="58" x2="50" y2="60" stroke="#713f12" stroke-width="2"/>
+      <polygon points="76,56 66,58 74,64" fill="#facc15"/>
+      <line x1="74" y1="58" x2="70" y2="60" stroke="#713f12" stroke-width="2"/>
+      <!-- Boca e presas pontiagudas irregulares -->
+      <path d="M46 76 Q60 82 74 76" stroke="#141f07" stroke-width="3" fill="none"/>
+      <polygon points="50,75 53,69 56,76" fill="#fef08a"/>
+      <polygon points="64,75 67,69 70,76" fill="#fef08a"/>
+      <!-- Peitoral de couro reforçado e cravos -->
+      <path d="M26 112 L38 86 L82 86 L94 112 Z" fill="url(#goblinLeather)" stroke="#451a03" stroke-width="2"/>
+      <circle cx="50" cy="98" r="3" fill="#78350f"/>
+      <circle cx="70" cy="98" r="3" fill="#78350f"/>
     </svg>
   `,
 
   WOLF: `
     <svg viewBox="0 0 120 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="wolfSmoke" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#6366f1" stop-opacity="0.5"/>
-          <stop offset="100%" stop-color="#020617" stop-opacity="0"/>
+        <radialGradient id="shadowMane" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#312e81"/>
+          <stop offset="60%" stop-color="#1e1b4b"/>
+          <stop offset="100%" stop-color="#030712"/>
         </radialGradient>
       </defs>
-      <circle cx="60" cy="60" r="54" fill="#090a16" stroke="#4338ca" stroke-width="2"/>
-      <circle cx="60" cy="60" r="48" fill="url(#wolfSmoke)"/>
-      <!-- Cabeça do Lobo de Sombras -->
-      <path d="M60 28 L74 48 L88 38 L80 62 L94 72 L78 84 L60 102 L42 84 L26 72 L40 62 L32 38 L46 48 Z" fill="#1e1b4b" stroke="#312e81" stroke-width="2"/>
-      <!-- Focinho e Presas -->
-      <polygon points="54,82 66,82 60,94" fill="#020617"/>
-      <!-- Olhos Azuis Espectrais de Fera -->
-      <polygon points="46,58 54,62 48,66" fill="#38bdf8" filter="drop-shadow(0 0 4px #0ea5e9)"/>
-      <polygon points="74,58 66,62 72,66" fill="#38bdf8" filter="drop-shadow(0 0 4px #0ea5e9)"/>
+      <rect width="120" height="120" fill="#060713" rx="4"/>
+      <!-- Espinhos e fumaça de sombras ao redor da fera -->
+      <path d="M60 14 L68 34 L88 20 L80 44 L102 38 L88 62 L106 72 L86 86 L98 108 L60 98 L22 108 L34 86 L14 72 L32 62 L18 38 L40 44 L32 20 L52 34 Z" fill="url(#shadowMane)" stroke="#4338ca" stroke-width="1.5"/>
+      <!-- Cabeça e crânio angular -->
+      <polygon points="60,32 78,60 60,94 42,60" fill="#0f172a" stroke="#1e293b" stroke-width="1.5"/>
+      <!-- Focinho negro e presas -->
+      <polygon points="56,80 64,80 60,92" fill="#020617"/>
+      <polygon points="50,78 54,72 56,79" fill="#f8fafc"/>
+      <polygon points="70,78 66,72 64,79" fill="#f8fafc"/>
+      <!-- Olhos espectrais gélidos de Solo Leveling -->
+      <polygon points="44,54 54,58 46,62" fill="#38bdf8"/>
+      <circle cx="48" cy="58" r="1.5" fill="#ffffff"/>
+      <polygon points="76,54 66,58 74,62" fill="#38bdf8"/>
+      <circle cx="72" cy="58" r="1.5" fill="#ffffff"/>
+      <!-- Rastro de fogo sombrio saindo dos olhos -->
+      <path d="M44 54 Q36 46 40 40" stroke="#0ea5e9" stroke-width="2" fill="none"/>
+      <path d="M76 54 Q84 46 80 40" stroke="#0ea5e9" stroke-width="2" fill="none"/>
     </svg>
   `
 };

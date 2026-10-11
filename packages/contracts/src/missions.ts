@@ -22,7 +22,7 @@ export const MissionDefinitionSchema = z.object({
   killsEquiv: z.number().int().positive(),
   minRank: HunterRankSchema,
   minLevel: z.number().int().positive(),
-  icon: z.string().default("📜")
+  icon: z.string().default("doc")
 });
 export type MissionDefinition = z.infer<typeof MissionDefinitionSchema>;
 
@@ -84,7 +84,7 @@ export const MISSIONS: readonly MissionDefinition[] = [
     killsEquiv: 1,
     minRank: "E",
     minLevel: 1,
-    icon: "⚡"
+    icon: "patrol"
   },
   {
     id: "recon_1m",
@@ -94,7 +94,7 @@ export const MISSIONS: readonly MissionDefinition[] = [
     killsEquiv: 3,
     minRank: "E",
     minLevel: 3,
-    icon: "💎"
+    icon: "crystal"
   },
   {
     id: "subdue_10m",
@@ -104,7 +104,7 @@ export const MISSIONS: readonly MissionDefinition[] = [
     killsEquiv: 12,
     minRank: "E",
     minLevel: 6,
-    icon: "🏹"
+    icon: "hunt"
   },
   {
     id: "gate_d_1h",
@@ -114,7 +114,7 @@ export const MISSIONS: readonly MissionDefinition[] = [
     killsEquiv: 30,
     minRank: "D",
     minLevel: 13,
-    icon: "🐺"
+    icon: "dungeon"
   },
   {
     id: "gate_c_3h",
@@ -124,7 +124,7 @@ export const MISSIONS: readonly MissionDefinition[] = [
     killsEquiv: 70,
     minRank: "C",
     minLevel: 26,
-    icon: "🔮"
+    icon: "expedition"
   },
   {
     id: "tower_b_6h",
@@ -134,7 +134,7 @@ export const MISSIONS: readonly MissionDefinition[] = [
     killsEquiv: 130,
     minRank: "B",
     minLevel: 50,
-    icon: "🏰"
+    icon: "tower"
   },
   {
     id: "monarch_a_12h",
@@ -144,6 +144,6 @@ export const MISSIONS: readonly MissionDefinition[] = [
     killsEquiv: 220,
     minRank: "A",
     minLevel: 70,
-    icon: "👑"
+    icon: "monarch"
   }
 ];

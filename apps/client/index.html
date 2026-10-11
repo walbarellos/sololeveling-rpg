@@ -3,21 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#05070d" />
-    <title>Solo Hunter RPG — Arena de Combate em Turnos</title>
+    <meta name="theme-color" content="#070a12" />
+    <title>Hunter RPG — Associação de Caçadores</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="app">
-      <!-- Cabeçalho Superior Estilo RPG Clássico dos Anos 2000 -->
+      <!-- CABEÇALHO SUPERIOR SÓBRIO (ASSOCIAÇÃO DE CAÇADORES) -->
       <header class="rpg-top-bar">
         <div class="rpg-brand">
-          <span class="gate-portal-icon">🌀</span>
+          <div class="brand-crest">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </div>
           <div class="brand-text">
             <h1 class="brand-title">HUNTER RPG</h1>
-            <span class="gate-dungeon-tag">Gate E-Rank · Masmorra das Sombras</span>
+            <span class="gate-dungeon-tag">Gate Rank E · Masmorra das Sombras</span>
           </div>
         </div>
 
@@ -32,7 +36,6 @@
             </select>
           </div>
           <button id="btn-missions-toggle" class="btn-top-missions" title="Quadro de Missões da Associação">
-            <span class="top-icon">📜</span>
             <span class="top-label">MISSÕES</span>
             <span id="mission-hud-badge" class="mission-hud-badge hidden">00:00</span>
           </button>
@@ -53,222 +56,298 @@
         </div>
       </header>
 
-      <div class="status-ticker">
-        <span class="ticker-icon">📜</span>
-        <span id="status">[W A S D] andam · [E] combate o monstro (ou vai até o mais próximo) · clique num monstro para ir até ele · [Esc] cancela</span>
+      <!-- LAYOUT PRINCIPAL: MENU LATERAL + PALCO DO JOGO -->
+      <div class="rpg-main-layout">
+        <!-- MENU LATERAL DO JOGO (PERFIL, FOTO, ATALHOS, ESCOLA) -->
+        <aside class="rpg-sidebar">
+          <!-- CARD DO PERSONAGEM NA LATERAL -->
+          <div class="sidebar-hunter-card">
+            <div class="sidebar-portrait-frame">
+              <img id="sidebar-portrait" class="sidebar-portrait-img" src="/assets/portraits/director.png" alt="Retrato do Hunter" />
+              <div class="sidebar-portrait-overlay"></div>
+              <span id="sidebar-hunter-rank" class="sidebar-rank-tag rank-e">RANK E</span>
+            </div>
+
+            <div class="sidebar-hunter-info">
+              <div id="sidebar-hunter-nick" class="sidebar-hunter-name">Hunter-1dc3</div>
+              <div id="sidebar-hunter-class" class="sidebar-hunter-class">Curandeiro de Combate</div>
+            </div>
+
+            <!-- GAUGES COMPACTOS NA SIDEBAR -->
+            <div class="sidebar-gauges">
+              <div class="sidebar-gauge-slot">
+                <div class="sidebar-gauge-header">
+                  <span class="gauge-label-mini">HP</span>
+                  <span id="sidebar-hp-text" class="gauge-value-mini">120 / 120</span>
+                </div>
+                <div class="gauge-track-mini">
+                  <div id="sidebar-hp-bar" class="gauge-fill-mini bar-hp" style="width: 100%;"></div>
+                </div>
+              </div>
+
+              <div class="sidebar-gauge-slot">
+                <div class="sidebar-gauge-header">
+                  <span class="gauge-label-mini">MP</span>
+                  <span id="sidebar-mp-text" class="gauge-value-mini">80 / 80</span>
+                </div>
+                <div class="gauge-track-mini">
+                  <div id="sidebar-mp-bar" class="gauge-fill-mini bar-mp" style="width: 100%;"></div>
+                </div>
+              </div>
+
+              <div class="sidebar-gauge-slot">
+                <div class="sidebar-gauge-header">
+                  <span id="sidebar-hunter-level" class="gauge-label-mini">Lv 1</span>
+                  <span id="sidebar-exp-text" class="gauge-value-mini">0 / 40 EXP</span>
+                </div>
+                <div class="gauge-track-mini">
+                  <div id="sidebar-exp-fill" class="gauge-fill-mini bar-exp" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- NAVEGAÇÃO E ATALHOS DO MENU LATERAL -->
+          <nav class="sidebar-nav-menu">
+            <div class="sidebar-nav-section-title">TERMINAL DO CAÇADOR</div>
+            <button id="menu-status" class="sidebar-nav-btn" type="button">
+              <span class="nav-btn-indicator">›</span>
+              <span class="nav-btn-text">STATUS & PERFIL</span>
+            </button>
+            <button id="menu-missions" class="sidebar-nav-btn" type="button">
+              <span class="nav-btn-indicator">›</span>
+              <span class="nav-btn-text">MISSÕES DA ASSOCIAÇÃO</span>
+              <span id="sidebar-mission-badge" class="nav-badge hidden">00:00</span>
+            </button>
+            <button id="menu-map" class="sidebar-nav-btn active" type="button">
+              <span class="nav-btn-indicator">›</span>
+              <span class="nav-btn-text">MAPA DA MASMORRA</span>
+            </button>
+            <button id="menu-academy" class="sidebar-nav-btn" type="button">
+              <span class="nav-btn-indicator">›</span>
+              <span class="nav-btn-text">ACADEMIA HUNTER (GUIA)</span>
+            </button>
+          </nav>
+
+          <!-- DICAS DE TECLADO / PAINEL INFORMATIVO -->
+          <div class="sidebar-quick-help">
+            <div class="help-title">ATALHOS RÁPIDOS</div>
+            <ul class="help-list">
+              <li><kbd>W A S D</kbd> Movimentar</li>
+              <li><kbd>E</kbd> Combater próximo</li>
+              <li><kbd>1 2 3</kbd> Usar habilidade</li>
+              <li><kbd>F</kbd> Fugir do combate</li>
+              <li><kbd>Esc</kbd> Cancelar perseguição</li>
+            </ul>
+          </div>
+        </aside>
+
+        <!-- ÁREA CENTRAL DO PALCO (TICKER + MAPA 2D + TELA DE COMBATE) -->
+        <section class="rpg-viewport">
+          <div class="status-ticker">
+            <span class="ticker-badge">[SISTEMA]</span>
+            <span id="status">[W A S D] andam · [E] combate o monstro mais próximo · clique num monstro para perseguir · [Esc] cancela</span>
+          </div>
+
+          <div class="stage-container">
+            <!-- Mapa de Exploração 2D (Phaser) -->
+            <main id="game"></main>
+
+            <!-- ARENA DE CONFRONTO EM TURNOS (ESTILO NARUTO GAME SÓBRIO & DARK FANTASY) -->
+            <div id="battle-screen" class="battle-screen hidden">
+              <!-- Topo da Batalha: Banner e Turno -->
+              <div class="battle-top-banner">
+                <div class="dungeon-name-badge">
+                  <span class="battle-mode-tag">CONFRONTO TÁTICO</span>
+                  <span class="battle-mode-title">ARENA DE COMBATE EM TURNOS</span>
+                </div>
+                <div class="turn-counter-badge">
+                  <span class="turn-label">TURNO</span>
+                  <span id="battle-turn-indicator" class="turn-number">01 / 20</span>
+                </div>
+              </div>
+
+              <!-- As 3 Colunas Principais do Naruto Game -->
+              <div class="ng-battle-grid">
+                
+                <!-- COLUNA ESQUERDA: VOCÊ (O Caçador) -->
+                <section class="ng-fighter-column player-column">
+                  <div class="fighter-frame player-frame">
+                    <div class="fighter-header-plate">
+                      <span id="battle-player-badge" class="rank-tag rank-e">RANK E</span>
+                      <div class="fighter-titles">
+                        <span id="battle-player-name" class="fighter-nick">Você</span>
+                        <span id="battle-player-class-title" class="fighter-sub-title">Curandeiro de Combate</span>
+                      </div>
+                    </div>
+
+                    <div class="avatar-canvas-box" id="player-avatar-box">
+                      <!-- Retrato Injetado dinamicamente via JS -->
+                    </div>
+
+                    <!-- Barras de Recursos com Canaleta de Ferro -->
+                    <div class="resource-gauges">
+                      <div class="gauge-slot">
+                        <div class="gauge-meta">
+                          <span class="gauge-name hp-label">VITALIDADE (HP)</span>
+                          <span id="battle-player-hp-text" class="gauge-value">120 / 120</span>
+                        </div>
+                        <div class="iron-gauge-track">
+                          <div id="battle-player-hp-bar" class="iron-bar bar-hp" style="width: 100%;"></div>
+                        </div>
+                      </div>
+
+                      <div class="gauge-slot">
+                        <div class="gauge-meta">
+                          <span class="gauge-name mp-label">MANA / CHAKRA (MP)</span>
+                          <span id="battle-player-mp-text" class="gauge-value">80 / 80</span>
+                        </div>
+                        <div class="iron-gauge-track">
+                          <div id="battle-player-mp-bar" class="iron-bar bar-mp" style="width: 100%;"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Deck Tático de Habilidades [1 · 2 · 3] -->
+                    <div class="skills-panel">
+                      <div class="deck-header">
+                        <span class="deck-title">HABILIDADES DE COMBATE</span>
+                        <span class="deck-hotkeys">ATALHOS [1 · 2 · 3]</span>
+                      </div>
+                      <div id="skills-deck" class="skills-card-deck"></div>
+                      <div id="skill-info" class="skill-info">Passe o cursor sobre uma habilidade para ver detalhes táticos.</div>
+                    </div>
+
+                    <!-- Atributos do Caçador em Tabela Técnica -->
+                    <div class="attributes-card">
+                      <div class="attr-header">PARÂMETROS DE COMBATE</div>
+                      <div class="attr-grid">
+                        <div class="attr-pill"><span class="attr-label">ATK Físico:</span> <span id="attr-atk-phys" class="attr-val">28</span></div>
+                        <div class="attr-pill"><span class="attr-label">ATK Mágico:</span> <span id="attr-atk-mag" class="attr-val">35</span></div>
+                        <div class="attr-pill"><span class="attr-label">Crítico:</span> <span id="attr-crit" class="attr-val gold-val">15%</span></div>
+                        <div class="attr-pill"><span class="attr-label">Esquiva / Bloq:</span> <span id="attr-def" class="attr-val blue-val">12% / 10%</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- COLUNA CENTRAL: O LOG DE COMBATE & ACTION BAR (Centro Nervoso) -->
+                <section class="ng-center-column">
+                  <div class="battle-log-parchment">
+                    <div class="log-parchment-header">
+                      <span class="log-title">HISTÓRICO TÁTICO DA RODADA</span>
+                      <span class="log-sub">Resolução simultânea de ataques e defesas</span>
+                    </div>
+                    <div id="battle-log" class="battle-log-feed"></div>
+                  </div>
+
+                  <div class="deck-footer-actions">
+                    <button id="btn-flee" class="btn-rpg-flee" type="button">
+                      <span>FUGIR DO CONFRONTO [F]</span>
+                    </button>
+                    <button id="btn-calc-toggle" class="btn-rpg-calc" type="button" title="Exibe previsão tática de combate">
+                      <span>PREVISÃO TÁTICA</span>
+                    </button>
+                  </div>
+                </section>
+
+                <!-- COLUNA DIREITA: O OPONENTE (Monstro da Masmorra) -->
+                <section class="ng-fighter-column enemy-column">
+                  <div class="fighter-frame enemy-frame">
+                    <div class="fighter-header-plate enemy-plate">
+                      <span id="battle-enemy-badge" class="rank-tag rank-e">RANK E</span>
+                      <div class="fighter-titles">
+                        <span id="battle-enemy-name" class="fighter-nick nick-enemy">Dungeon Slime</span>
+                        <span class="fighter-sub-title threat-sub">Besta Mágica da Masmorra</span>
+                      </div>
+                    </div>
+
+                    <div class="avatar-canvas-box" id="enemy-avatar-box">
+                      <!-- SVG do Monstro Injetado dinamicamente via JS -->
+                    </div>
+
+                    <!-- Barras de Recursos do Monstro -->
+                    <div class="resource-gauges">
+                      <div class="gauge-slot">
+                        <div class="gauge-meta">
+                          <span class="gauge-name enemy-hp-label">VITALIDADE (HP)</span>
+                          <span id="battle-enemy-hp-text" class="gauge-value">60 / 60</span>
+                        </div>
+                        <div class="iron-gauge-track">
+                          <div id="battle-enemy-hp-bar" class="iron-bar bar-enemy-hp" style="width: 100%;"></div>
+                        </div>
+                      </div>
+
+                      <div class="gauge-slot">
+                        <div class="gauge-meta">
+                          <span class="gauge-name enemy-mp-label">RESERVA DE PODER (MP)</span>
+                          <span id="battle-enemy-mp-text" class="gauge-value">10 / 10</span>
+                        </div>
+                        <div class="iron-gauge-track">
+                          <div id="battle-enemy-mp-bar" class="iron-bar bar-enemy-mp" style="width: 100%;"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Ficha de Ameaça do Monstro -->
+                    <div class="attributes-card enemy-attr-card">
+                      <div class="attr-header">FICHA DE AMEAÇA</div>
+                      <div class="attr-grid">
+                        <div class="attr-pill"><span class="attr-label">Dano Base:</span> <span class="attr-val red-val">12 ~ 18</span></div>
+                        <div class="attr-pill"><span class="attr-label">Esquiva:</span> <span class="attr-val blue-val">8%</span></div>
+                        <div class="attr-pill"><span class="attr-label">Bloqueio:</span> <span class="attr-val">10%</span></div>
+                        <div class="attr-pill"><span class="attr-label">Fraqueza:</span> <span class="attr-val gold-val">Sagrado / Fogo</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <!-- MODAL DE RESULTADO DE BATALHA -->
+              <div id="battle-result-modal" class="battle-result-modal hidden">
+                <div class="result-card">
+                  <div class="result-crest" id="result-icon">
+                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                      <path d="M4 22h16"></path>
+                      <path d="M10 14.66V17c0 .55-.45 1-1 1H7v2h10v-2h-2c-.55 0-1-.45-1-1v-2.34"></path>
+                      <path d="M6 4h12v7a6 6 0 0 1-12 0V4z"></path>
+                    </svg>
+                  </div>
+                  <h2 id="result-title" class="result-headline">VITÓRIA!</h2>
+                  <div id="result-desc" class="result-summary">A criatura sucumbiu perante sua investida tática.</div>
+                  <div class="result-rewards-box" id="result-rewards">
+                    <span class="reward-title">RECOMPENSAS DE COMBATE</span>
+                    <div id="exp-block" class="exp-block hidden">
+                      <div class="exp-head">
+                        <span id="exp-level" class="exp-level">Lv 1</span>
+                        <span id="exp-numbers" class="exp-numbers"></span>
+                      </div>
+                      <div class="exp-track"><div id="exp-fill" class="exp-fill"></div></div>
+                      <div id="exp-gain" class="reward-badge"></div>
+                      <div id="exp-note" class="exp-note"></div>
+                    </div>
+                    <span id="reward-none" class="reward-none hidden">Sem recompensas obtidas neste desfecho.</span>
+                  </div>
+                  <button id="btn-return-map" class="btn-rpg-return" type="button">RETORNAR À MASMORRA</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <!-- Container do Palco (Mapa 2D e Tela de Batalha Naruto Game) -->
-      <div class="stage-container">
-        <!-- Mapa de Exploração 2D (Phaser) -->
-        <main id="game"></main>
-
-        <!-- ARENA DE CONFRONTO EM TURNOS (Layout Fiel ao Naruto Game) -->
-        <div id="battle-screen" class="battle-screen hidden">
-          <!-- Topo da Batalha: Banner e Turno -->
-          <div class="battle-top-banner">
-            <div class="dungeon-name-badge">
-              <span class="gate-symbol">⚔️</span>
-              <span>ARENA DE CONFRONTO EM TURNOS</span>
-            </div>
-            <div class="turn-counter-badge">
-              <span class="hourglass-icon">⏳</span>
-              <span id="battle-turn-indicator">TURNO 1 / 20</span>
-            </div>
-          </div>
-
-          <!-- As 3 Colunas Principais do Naruto Game -->
-          <div class="ng-battle-grid">
-            
-            <!-- COLUNA ESQUERDA: VOCÊ (O Caçador) -->
-            <section class="ng-fighter-column player-column">
-              <div class="fighter-frame player-frame">
-                <div class="frame-corner top-left"></div>
-                <div class="frame-corner top-right"></div>
-                <div class="frame-corner bottom-left"></div>
-                <div class="frame-corner bottom-right"></div>
-
-                <div class="fighter-header-plate">
-                  <span id="battle-player-badge" class="rank-tag rank-e">RANK E</span>
-                  <div class="fighter-titles">
-                    <span id="battle-player-name" class="fighter-nick nick-rare">Você</span>
-                    <span id="battle-player-class-title" class="fighter-sub-title">Curandeiro de Combate</span>
-                  </div>
-                </div>
-
-                <div class="avatar-canvas-box" id="player-avatar-box">
-                  <!-- SVG Injetado dinamicamente via JS -->
-                </div>
-
-                <!-- Barras de Recursos Glossy Glass -->
-                <div class="resource-gauges">
-                  <div class="gauge-slot">
-                    <div class="gauge-meta">
-                      <span class="gauge-name hp-label">VITALIDADE (HP)</span>
-                      <span id="battle-player-hp-text" class="gauge-value">120 / 120</span>
-                    </div>
-                    <div class="glossy-track">
-                      <div id="battle-player-hp-bar" class="glossy-bar bar-hp" style="width: 100%;">
-                        <div class="glass-shine"></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="gauge-slot">
-                    <div class="gauge-meta">
-                      <span class="gauge-name mp-label">MANA / CHAKRA (MP)</span>
-                      <span id="battle-player-mp-text" class="gauge-value">80 / 80</span>
-                    </div>
-                    <div class="glossy-track">
-                      <div id="battle-player-mp-bar" class="glossy-bar bar-mp" style="width: 100%;">
-                        <div class="glass-shine"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Habilidades (ícones) ao lado do jogador -->
-                <div class="skills-panel">
-                  <div class="deck-header">
-                    <span class="deck-title">HABILIDADES [1 · 2 · 3]</span>
-                  </div>
-                  <div id="skills-deck" class="skills-card-deck"></div>
-                  <div id="skill-info" class="skill-info">Passe o mouse numa habilidade para ver os detalhes.</div>
-                </div>
-
-                <!-- Calculadora de Atributos do Caçador (Estilo NG) -->
-                <div class="attributes-card">
-                  <div class="attr-header">ATRIBUTOS & PODER</div>
-                  <div class="attr-grid">
-                    <div class="attr-pill"><span class="attr-label">ATK Físico:</span> <span id="attr-atk-phys" class="attr-val">28</span></div>
-                    <div class="attr-pill"><span class="attr-label">ATK Mágico:</span> <span id="attr-atk-mag" class="attr-val">35</span></div>
-                    <div class="attr-pill"><span class="attr-label">Crítico:</span> <span id="attr-crit" class="attr-val gold-val">15%</span></div>
-                    <div class="attr-pill"><span class="attr-label">Esquiva / Bloq:</span> <span id="attr-def" class="attr-val blue-val">12% / 10%</span></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- COLUNA CENTRAL: O LOG DE COMBATE & ACTION BAR (Centro Nervoso) -->
-            <section class="ng-center-column">
-              <!-- Log de Batalha com Scroll e Badges Coloridos -->
-              <div class="battle-log-parchment">
-                <div class="log-parchment-header">
-                  <span class="log-title">HISTÓRICO DE AÇÕES DO TURNO</span>
-                  <span class="log-sub">Acompanhe acertos, esquivas e magias</span>
-                </div>
-                <div id="battle-log" class="battle-log-feed"></div>
-              </div>
-
-              <div class="deck-footer-actions">
-                <button id="btn-flee" class="btn-rpg-flee">
-                  <span class="flee-icon">🏃</span>
-                  <span>FUGIR DO CONFRONTO [F]</span>
-                </button>
-                <button id="btn-calc-toggle" class="btn-rpg-calc" title="Exibe previsão tática de combate">
-                  <span>📊 Calculadora Tática</span>
-                </button>
-              </div>
-            </section>
-
-            <!-- COLUNA DIREITA: O OPONENTE (Monstro da Masmorra) -->
-            <section class="ng-fighter-column enemy-column">
-              <div class="fighter-frame enemy-frame">
-                <div class="frame-corner top-left"></div>
-                <div class="frame-corner top-right"></div>
-                <div class="frame-corner bottom-left"></div>
-                <div class="frame-corner bottom-right"></div>
-
-                <div class="fighter-header-plate enemy-plate">
-                  <span id="battle-enemy-badge" class="rank-tag rank-e">RANK E</span>
-                  <div class="fighter-titles">
-                    <span id="battle-enemy-name" class="fighter-nick nick-enemy">Dungeon Slime</span>
-                    <span class="fighter-sub-title threat-sub">Besta Mágica da Masmorra</span>
-                  </div>
-                </div>
-
-                <div class="avatar-canvas-box" id="enemy-avatar-box">
-                  <!-- SVG Injetado dinamicamente via JS -->
-                </div>
-
-                <!-- Barras de Recursos do Monstro -->
-                <div class="resource-gauges">
-                  <div class="gauge-slot">
-                    <div class="gauge-meta">
-                      <span class="gauge-name enemy-hp-label">VITALIDADE (HP)</span>
-                      <span id="battle-enemy-hp-text" class="gauge-value">60 / 60</span>
-                    </div>
-                    <div class="glossy-track">
-                      <div id="battle-enemy-hp-bar" class="glossy-bar bar-enemy-hp" style="width: 100%;">
-                        <div class="glass-shine"></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="gauge-slot">
-                    <div class="gauge-meta">
-                      <span class="gauge-name enemy-mp-label">RESERVA DE PODER (MP)</span>
-                      <span id="battle-enemy-mp-text" class="gauge-value">10 / 10</span>
-                    </div>
-                    <div class="glossy-track">
-                      <div id="battle-enemy-mp-bar" class="glossy-bar bar-enemy-mp" style="width: 100%;">
-                        <div class="glass-shine"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Ficha de Ameaça do Monstro -->
-                <div class="attributes-card enemy-attr-card">
-                  <div class="attr-header">FICHA DE AMEAÇA</div>
-                  <div class="attr-grid">
-                    <div class="attr-pill"><span class="attr-label">Dano Base:</span> <span class="attr-val red-val">12 ~ 18</span></div>
-                    <div class="attr-pill"><span class="attr-label">Esquiva:</span> <span class="attr-val blue-val">8%</span></div>
-                    <div class="attr-pill"><span class="attr-label">Bloqueio:</span> <span class="attr-val">10%</span></div>
-                    <div class="attr-pill"><span class="attr-label">Fraqueza:</span> <span class="attr-val gold-val">Sagrado / Fogo</span></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          <!-- Modal de Resultado de Batalha Estilo Vitória Diablo / Solo Leveling -->
-          <div id="battle-result-modal" class="battle-result-modal hidden">
-            <div class="result-card">
-              <div class="result-crest" id="result-icon">🏆</div>
-              <h2 id="result-title" class="result-headline">VITÓRIA!</h2>
-              <div id="result-desc" class="result-summary">A criatura sucumbiu perante o poder sagrado.</div>
-              <div class="result-rewards-box" id="result-rewards">
-                <span class="reward-title">RECOMPENSAS</span>
-                <div id="exp-block" class="exp-block hidden">
-                  <div class="exp-head">
-                    <span id="exp-level" class="exp-level">Lv 1</span>
-                    <span id="exp-numbers" class="exp-numbers"></span>
-                  </div>
-                  <div class="exp-track"><div id="exp-fill" class="exp-fill"></div></div>
-                  <div id="exp-gain" class="reward-badge"></div>
-                  <div id="exp-note" class="exp-note"></div>
-                </div>
-                <span id="reward-none" class="reward-none hidden">Sem recompensas desta vez.</span>
-              </div>
-              <button id="btn-return-map" class="btn-rpg-return">RETORNAR À MASMORRA</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- MODAL DO QUADRO DE MISSÕES (ESTILO NARUTO GAME / ASSOCIAÇÃO DE CAÇADORES) -->
+      <!-- MODAL DO QUADRO DE MISSÕES -->
       <div id="missions-modal" class="missions-modal-overlay hidden">
         <div class="missions-modal-window">
           <div class="modal-header-plate">
             <div class="modal-title-group">
-              <span class="modal-icon">📋</span>
-              <div>
-                <h2 class="modal-title">QUADRO DE MISSÕES DA ASSOCIAÇÃO</h2>
-                <span class="modal-subtitle">Patrulhas e incursões periódicas · EXP autoritativo lazy (ADR 5 & ADR 10)</span>
-              </div>
+              <span class="modal-tag">[ASSOCIAÇÃO DE CAÇADORES]</span>
+              <h2 class="modal-title">QUADRO DE MISSÕES DA REGIÃO</h2>
+              <span class="modal-subtitle">Patrulhas e incursões autônomas · Recompensa em EXP sem travar combate manual</span>
             </div>
-            <button id="btn-missions-close" class="btn-modal-close" title="Fechar">✕</button>
+            <button id="btn-missions-close" class="btn-modal-close" title="Fechar" type="button">FECHAR [X]</button>
           </div>
 
           <!-- Seção de Missão Ativa (se houver) -->
@@ -276,25 +355,22 @@
             <div class="active-mission-card">
               <div class="active-mission-header">
                 <span class="active-pulse">●</span>
-                <span class="active-label">MISSÃO EM CURSO</span>
+                <span class="active-label">MISSÃO EM EXECUÇÃO:</span>
                 <span id="active-mission-name" class="active-mission-name">Patrulha Relâmpago</span>
               </div>
               <div class="active-mission-body">
                 <div class="active-mission-meta">
-                  <span id="active-mission-status" class="active-status-text">⏳ Em andamento…</span>
+                  <span id="active-mission-status" class="active-status-text">Em andamento…</span>
                   <span id="active-mission-timer" class="active-timer-display">00:05</span>
                 </div>
-                <div class="glossy-track mission-progress-track">
-                  <div id="active-mission-progress" class="glossy-bar bar-mission" style="width: 0%;">
-                    <div class="glass-shine"></div>
-                  </div>
+                <div class="iron-gauge-track mission-progress-track">
+                  <div id="active-mission-progress" class="iron-bar bar-mission" style="width: 0%;"></div>
                 </div>
                 <div class="active-mission-actions">
-                  <button id="btn-claim-mission" class="btn-rpg-claim" disabled>
-                    <span class="claim-icon">🎁</span>
+                  <button id="btn-claim-mission" class="btn-rpg-claim" disabled type="button">
                     <span id="btn-claim-text">COLETAR RECOMPENSA</span>
                   </button>
-                  <button id="btn-cancel-mission" class="btn-rpg-cancel-mission">
+                  <button id="btn-cancel-mission" class="btn-rpg-cancel-mission" type="button">
                     <span>CANCELAR</span>
                   </button>
                 </div>
@@ -304,7 +380,7 @@
 
           <!-- Lista de Missões Disponíveis -->
           <div class="missions-board-body">
-            <div class="board-section-title">MISSÕES DISPONÍVEIS NA REGIÃO</div>
+            <div class="board-section-title">CONTRATOS DISPONÍVEIS</div>
             <div id="missions-list" class="missions-cards-grid">
               <!-- Cards gerados dinamicamente via JS -->
             </div>
@@ -312,10 +388,183 @@
         </div>
       </div>
 
-      <!-- Rodapé Clássico -->
+      <!-- MODAL DE PERFIL / STATUS DO JOGADOR -->
+      <div id="profile-modal" class="modal-overlay hidden">
+        <div class="profile-modal-window">
+          <div class="modal-header-plate">
+            <div class="modal-title-group">
+              <span class="modal-tag">[TERMINAL DO CAÇADOR]</span>
+              <h2 class="modal-title">FICHA DE STATUS E PROGRESSÃO</h2>
+              <span class="modal-subtitle">Registro oficial de atributos, classe e nível perante a Associação</span>
+            </div>
+            <button id="btn-profile-close" class="btn-modal-close" title="Fechar" type="button">FECHAR [X]</button>
+          </div>
+
+          <div class="profile-modal-body">
+            <div class="profile-left-col">
+              <div class="profile-card-frame">
+                <img id="profile-portrait-img" class="profile-portrait-large" src="/assets/portraits/director.png" alt="Avatar" />
+                <div class="profile-name-tag">
+                  <span id="profile-nick-display" class="profile-nick">Hunter-1dc3</span>
+                  <span id="profile-class-display" class="profile-class">Curandeiro de Combate</span>
+                </div>
+              </div>
+              <div class="profile-rank-box">
+                <span class="profile-box-label">RANK ATUAL:</span>
+                <span id="profile-rank-display" class="rank-tag rank-e">RANK E</span>
+              </div>
+            </div>
+
+            <div class="profile-right-col">
+              <div class="profile-section">
+                <div class="profile-section-heading">PROGRESSÃO DE NÍVEL</div>
+                <div class="profile-stats-table">
+                  <div class="table-row">
+                    <span class="table-key">Nível Atual:</span>
+                    <span id="profile-level-val" class="table-val">Lv 1</span>
+                  </div>
+                  <div class="table-row">
+                    <span class="table-key">Cap do Rank E:</span>
+                    <span class="table-val">Nível 12 (Trava de Despertar)</span>
+                  </div>
+                  <div class="table-row">
+                    <span class="table-key">Experiência (EXP):</span>
+                    <span id="profile-exp-val" class="table-val">0 / 40</span>
+                  </div>
+                  <div class="table-row">
+                    <span class="table-key">Próximo Desafio:</span>
+                    <span class="table-val gold-val">Prova de Despertar (Gate E · Chefe Goblin)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="profile-section">
+                <div class="profile-section-heading">PARÂMETROS DE COMBATE AUTORITATIVOS</div>
+                <div class="profile-stats-grid">
+                  <div class="p-stat-card">
+                    <span class="p-stat-name">Poder Físico:</span>
+                    <span id="profile-atk-phys" class="p-stat-value">28</span>
+                  </div>
+                  <div class="p-stat-card">
+                    <span class="p-stat-name">Poder Mágico:</span>
+                    <span id="profile-atk-mag" class="p-stat-value">35</span>
+                  </div>
+                  <div class="p-stat-card">
+                    <span class="p-stat-name">Taxa Crítica:</span>
+                    <span id="profile-crit" class="p-stat-value gold-val">15%</span>
+                  </div>
+                  <div class="p-stat-card">
+                    <span class="p-stat-name">Taxa de Esquiva:</span>
+                    <span id="profile-dodge" class="p-stat-value blue-val">12%</span>
+                  </div>
+                  <div class="p-stat-card">
+                    <span class="p-stat-name">Taxa de Bloqueio:</span>
+                    <span id="profile-block" class="p-stat-value">10%</span>
+                  </div>
+                  <div class="p-stat-card">
+                    <span class="p-stat-name">Vitalidade Máxima:</span>
+                    <span id="profile-max-hp" class="p-stat-value hp-val">120 HP</span>
+                  </div>
+                  <div class="p-stat-card">
+                    <span class="p-stat-name">Chakra / Mana:</span>
+                    <span id="profile-max-mp" class="p-stat-value mp-val">80 MP</span>
+                  </div>
+                  <div class="p-stat-card">
+                    <span class="p-stat-name">Multiplicador Atual:</span>
+                    <span id="profile-mult" class="p-stat-value">1.00x</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL DA ACADEMIA HUNTER (ESCOLA: RANK E -> D, REGRAS & MECÂNICAS) -->
+      <div id="academy-modal" class="modal-overlay hidden">
+        <div class="academy-modal-window">
+          <div class="modal-header-plate">
+            <div class="modal-title-group">
+              <span class="modal-tag">[ASSOCIAÇÃO DE CAÇADORES · DIVISÃO DE TREINAMENTO]</span>
+              <h2 class="modal-title">ACADEMIA HUNTER: MANUAL DE DESPERTAR & COMBATE</h2>
+              <span class="modal-subtitle">Instruções para caçadores novatos ascenderem do Rank E ao Rank D</span>
+            </div>
+            <button id="btn-academy-close" class="btn-modal-close" title="Fechar" type="button">FECHAR [X]</button>
+          </div>
+
+          <div class="academy-body">
+            <!-- ARTIGO 1: COMO SUBIR DE RANK -->
+            <article class="academy-article">
+              <h3 class="article-title">1. COMO ASCENDER DO RANK E PARA O RANK D</h3>
+              <p class="article-text">
+                Todo caçador recém-desperto é classificado como <strong>Rank E</strong>. Seus atributos e nível evoluem através de confrontos na Masmorra e missões periódicas da Associação.
+              </p>
+              <div class="academy-callout">
+                <div class="callout-heading">A REGRA DO CAP DE NÍVEL (RANK CAP):</div>
+                <p>
+                  No Rank E, seu nível máximo é <strong>Nível 12</strong>. Ao atingir o Lv 12, todo o EXP excedente fica retido e acumulado. O caçador <strong>não subirá para o Lv 13</strong> até ser aprovado na Prova de Despertar.
+                </p>
+              </div>
+              <ul class="academy-steps">
+                <li><strong>Passo 1:</strong> Evolua do Nível 1 ao 12 derrotando monstros e cumprindo missões na Associação.</li>
+                <li><strong>Passo 2:</strong> Acesse a <em>Prova de Rank E</em>: uma masmorra especial contra o <strong>Chefe Goblin</strong>.</li>
+                <li><strong>Passo 3:</strong> Na Prova, a fuga é bloqueada. Ao vencer o chefe, a Associação homologa sua ascensão para <strong>Rank D</strong>.</li>
+                <li><strong>Benefícios do Rank D:</strong> Cap de nível expandido até o <strong>Nível 25</strong>, acesso a missões longas de 1 hora e novas masmorras.</li>
+              </ul>
+            </article>
+
+            <!-- ARTIGO 2: SISTEMA DE COMBATE EM TURNOS -->
+            <article class="academy-article">
+              <h3 class="article-title">2. SISTEMA DE COMBATE TÁTICO EM TURNOS</h3>
+              <p class="article-text">
+                O combate segue a mecânica clássica de rodadas simultâneas (estilo <em>Naruto Game</em>). Você escolhe sua habilidade e tanto você quanto o monstro resolvem suas ações no mesmo instante da rodada.
+              </p>
+              <div class="academy-grid-2">
+                <div class="academy-subcard">
+                  <div class="subcard-title">RECUO TÁTICO (LIMITE DE 20 TURNOS)</div>
+                  <p>
+                    Se o confronto atingir o turno 20 e ambos continuarem vivos, você executa um <strong>Recuo Tático</strong>. Você não morre, não perde EXP, mantém seus recursos restantes e o monstro permanece no mapa com o HP atual.
+                  </p>
+                </div>
+                <div class="academy-subcard">
+                  <div class="subcard-title">EMPATE MÚTUO (GOLPE FATAL DUPLO)</div>
+                  <p>
+                    Se você e a criatura zerarem os pontos de vida na mesma troca de golpes, é declarado <strong>Empate Mútuo</strong>. Você recebe metade da EXP da criatura e é recolhido com segurança para o ponto de partida do Gate.
+                  </p>
+                </div>
+              </div>
+            </article>
+
+            <!-- ARTIGO 3: ATRIBUTOS & GESTÃO DE RECURSOS -->
+            <article class="academy-article">
+              <h3 class="article-title">3. PARÂMETROS DE COMBATE & DICAS DE SOBREVIVÊNCIA</h3>
+              <div class="academy-tips-table">
+                <div class="tip-row">
+                  <span class="tip-name">Golpe Crítico:</span>
+                  <span class="tip-desc">Tem chance base de acontecer baseada na agilidade da classe e multiplica o dano total causado por 1.6x.</span>
+                </div>
+                <div class="tip-row">
+                  <span class="tip-name">Esquiva:</span>
+                  <span class="tip-desc">Anula completamente (100%) o dano do ataque inimigo naquela rodada.</span>
+                </div>
+                <div class="tip-row">
+                  <span class="tip-name">Bloqueio:</span>
+                  <span class="tip-desc">Apara o impacto do golpe com escudo ou postura defensiva, mitigando o dano recebido em 50%.</span>
+                </div>
+                <div class="tip-row">
+                  <span class="tip-name">Gestão de Mana:</span>
+                  <span class="tip-desc">O ataque básico tem custo zero de MP. Guarde seu MP para magias de dano concentrado ou curas em momentos críticos.</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <!-- RODAPÉ CLÁSSICO -->
       <footer class="rpg-footer">
-        <span>HUNTER RPG WEB · SISTEMA EM TURNOS E TILES AUTORITATIVO</span>
-        <span>ESTÉTICA DIABLO × SOLO LEVELING × NARUTO GAME</span>
+        <span>ASSOCIAÇÃO DE CAÇADORES · PROTOCOLO DE COMBATE AUTORITATIVO EM TURNOS</span>
+        <span>GRID 2D E BATALHA INSTANCIADA · SOLO HUNTER RPG</span>
       </footer>
     </div>
 

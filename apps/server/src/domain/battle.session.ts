@@ -86,7 +86,7 @@ export class BattleSession {
     );
 
     this.log.push(
-      `⚔️ Confronto iniciado! [${this.player.rank}] ${this.player.name} (${classInfo.title}) VS [${this.enemy.rank}] ${this.enemy.name}.`
+      `[SISTEMA] Confronto iniciado! [${this.player.rank}] ${this.player.name} (${classInfo.title}) VS [${this.enemy.rank}] ${this.enemy.name}.`
     );
   }
 
@@ -149,7 +149,7 @@ export class BattleSession {
         isEnemyDodge = true;
         playerDmg = 0;
         this.note(
-          `[ESQUIVOU] 💨 [${this.enemy.rank}] ${this.enemy.name} se esquivou agilmente de ${skillDef.name}! (0 de dano)`,
+          `[ESQUIVA] [${this.enemy.rank}] ${this.enemy.name} se esquivou agilmente de ${skillDef.name}! (0 de dano)`,
           "DODGE",
           "enemy",
           0,
@@ -168,7 +168,7 @@ export class BattleSession {
 
         if (isCrit) {
           this.note(
-            `[CRÍTICO] 💥 GOLPE CRÍTICO! Você usou ${skillDef.name} causando ${playerDmg} de dano devastador!`,
+            `[CRÍTICO] GOLPE CRÍTICO! Você usou ${skillDef.name} causando ${playerDmg} de dano devastador!`,
             "CRIT",
             "enemy",
             playerDmg,
@@ -176,7 +176,7 @@ export class BattleSession {
           );
         } else if (isEnemyBlock) {
           this.note(
-            `[BLOQUEIO] 🛡️ ${this.enemy.name} aparou parte do golpe! ${skillDef.name} causou ${playerDmg} de dano.`,
+            `[BLOQUEIO] ${this.enemy.name} aparou parte do golpe! ${skillDef.name} causou ${playerDmg} de dano.`,
             "BLOCK",
             "enemy",
             playerDmg,
@@ -184,7 +184,7 @@ export class BattleSession {
           );
         } else {
           this.note(
-            `[DANO] ⚔️ Você usou ${skillDef.name} causando ${playerDmg} de dano a ${this.enemy.name}.`,
+            `[DANO] Você usou ${skillDef.name} causando ${playerDmg} de dano a ${this.enemy.name}.`,
             "HIT",
             "enemy",
             playerDmg,
@@ -198,7 +198,7 @@ export class BattleSession {
       const heal = Math.min(this.player.maxHp - this.player.hp, skillDef.healAmount);
       this.player.hp += heal;
       this.note(
-        `[CURA] 💚 Canalização Sagrada! Você restaurou +${heal} de HP (Vida atual: ${this.player.hp}/${this.player.maxHp}).`,
+        `[CURA] Canalização Sagrada! Você restaurou +${heal} de HP (Vida atual: ${this.player.hp}/${this.player.maxHp}).`,
         "HEAL",
         "player",
         heal,
@@ -214,7 +214,7 @@ export class BattleSession {
 
       if (this.rng() < playerDodgeChance) {
         this.note(
-          `[ESQUIVOU] 💨 Você previu o movimento de ${this.enemy.name} e se esquivou com maestria! (0 de dano sofrido)`,
+          `[ESQUIVA] Você previu o movimento de ${this.enemy.name} e se esquivou com maestria! (0 de dano sofrido)`,
           "DODGE",
           "player",
           0,
@@ -224,7 +224,7 @@ export class BattleSession {
         enemyDmg = Math.floor(enemyDmg * 0.5);
         this.player.hp = Math.max(0, this.player.hp - enemyDmg);
         this.note(
-          `[BLOQUEIO] 🛡️ Você ergueu a guarda e bloqueou o impacto! Sofreu apenas ${enemyDmg} de dano de ${this.enemy.name}.`,
+          `[BLOQUEIO] Você ergueu a guarda e bloqueou o impacto! Sofreu apenas ${enemyDmg} de dano de ${this.enemy.name}.`,
           "BLOCK",
           "player",
           enemyDmg,
@@ -234,7 +234,7 @@ export class BattleSession {
         // Monster hit
         this.player.hp = Math.max(0, this.player.hp - enemyDmg);
         this.note(
-          `[DANO] 🩸 ${this.enemy.name} revidou com ferocidade causando ${enemyDmg} de dano em você!`,
+          `[DANO] ${this.enemy.name} revidou com ferocidade causando ${enemyDmg} de dano em você!`,
           "HIT",
           "player",
           enemyDmg,
@@ -260,7 +260,7 @@ export class BattleSession {
       // Empate com o monstro caído: metade do EXP (o monstro morreu junto).
       this.rewardExp = Math.floor(mobExp(this.enemy.level) / 2);
       this.note(
-        "⚖️ [EMPATE] Golpe mútuo fatal! Ambos os combatentes tombaram ao mesmo tempo.",
+        "[EMPATE] Golpe mútuo fatal! Ambos os combatentes tombaram ao mesmo tempo.",
         "DEATH",
         "enemy",
         0,
@@ -272,7 +272,7 @@ export class BattleSession {
       this.result = "VICTORY";
       this.rewardExp = mobExp(this.enemy.level);
       this.note(
-        `🏆 [VITÓRIA] Oponente aniquilado! [${this.enemy.rank}] ${this.enemy.name} foi eliminado (+${this.rewardExp} EXP).`,
+        `[VITÓRIA] Oponente aniquilado! [${this.enemy.rank}] ${this.enemy.name} foi eliminado (+${this.rewardExp} EXP).`,
         "DEATH",
         "enemy",
         0,
@@ -282,7 +282,7 @@ export class BattleSession {
       this.finished = true;
       this.result = "DEFEAT";
       this.note(
-        `💀 [DERROTA] Você foi sobrepujado por [${this.enemy.rank}] ${this.enemy.name}!`,
+        `[DERROTA] Você foi sobrepujado por [${this.enemy.rank}] ${this.enemy.name}!`,
         "DEATH",
         "player",
         0,
@@ -296,7 +296,7 @@ export class BattleSession {
         this.drawReason = "TURN_LIMIT";
         this.rewardExp = 0;
         this.log.push(
-          `⚖️ [RECUO TÁTICO] Limite de ${this.maxTurns} turnos atingido! Você recuou taticamente perante a resistência de [${this.enemy.rank}] ${this.enemy.name}.`
+          `[RECUO TÁTICO] Limite de ${this.maxTurns} turnos atingido! Você recuou taticamente perante a resistência de [${this.enemy.rank}] ${this.enemy.name}.`
         );
       }
     }
@@ -309,7 +309,7 @@ export class BattleSession {
     this.events = [];
     this.finished = true;
     this.result = "FLED";
-    this.log.push("🏃 [FUGA] Você recuou taticamente e escapou com segurança.");
+    this.log.push("[FUGA] Você recuou taticamente e escapou com segurança.");
   }
 
   toSnapshot(): BattleSnapshot {
