@@ -26,6 +26,9 @@ export const PlayerSnapshotSchema = z.object({
   rank: HunterRankSchema,
   hunterClass: HunterClassSchema,
   level: z.number().int().positive(),
+  exp: z.number().int().nonnegative(),
+  expToNext: z.number().int().positive(),
+  levelCap: z.number().int().positive(),
   position: TileCoordSchema,
   hp: z.number().int().nonnegative(),
   maxHp: z.number().int().positive(),
@@ -43,6 +46,7 @@ export const EnemySnapshotSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   rank: HunterRankSchema,
+  level: z.number().int().positive(),
   position: TileCoordSchema,
   hp: z.number().int().nonnegative(),
   maxHp: z.number().int().positive(),
@@ -89,6 +93,7 @@ export const BattleParticipantSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   rank: HunterRankSchema,
+  level: z.number().int().positive(),
   hp: z.number().int().nonnegative(),
   maxHp: z.number().int().positive(),
   mp: z.number().int().nonnegative(),
@@ -102,6 +107,33 @@ export const BattlePlayerParticipantSchema = BattleParticipantSchema.extend({
 });
 export type BattlePlayerParticipant = z.infer<typeof BattlePlayerParticipantSchema>;
 
+export const BattleRewardsSchema = z.object({
+  expGained: z.number().int().nonnegative(),
+  levelBefore: z.number().int().positive(),
+  levelAfter: z.number().int().positive(),
+  expBefore: z.number().int().nonnegative(),
+  expAfter: z.number().int().nonnegative(),
+  /** Nível travado pelo rank: o EXP fica retido até a prova de rank. */
+  capped: z.boolean(),
+  /** Cap de nível do rank atual (para a mensagem de "prova pendente"). */
+  levelCap: z.number().int().positive()
+});
+export type BattleRewards = z.infer<typeof BattleRewardsSchema>;
+
+/**
+ * Evento estruturado de combate, na ordem em que aconteceu no turno.
+ * O cliente reproduz em sequência (golpe → contragolpe → morte) em vez de pular pro estado final.
+ * `logIndex` aponta a linha de `log` que corresponde ao evento.
+ */
+export const BattleEventSchema = z.object({
+  kind: z.enum(["HIT", "CRIT", "BLOCK", "DODGE", "HEAL", "DEATH"]),
+  target: z.enum(["player", "enemy"]),
+  amount: z.number().int().nonnegative(),
+  targetHpAfter: z.number().int().nonnegative(),
+  logIndex: z.number().int().nonnegative()
+});
+export type BattleEvent = z.infer<typeof BattleEventSchema>;
+
 export const BattleSnapshotSchema = z.object({
   battleId: z.string().min(1),
   turn: z.number().int().positive(),
@@ -111,7 +143,10 @@ export const BattleSnapshotSchema = z.object({
   log: z.array(z.string()),
   finished: z.boolean(),
   result: z.enum(["VICTORY", "DEFEAT", "DRAW", "FLED"]).optional(),
-  rewardExp: z.number().int().nonnegative().optional()
+  rewardExp: z.number().int().nonnegative().optional(),
+  rewards: BattleRewardsSchema.optional(),
+  /** Eventos do último turno resolvido (vazio no snapshot de início de batalha). */
+  events: z.array(BattleEventSchema).default([])
 });
 export type BattleSnapshot = z.infer<typeof BattleSnapshotSchema>;
 
@@ -170,8 +205,17 @@ export const ServerEvents = {
   BattleSnapshot: "game:battle:snapshot",
   BattleEnded: "game:battle:ended",
   Error: "game:error",
-  CombatLog: "game:combat-log"
+  CombatLog: "game:combat-log",
+  SessionReplaced: "game:session:replaced"
 } as const;
+
+/**
+ * Identidade persistente (demo, sem autenticação real): o cliente guarda uma chave aleatória
+ * e envia no handshake. O servidor só expõe o hash dela como `playerId`.
+ */
+export const PlayerKeySchema = z.string().regex(/^[a-f0-9]{32,64}$/);
+export const HandshakeAuthSchema = z.object({ playerKey: PlayerKeySchema });
+export type HandshakeAuth = z.infer<typeof HandshakeAuthSchema>;
 
 export const WelcomeSchema = z.object({
   playerId: z.string().min(1),
@@ -193,3 +237,5 @@ export const CombatLogSchema = z.object({
   sequence: z.number().int().nonnegative()
 });
 export type CombatLog = z.infer<typeof CombatLogSchema>;
+
+export * from "./progression";

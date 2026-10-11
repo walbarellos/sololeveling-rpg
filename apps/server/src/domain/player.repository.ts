@@ -6,6 +6,8 @@ export interface PlayerEntity {
   rank: HunterRank;
   hunterClass: HunterClass;
   level: number;
+  /** EXP acumulado dentro do nível atual (0 .. expToNext(level) - 1). */
+  exp: number;
   position: TileCoord;
   hp: number;
   maxHp: number;

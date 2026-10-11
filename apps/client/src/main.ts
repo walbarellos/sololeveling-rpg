@@ -6,9 +6,13 @@ import {
   ServerEvents,
   WelcomeSchema,
   WorldSnapshotSchema,
+  expToNext,
+  type BattleEvent,
+  type BattleRewards,
   type BattleSnapshot,
   type Direction,
   type HunterClass,
+  type PlayerSnapshot,
   type TileCoord,
   type WorldSnapshot
 } from "@rpg/contracts";
@@ -27,7 +31,30 @@ import {
 import "./style.css";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3000";
-const socket: Socket = io(SERVER_URL, { transports: ["websocket", "polling"] });
+
+/**
+ * Identidade persistente (demo, sem login): chave aleatória no localStorage, enviada no handshake.
+ * `?slot=2` abre um segundo personagem local no mesmo navegador. Sem storage, o personagem é efêmero.
+ */
+function loadPlayerKey(): string {
+  const slot = (new URLSearchParams(location.search).get("slot") ?? "0").replace(/[^\w-]/g, "").slice(0, 16) || "0";
+  const storageKey = `hunter-rpg:player-key:${slot}`;
+  try {
+    const existing = localStorage.getItem(storageKey);
+    if (existing && /^[a-f0-9]{32}$/.test(existing)) return existing;
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    const key = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    localStorage.setItem(storageKey, key);
+    return key;
+  } catch {
+    return "";
+  }
+}
+const playerKey = loadPlayerKey();
+const socket: Socket = io(SERVER_URL, {
+  transports: ["websocket", "polling"],
+  auth: playerKey ? { playerKey } : {}
+});
 
 let world: WorldSnapshot = { players: [], enemies: [], obstacles: [], serverTime: 0 };
 let myPlayerId = "";
@@ -45,6 +72,9 @@ const classSelect = document.querySelector<HTMLSelectElement>("#class-select")!;
 const headerHunterNick = document.querySelector<HTMLSpanElement>("#header-hunter-nick")!;
 const headerHunterResources = document.querySelector<HTMLSpanElement>("#header-hunter-resources")!;
 const hunterRankBadge = document.querySelector<HTMLSpanElement>("#hunter-rank-badge")!;
+const hudLevel = document.querySelector<HTMLSpanElement>("#hud-level")!;
+const hudExpFill = document.querySelector<HTMLDivElement>("#hud-exp-fill")!;
+const hudExpText = document.querySelector<HTMLSpanElement>("#hud-exp-text")!;
 
 // DOM Elements - Battle Arena
 const battleScreen = document.querySelector<HTMLDivElement>("#battle-screen")!;
@@ -87,6 +117,13 @@ const resultIcon = document.querySelector<HTMLDivElement>("#result-icon")!;
 const resultTitle = document.querySelector<HTMLHeadingElement>("#result-title")!;
 const resultDesc = document.querySelector<HTMLDivElement>("#result-desc")!;
 const btnReturnMap = document.querySelector<HTMLButtonElement>("#btn-return-map")!;
+const expBlock = document.querySelector<HTMLDivElement>("#exp-block")!;
+const expLevel = document.querySelector<HTMLSpanElement>("#exp-level")!;
+const expNumbers = document.querySelector<HTMLSpanElement>("#exp-numbers")!;
+const expFill = document.querySelector<HTMLDivElement>("#exp-fill")!;
+const expGain = document.querySelector<HTMLDivElement>("#exp-gain")!;
+const expNote = document.querySelector<HTMLDivElement>("#exp-note")!;
+const rewardNone = document.querySelector<HTMLSpanElement>("#reward-none")!;
 
 // Class Selector Handler
 classSelect?.addEventListener("change", () => {
@@ -115,7 +152,12 @@ btnCalcToggle?.addEventListener("click", () => {
 
 // Return to Map Button Handler
 btnReturnMap?.addEventListener("click", () => {
+  if (pending > 0) {
+    fast = true; // 1º clique durante a animação: pula pro fim
+    return;
+  }
   currentBattle = null;
+  resetBattleVisuals();
   status.textContent = "Explore o mapa · [E] combate o monstro adjacente · clique num monstro para ir até ele";
   battleResultModal.classList.add("hidden");
   battleScreen.classList.add("hidden");
@@ -129,6 +171,10 @@ window.addEventListener("keydown", (e: KeyboardEvent) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
 
   if (currentBattle) {
+    if (pending > 0) {
+      fast = true; // qualquer tecla durante a animação: pula
+      return;
+    }
     if (currentBattle.finished) return;
     if (e.key === "1" || e.key === "2" || e.key === "3") {
       const index = parseInt(e.key, 10) - 1;
@@ -185,31 +231,56 @@ socket.on(ServerEvents.Snapshot, (raw: unknown) => {
 
   const me = world.players.find((p) => p.id === myPlayerId);
   if (me) {
-    currentHunterClass = me.hunterClass;
-    headerHunterNick.textContent = me.name;
-    headerHunterResources.textContent = `HP: ${me.hp}/${me.maxHp} · MP: ${me.mp}/${me.maxMp}`;
-    hunterRankBadge.textContent = `RANK ${me.rank}`;
-    if (classSelect && classSelect.value !== me.hunterClass) {
-      classSelect.value = me.hunterClass;
-    }
-    updateClassVisuals(me.hunterClass);
+    lastMe = me;
+    // Durante a sequência de combate o HUD fica congelado (senão spoila o resultado/EXP).
+    if (pending === 0) applyHud(me);
   }
 });
+
+let lastMe: PlayerSnapshot | null = null;
+
+function applyHud(me: PlayerSnapshot) {
+  currentHunterClass = me.hunterClass;
+  headerHunterNick.textContent = me.name;
+  headerHunterResources.textContent = `HP: ${me.hp}/${me.maxHp} · MP: ${me.mp}/${me.maxMp}`;
+  hunterRankBadge.textContent = `RANK ${me.rank}`;
+  if (classSelect && classSelect.value !== me.hunterClass) {
+    classSelect.value = me.hunterClass;
+  }
+  updateClassVisuals(me.hunterClass);
+
+  const capped = me.level >= me.levelCap;
+  hudLevel.textContent = `Lv ${me.level}`;
+  hudExpFill.style.width = `${Math.min(100, (100 * me.exp) / me.expToNext)}%`;
+  hudExpFill.classList.toggle("exp-capped", capped);
+  hudExpText.textContent = capped
+    ? `EXP ${me.exp} / ${me.expToNext} · TRAVADO: prova de rank`
+    : `EXP ${me.exp} / ${me.expToNext}`;
+}
 
 socket.on(ServerEvents.BattleSnapshot, (raw: unknown) => {
   const parsed = BattleSnapshotSchema.safeParse(raw);
   if (!parsed.success) return;
-  currentBattle = parsed.data;
+  const prev = currentBattle;
+  const next = parsed.data;
+  currentBattle = next;
   worldScene?.cancelPursuit();
-  renderBattleArena(currentBattle);
+  // Enfileira: snapshot e BattleEnded chegam juntos, mas precisam ser mostrados em ordem.
+  enqueue(() => playTurn(prev && prev.battleId === next.battleId ? prev : null, next));
 });
 
 socket.on(ServerEvents.BattleEnded, (raw: unknown) => {
   const parsed = BattleSnapshotSchema.safeParse(raw);
   if (!parsed.success) return;
-  currentBattle = parsed.data;
-  renderBattleArena(currentBattle);
-  showBattleOutcome(currentBattle);
+  const ended = parsed.data;
+  currentBattle = ended;
+  enqueue(() => finishBattle(ended));
+});
+
+socket.on(ServerEvents.SessionReplaced, () => {
+  connection.textContent = "○ Sessão aberta em outra aba";
+  connection.style.color = "#fbbf24";
+  status.textContent = "⚠️ Este personagem foi aberto em outra aba. Use ?slot=2 na URL para um segundo jogador local.";
 });
 
 socket.on(ServerEvents.Error, (raw: unknown) => {
@@ -262,13 +333,13 @@ function updateClassVisuals(hClass: HunterClass) {
   }
 }
 
-function renderBattleArena(b: BattleSnapshot) {
+function renderBattleArena(b: BattleSnapshot, locked = pending > 0) {
   battleScreen.classList.remove("hidden");
   battleTurnIndicator.textContent = `TURNO ${b.turn} / ${b.maxTurns}`;
 
   // 1. Update Player Card
   battlePlayerName.textContent = b.player.name;
-  battlePlayerBadge.textContent = `RANK ${b.player.rank}`;
+  battlePlayerBadge.textContent = `RANK ${b.player.rank} · Lv ${b.player.level}`;
   battlePlayerHpText.textContent = `${b.player.hp} / ${b.player.maxHp}`;
   battlePlayerHpBar.style.width = `${Math.max(0, (100 * b.player.hp) / b.player.maxHp)}%`;
   battlePlayerMpText.textContent = `${b.player.mp} / ${b.player.maxMp}`;
@@ -277,7 +348,7 @@ function renderBattleArena(b: BattleSnapshot) {
 
   // 2. Update Enemy Card
   battleEnemyName.textContent = b.enemy.name;
-  battleEnemyBadge.textContent = `RANK ${b.enemy.rank}`;
+  battleEnemyBadge.textContent = `RANK ${b.enemy.rank} · Lv ${b.enemy.level}`;
   battleEnemyHpText.textContent = `${b.enemy.hp} / ${b.enemy.maxHp}`;
   battleEnemyHpBar.style.width = `${Math.max(0, (100 * b.enemy.hp) / b.enemy.maxHp)}%`;
   battleEnemyMpText.textContent = `${b.enemy.mp} / ${b.enemy.maxMp}`;
@@ -323,6 +394,9 @@ function renderBattleArena(b: BattleSnapshot) {
     } else if (entry.includes("[EMPATE]")) {
       badgeClass = "badge-dodge";
       badgeText = "EMPATE ⚖️";
+    } else if (entry.includes("[DERROTA]")) {
+      badgeClass = "badge-damage";
+      badgeText = "DERROTA 💀";
     }
 
     const cleanText = entry.replace(/\[.*?\]\s*/g, "");
@@ -344,7 +418,7 @@ function renderBattleArena(b: BattleSnapshot) {
     const notEnoughMp = b.player.mp < skill.mpCost;
     const onCooldown = skill.currentCooldown > 0;
     slot.className = `skill-icon-btn kind-${icon.kind}`;
-    slot.disabled = notEnoughMp || onCooldown || b.finished;
+    slot.disabled = notEnoughMp || onCooldown || b.finished || locked;
     slot.title = `${skill.name} — ${skill.description}`;
     slot.setAttribute("aria-label", `${skill.name}. ${skill.description}. Custo ${skill.mpCost} MP`);
 
@@ -366,7 +440,7 @@ function renderBattleArena(b: BattleSnapshot) {
     slot.addEventListener("focus", showInfo);
 
     slot.addEventListener("click", () => {
-      if (b.finished) return;
+      if (b.finished || pending > 0) return;
       socket.emit(ClientEvents.BattleActionRequest, {
         battleId: b.battleId,
         actionId: skill.id
@@ -400,6 +474,208 @@ function showBattleOutcome(b: BattleSnapshot) {
     resultTitle.textContent = "FUGA BEM-SUCEDIDA!";
     resultTitle.style.color = "#a855f7";
     resultDesc.textContent = "Você rompeu o engajamento e recuou para um quadrante seguro do mapa.";
+  }
+
+  // Recompensas reais (vindas do servidor); nada hardcoded.
+  expBlock.classList.toggle("hidden", !b.rewards);
+  rewardNone.classList.toggle("hidden", !!b.rewards);
+  expNote.textContent = "";
+  expLevel.classList.remove("levelup");
+  if (b.rewards) {
+    expGain.textContent = `+${b.rewards.expGained} EXP`;
+    expLevel.textContent = `Lv ${b.rewards.levelBefore}`;
+    setExpBar(b.rewards.expBefore, expToNext(b.rewards.levelBefore));
+  }
+}
+
+// -------------------------------------------------------------
+// SEQUÊNCIA DE COMBATE (animação ordenada, pulável)
+// -------------------------------------------------------------
+let pending = 0;
+let fast = false;
+let chain: Promise<void> = Promise.resolve();
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, fast || PREFERS_REDUCED_MOTION ? 0 : ms));
+
+function enqueue(task: () => Promise<void>) {
+  pending++;
+  chain = chain
+    .then(task)
+    .catch((err) => console.error("battle sequence failed", err))
+    .then(() => {
+      pending--;
+      if (pending === 0) {
+        fast = false;
+        if (lastMe) applyHud(lastMe);
+      }
+    });
+}
+
+// Clicar na arena durante a animação pula pro fim.
+battleScreen.addEventListener("click", () => {
+  if (pending > 0) fast = true;
+});
+
+function setPlayerBars(hp: number, maxHp: number, mp: number, maxMp: number) {
+  battlePlayerHpText.textContent = `${hp} / ${maxHp}`;
+  battlePlayerHpBar.style.width = `${Math.max(0, (100 * hp) / maxHp)}%`;
+  battlePlayerMpText.textContent = `${mp} / ${maxMp}`;
+  battlePlayerMpBar.style.width = `${Math.max(0, (100 * mp) / maxMp)}%`;
+}
+
+function setEnemyHp(hp: number, maxHp: number) {
+  battleEnemyHpText.textContent = `${hp} / ${maxHp}`;
+  battleEnemyHpBar.style.width = `${Math.max(0, (100 * hp) / maxHp)}%`;
+}
+
+/** Reinicia uma animação CSS pontual (remove, força reflow, adiciona). */
+function pulse(el: HTMLElement, cls: string) {
+  el.classList.remove(cls);
+  void el.offsetWidth;
+  el.classList.add(cls);
+}
+
+function floatText(box: HTMLElement, text: string, cls: string) {
+  const el = document.createElement("span");
+  el.className = `float-num ${cls}`;
+  el.textContent = text;
+  box.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+function resetBattleVisuals() {
+  for (const box of [playerAvatarBox, enemyAvatarBox]) {
+    box.classList.remove("dying", "hit-flash", "hit-crit", "dodge-slide");
+    box.querySelectorAll(".float-num").forEach((n) => n.remove());
+  }
+  battleScreen.classList.remove("outcome-win", "outcome-lose", "outcome-neutral", "shake");
+}
+
+function revealLogUpTo(index: number) {
+  for (let i = 0; i <= index && i < battleLogFeed.children.length; i++) {
+    battleLogFeed.children[i].classList.remove("log-hidden");
+  }
+  battleLogFeed.scrollTop = battleLogFeed.scrollHeight;
+}
+
+async function playEvent(e: BattleEvent, b: BattleSnapshot) {
+  const box = e.target === "player" ? playerAvatarBox : enemyAvatarBox;
+  revealLogUpTo(e.logIndex);
+
+  if (e.kind === "DEATH") {
+    if (e.target === "player") setPlayerBars(0, b.player.maxHp, b.player.mp, b.player.maxMp);
+    else setEnemyHp(0, b.enemy.maxHp);
+    pulse(battleScreen, "shake");
+    box.classList.add("dying");
+    await sleep(1100);
+    return;
+  }
+
+  if (e.kind === "HEAL") {
+    setPlayerBars(e.targetHpAfter, b.player.maxHp, b.player.mp, b.player.maxMp);
+    floatText(box, `+${e.amount}`, "float-heal");
+    await sleep(550);
+    return;
+  }
+
+  if (e.kind === "DODGE") {
+    floatText(box, "ESQUIVOU", "float-dodge");
+    pulse(box, "dodge-slide");
+    await sleep(550);
+    return;
+  }
+
+  // HIT / CRIT / BLOCK
+  if (e.target === "player") setPlayerBars(e.targetHpAfter, b.player.maxHp, b.player.mp, b.player.maxMp);
+  else setEnemyHp(e.targetHpAfter, b.enemy.maxHp);
+
+  if (e.kind === "CRIT") {
+    floatText(box, `-${e.amount}!`, "float-crit");
+    pulse(box, "hit-crit");
+    pulse(battleScreen, "shake");
+    await sleep(750);
+  } else if (e.kind === "BLOCK") {
+    floatText(box, `-${e.amount} 🛡`, "float-block");
+    pulse(box, "hit-flash");
+    await sleep(600);
+  } else {
+    floatText(box, `-${e.amount}`, "float-hit");
+    pulse(box, "hit-flash");
+    await sleep(600);
+  }
+}
+
+/** Mostra um turno: parte do estado anterior e reproduz os eventos na ordem em que aconteceram. */
+async function playTurn(prev: BattleSnapshot | null, next: BattleSnapshot) {
+  if (!prev) resetBattleVisuals();
+  renderBattleArena(next, true);
+
+  if (!prev || next.events.length === 0) {
+    if (!next.finished) renderBattleArena(next, false);
+    return;
+  }
+
+  // Rebobina barras e log pro estado anterior; o MP gasto já aparece (custo é pago ao conjurar).
+  setPlayerBars(prev.player.hp, next.player.maxHp, next.player.mp, next.player.maxMp);
+  setEnemyHp(prev.enemy.hp, next.enemy.maxHp);
+  for (let i = prev.log.length; i < battleLogFeed.children.length; i++) {
+    battleLogFeed.children[i].classList.add("log-hidden");
+  }
+  await sleep(200);
+
+  for (const e of next.events) await playEvent(e, next);
+
+  revealLogUpTo(next.log.length - 1);
+  setPlayerBars(next.player.hp, next.player.maxHp, next.player.mp, next.player.maxMp);
+  setEnemyHp(next.enemy.hp, next.enemy.maxHp);
+  if (!next.finished) renderBattleArena(next, false);
+}
+
+async function finishBattle(b: BattleSnapshot) {
+  if (b.result !== "FLED") {
+    await sleep(500); // deixa o corpo no chão antes de cobrir a tela
+    battleScreen.classList.add(
+      b.result === "VICTORY" ? "outcome-win" : b.result === "DEFEAT" ? "outcome-lose" : "outcome-neutral"
+    );
+    await sleep(700);
+  }
+  showBattleOutcome(b);
+  if (b.rewards) await animateExpBar(b.rewards);
+}
+
+function setExpBar(exp: number, need: number) {
+  expFill.style.transition = "none";
+  expFill.style.width = `${Math.min(100, (100 * exp) / need)}%`;
+  void expFill.offsetWidth;
+  expFill.style.transition = "";
+  expNumbers.textContent = `${exp} / ${need}`;
+}
+
+/** Enche a barra de EXP; a cada level-up completa a barra, mostra LEVEL UP e recomeça do zero. */
+async function animateExpBar(r: BattleRewards) {
+  let lvl = r.levelBefore;
+  await sleep(500);
+  for (;;) {
+    const need = expToNext(lvl);
+    const last = lvl === r.levelAfter;
+    const target = last ? r.expAfter : need;
+    expFill.style.width = `${Math.min(100, (100 * target) / need)}%`;
+    expNumbers.textContent = `${target} / ${need}`;
+    await sleep(900);
+    if (last) break;
+    lvl++;
+    expLevel.textContent = `LEVEL UP! Lv ${lvl}`;
+    expLevel.classList.add("levelup");
+    await sleep(600);
+    setExpBar(0, expToNext(lvl));
+  }
+  expLevel.textContent = `Lv ${lvl}`;
+  if (r.levelAfter > r.levelBefore) {
+    expLevel.classList.add("levelup");
+    expNote.textContent = "HP e MP restaurados. Status aumentaram!";
+  } else if (r.capped) {
+    expNote.textContent = `Nível ${r.levelCap} é o máximo do seu rank. O EXP fica retido até a prova de rank.`;
   }
 }
 
@@ -760,7 +1036,7 @@ class WorldScene extends Phaser.Scene {
         const ring = this.add.circle(0, 0, tileSize * 0.4).setStrokeStyle(3, isMe ? 0x38bdf8 : 0x818cf8);
         ring.setFillStyle(0x000000, 0);
         const label = this.add
-          .text(0, -tileSize * 0.62, isMe ? `[${player.rank}] Você` : `[${player.rank}] ${player.name}`, {
+          .text(0, -tileSize * 0.62, isMe ? `[${player.rank}] Você · Lv ${player.level}` : `[${player.rank}] ${player.name} · Lv ${player.level}`, {
             fontSize: "11px", color: "#f8fafc", stroke: "#0f172a", strokeThickness: 3
           })
           .setOrigin(0.5);
@@ -769,6 +1045,7 @@ class WorldScene extends Phaser.Scene {
         object = this.add.container(px, py, [shadow, token, ring, hpBg, hpBar, label]).setDepth(10 + player.position.y);
         object.setData("hpBar", hpBar);
         object.setData("token", token);
+        object.setData("label", label);
         object.setData("cls", player.hunterClass);
         object.setData("tx", px);
         object.setData("ty", py);
@@ -779,6 +1056,9 @@ class WorldScene extends Phaser.Scene {
       } else {
         const hpBar = object.getData("hpBar") as Phaser.GameObjects.Rectangle;
         hpBar.width = Math.max(0, (32 * player.hp) / player.maxHp);
+        const labelText = isMe ? `[${player.rank}] Você · Lv ${player.level}` : `[${player.rank}] ${player.name} · Lv ${player.level}`;
+        const label = object.getData("label") as Phaser.GameObjects.Text;
+        if (label.text !== labelText) label.setText(labelText);
         if (object.getData("cls") !== player.hunterClass) {
           (object.getData("token") as Phaser.GameObjects.Image).setTexture(tokenKey).setDisplaySize(tileSize * 0.8, tileSize * 0.8);
           object.setData("cls", player.hunterClass);
@@ -806,7 +1086,7 @@ class WorldScene extends Phaser.Scene {
       if (!object) {
         const sprite = this.add.image(0, 0, enemyTextureKey(enemy.name));
         const label = this.add
-          .text(0, -tileSize * 0.62, `[${enemy.rank}] ${enemy.name}`, {
+          .text(0, -tileSize * 0.62, `[${enemy.rank}] ${enemy.name} · Lv ${enemy.level}`, {
             fontSize: "11px", color: "#e2e8f0", stroke: "#022c22", strokeThickness: 3
           })
           .setOrigin(0.5);

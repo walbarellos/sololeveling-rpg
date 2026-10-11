@@ -19,6 +19,9 @@ Build a browser-based 2D grid/tile-based shared-world Hunter RPG with hybrid per
 8. Injectable `Clock` abstraction in domain logic; no direct wall-clock reads.
 9. Presentation Separation: Client animates smooth tweens between tiles, floating combat text, and screen shake, but cannot assert state changes.
 10. Idempotent Rewards: Every reward claim must be keyed by an idempotency key.
+11. Server-owned Progression: EXP, levels, rank caps and stat scaling are computed on the server from `packages/contracts/src/progression.ts`. The client never sends or computes rewards; it renders `BattleSnapshot.rewards`.
+12. Stable Identity (demo): the handshake `playerKey` is hashed server-side into `playerId`; replace with real authentication before any public exposure.
+13. Ordered Combat Events: turn outcomes are sent as `BattleSnapshot.events` (with `logIndex`) so the client can present them in order; the client must not infer outcomes from log strings.
 
 ## Agent task protocol
 Every task must specify:

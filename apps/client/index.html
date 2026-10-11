@@ -39,6 +39,11 @@
           <div class="hunter-stats-mini">
             <span id="header-hunter-nick" class="hunter-name-glow">Sung Adventurer</span>
             <span id="header-hunter-resources" class="hunter-hp-mp-text">HP: 120/120 · MP: 80/80</span>
+            <div class="hud-exp" title="Experiência">
+              <span id="hud-level" class="hud-level">Lv 1</span>
+              <div class="exp-track hud-exp-track"><div id="hud-exp-fill" class="exp-fill"></div></div>
+              <span id="hud-exp-text" class="hud-exp-text">EXP 0 / 40</span>
+            </div>
           </div>
         </div>
       </header>
@@ -229,9 +234,17 @@
               <h2 id="result-title" class="result-headline">VITÓRIA!</h2>
               <div id="result-desc" class="result-summary">A criatura sucumbiu perante o poder sagrado.</div>
               <div class="result-rewards-box" id="result-rewards">
-                <span class="reward-title">RECOMPENSAS CONQUISTADAS:</span>
-                <span class="reward-badge">+40 PONTOS DE EXP</span>
-                <span class="reward-badge">+1 CRISTAL DE MANA</span>
+                <span class="reward-title">RECOMPENSAS</span>
+                <div id="exp-block" class="exp-block hidden">
+                  <div class="exp-head">
+                    <span id="exp-level" class="exp-level">Lv 1</span>
+                    <span id="exp-numbers" class="exp-numbers"></span>
+                  </div>
+                  <div class="exp-track"><div id="exp-fill" class="exp-fill"></div></div>
+                  <div id="exp-gain" class="reward-badge"></div>
+                  <div id="exp-note" class="exp-note"></div>
+                </div>
+                <span id="reward-none" class="reward-none hidden">Sem recompensas desta vez.</span>
               </div>
               <button id="btn-return-map" class="btn-rpg-return">RETORNAR À MASMORRA</button>
             </div>

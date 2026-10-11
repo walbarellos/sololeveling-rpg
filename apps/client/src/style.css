@@ -952,3 +952,192 @@ canvas {
 .kind-holy   .skill-glyph { background: radial-gradient(circle at 50% 35%, #a16207, #2a1d07); }
 .kind-heal   .skill-glyph { background: radial-gradient(circle at 50% 35%, #15803d, #06200f); }
 .kind-guard  .skill-glyph { background: radial-gradient(circle at 50% 35%, #475569, #101828); }
+
+/* =========================================================
+   PROGRESSÃO: barra de EXP (HUD + tela de resultado)
+   ========================================================= */
+.hud-exp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+.hud-level {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #facc15;
+  min-width: 34px;
+}
+.hud-exp-text {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+.exp-track {
+  flex: 1;
+  height: 8px;
+  background: #04060c;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+.hud-exp-track {
+  min-width: 110px;
+}
+.exp-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(180deg, #fde68a 0%, #facc15 50%, #a16207 100%);
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.55);
+  transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.exp-fill.exp-capped {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 50%, #475569 100%);
+  box-shadow: 0 0 8px rgba(148, 163, 184, 0.4);
+}
+.exp-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.exp-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.exp-level {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: #facc15;
+  letter-spacing: 0.05em;
+}
+.exp-level.levelup {
+  color: #fde68a;
+  text-shadow: 0 0 14px rgba(250, 204, 21, 0.9);
+  animation: levelup-pop 0.6s ease-out;
+}
+@keyframes levelup-pop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.exp-numbers {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+.exp-note {
+  font-size: 0.8rem;
+  color: #fbbf24;
+  min-height: 1em;
+}
+.reward-none {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+/* =========================================================
+   DRAMA DE COMBATE: números flutuantes, golpes, morte, vinheta
+   ========================================================= */
+.avatar-canvas-box {
+  position: relative;
+}
+.float-num {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.7rem;
+  text-shadow: 0 2px 0 #000, 0 0 12px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  z-index: 5;
+  animation: float-up 1.1s ease-out forwards;
+  white-space: nowrap;
+}
+.float-hit { color: #f87171; }
+.float-block { color: #94a3b8; font-size: 1.3rem; }
+.float-heal { color: #4ade80; }
+.float-dodge { color: #7dd3fc; font-size: 1.2rem; letter-spacing: 0.1em; }
+.float-crit { color: #facc15; font-size: 2.3rem; text-shadow: 0 2px 0 #7c2d12, 0 0 18px rgba(250, 204, 21, 0.9); }
+@keyframes float-up {
+  0% { opacity: 0; transform: translate(-50%, 10px) scale(0.7); }
+  15% { opacity: 1; transform: translate(-50%, 0) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -46px) scale(1); }
+}
+
+.avatar-canvas-box.hit-flash > :not(.float-num) { animation: hit-flash 0.35s ease-out; }
+.avatar-canvas-box.hit-crit > :not(.float-num) { animation: hit-crit 0.5s ease-out; }
+.avatar-canvas-box.dodge-slide > :not(.float-num) { animation: dodge-slide 0.45s ease-out; }
+@keyframes hit-flash {
+  0% { filter: brightness(3) saturate(0.3); transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  100% { filter: none; transform: none; }
+}
+@keyframes hit-crit {
+  0% { filter: brightness(4) sepia(1) hue-rotate(-20deg); transform: scale(1.12) translateX(-10px); }
+  30% { transform: scale(1.06) translateX(8px); }
+  60% { transform: translateX(-4px); }
+  100% { filter: none; transform: none; }
+}
+@keyframes dodge-slide {
+  0% { transform: none; opacity: 1; }
+  40% { transform: translateX(16px); opacity: 0.45; }
+  100% { transform: none; opacity: 1; }
+}
+
+.avatar-canvas-box.dying > :not(.float-num) {
+  animation: die 1.1s ease-in forwards;
+}
+@keyframes die {
+  0% { filter: none; transform: none; }
+  25% { filter: brightness(3) saturate(0); transform: translateX(-4px); }
+  100% { filter: grayscale(1) brightness(0.35); transform: translateY(26px) rotate(-9deg); opacity: 0.3; }
+}
+
+.battle-screen.shake { animation: screen-shake 0.4s ease-out; }
+@keyframes screen-shake {
+  0%, 100% { transform: none; }
+  20% { transform: translate(-6px, 3px); }
+  40% { transform: translate(5px, -4px); }
+  60% { transform: translate(-3px, 2px); }
+  80% { transform: translate(2px, -1px); }
+}
+
+.battle-screen.outcome-win { box-shadow: inset 0 0 180px rgba(202, 138, 4, 0.55); }
+.battle-screen.outcome-lose { box-shadow: inset 0 0 180px rgba(127, 29, 29, 0.85); }
+.battle-screen.outcome-neutral { box-shadow: inset 0 0 180px rgba(56, 189, 248, 0.3); }
+.battle-screen { transition: box-shadow 0.7s ease; }
+
+.log-line.log-hidden { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .float-num { animation: none; opacity: 1; }
+  .avatar-canvas-box.hit-flash > :not(.float-num),
+  .avatar-canvas-box.hit-crit > :not(.float-num),
+  .avatar-canvas-box.dodge-slide > :not(.float-num),
+  .battle-screen.shake,
+  .exp-level.levelup { animation: none; }
+  .avatar-canvas-box.dying > :not(.float-num) {
+    animation: none;
+    filter: grayscale(1) brightness(0.35);
+    opacity: 0.3;
+  }
+  .exp-fill { transition: none; }
+}
+
+/* Barra de EXP da tela de resultado: dentro de coluna flex o `flex: 1` zerava a altura */
+.exp-block .exp-track {
+  flex: none;
+  height: 14px;
+  width: 100%;
+}
+.rank-tag {
+  white-space: nowrap;
+}
+.brand-title {
+  white-space: nowrap;
+}

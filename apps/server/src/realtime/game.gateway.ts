@@ -21,6 +21,7 @@ import {
   type ServerError
 } from "@rpg/contracts";
 import { GameService } from "../domain/game.service";
+import { resolvePlayerId } from "./identity";
 
 @WebSocketGateway({
   cors: { origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173" },
@@ -28,10 +29,30 @@ import { GameService } from "../domain/game.service";
 })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server!: Server;
+  private readonly playerBySocket = new Map<string, string>();
+  private readonly socketByPlayer = new Map<string, string>();
+
   constructor(private readonly game: GameService) {}
 
+  /** Identidade autoritativa do socket (nunca vem do payload dos eventos). */
+  private pid(client: Socket): string {
+    return this.playerBySocket.get(client.id) ?? client.id;
+  }
+
   handleConnection(client: Socket) {
-    const player = this.game.connect(client.id);
+    const playerId = resolvePlayerId(client.handshake.auth, client.id);
+
+    // Mesma chave em outra aba/conexão: a mais nova assume o personagem.
+    const previousSocketId = this.socketByPlayer.get(playerId);
+    this.playerBySocket.set(client.id, playerId);
+    this.socketByPlayer.set(playerId, client.id);
+    if (previousSocketId && previousSocketId !== client.id) {
+      const previous = this.server.sockets.sockets.get(previousSocketId);
+      previous?.emit(ServerEvents.SessionReplaced, {});
+      previous?.disconnect(true);
+    }
+
+    const player = this.game.connect(playerId);
     client.emit(ServerEvents.Welcome, {
       playerId: player.id,
       ...this.game.dimensions
@@ -40,7 +61,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    this.game.disconnect(client.id);
+    const playerId = this.playerBySocket.get(client.id);
+    this.playerBySocket.delete(client.id);
+    if (!playerId) return;
+    // Se outra conexão já assumiu este personagem, não derruba o estado dela.
+    if (this.socketByPlayer.get(playerId) !== client.id) return;
+    this.socketByPlayer.delete(playerId);
+    this.game.disconnect(playerId);
     this.broadcastSnapshot();
   }
 
@@ -50,7 +77,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!parsed.success) {
       return this.sendError(client, "INVALID_PAYLOAD", "Classe inválida.");
     }
-    const updated = this.game.selectClass(client.id, parsed.data.hunterClass);
+    const updated = this.game.selectClass(this.pid(client), parsed.data.hunterClass);
     if (!updated) {
       return this.sendError(client, "ALREADY_IN_BATTLE", "Não pode trocar de classe em batalha.");
     }
@@ -63,7 +90,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!parsed.success) {
       return this.sendError(client, "INVALID_PAYLOAD", "Requisição de passo inválida.");
     }
-    const result = this.game.step(client.id, parsed.data.direction);
+    const result = this.game.step(this.pid(client), parsed.data.direction);
     if (!result.success) {
       const messages: Record<string, string> = {
         OUT_OF_BOUNDS: "Passo fora dos limites do mapa.",
@@ -82,7 +109,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!parsed.success) {
       return this.sendError(client, "INVALID_PAYLOAD", "Requisição de início de batalha inválida.");
     }
-    const result = this.game.startBattle(client.id, parsed.data.targetEnemyId);
+    const result = this.game.startBattle(this.pid(client), parsed.data.targetEnemyId);
     if (!result.success || !result.battle) {
       const messages: Record<string, string> = {
         TARGET_UNAVAILABLE: "Inimigo indisponível ou já derrotado.",
@@ -106,7 +133,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return this.sendError(client, "INVALID_PAYLOAD", "Ação de combate inválida.");
     }
     const result = this.game.executeBattleAction(
-      client.id,
+      this.pid(client),
       parsed.data.battleId,
       parsed.data.actionId
     );
@@ -136,7 +163,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!parsed.success) {
       return this.sendError(client, "INVALID_PAYLOAD", "Requisição de fuga inválida.");
     }
-    const result = this.game.fleeBattle(client.id, parsed.data.battleId);
+    const result = this.game.fleeBattle(this.pid(client), parsed.data.battleId);
     if (!result.success || !result.battle) {
       return this.sendError(client, "BATTLE_NOT_FOUND", "Sessão de batalha não encontrada.");
     }
@@ -151,7 +178,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!parsed.success) {
       return this.sendError(client, "INVALID_PAYLOAD", "Invalid attack request.");
     }
-    const result = this.game.attack(client.id, parsed.data.targetId);
+    const result = this.game.attack(this.pid(client), parsed.data.targetId);
     if (!result.success) {
       return this.sendError(client, result.error, "Ataque rejeitado.");
     }

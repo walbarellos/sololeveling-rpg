@@ -1,9 +1,12 @@
-import type {
-  BattleParticipant,
-  BattlePlayerParticipant,
-  BattleSnapshot,
-  EnemySnapshot,
-  HunterClass
+import {
+  mobExp,
+  statMult,
+  type BattleEvent,
+  type BattleParticipant,
+  type BattlePlayerParticipant,
+  type BattleRewards,
+  type BattleSnapshot,
+  type EnemySnapshot
 } from "@rpg/contracts";
 import type { PlayerEntity } from "./player.repository";
 import { CLASS_STATS, type SkillDefinition } from "./skills.data";
@@ -20,8 +23,13 @@ export class BattleSession {
   public finished = false;
   public result?: "VICTORY" | "DEFEAT" | "DRAW" | "FLED";
   public rewardExp = 0;
+  /** Preenchido pelo GameService ao aplicar o EXP (a sessão não conhece o estado persistente). */
+  public rewards?: BattleRewards;
+  /** Eventos do último turno resolvido, na ordem em que aconteceram. */
+  public events: BattleEvent[] = [];
 
   private skillDefs: Map<string, SkillDefinition>;
+  private readonly enemyDamageBase: number;
   public rng: RngFn;
 
   constructor(
@@ -36,8 +44,15 @@ export class BattleSession {
     const classInfo = CLASS_STATS[playerEntity.hunterClass] ?? CLASS_STATS.WARRIOR;
 
     this.skillDefs = new Map();
+    const mult = statMult(playerEntity.level);
     const skillsCopy = classInfo.defaultSkills.map((s) => {
-      this.skillDefs.set(s.id, s);
+      // Dano e cura escalam com o nível (Lv1 = valores base).
+      const scaled: SkillDefinition = {
+        ...s,
+        baseDamage: Math.floor(s.baseDamage * mult),
+        healAmount: Math.floor(s.healAmount * mult)
+      };
+      this.skillDefs.set(s.id, scaled);
       return { ...s, currentCooldown: 0 };
     });
 
@@ -45,6 +60,7 @@ export class BattleSession {
       id: playerEntity.id,
       name: playerEntity.name,
       rank: playerEntity.rank,
+      level: playerEntity.level,
       hunterClass: playerEntity.hunterClass,
       hp: playerEntity.hp,
       maxHp: playerEntity.maxHp,
@@ -57,11 +73,15 @@ export class BattleSession {
       id: enemySnapshot.id,
       name: enemySnapshot.name,
       rank: enemySnapshot.rank,
+      level: enemySnapshot.level,
       hp: enemySnapshot.hp,
       maxHp: enemySnapshot.maxHp,
       mp: enemySnapshot.mp,
       maxMp: enemySnapshot.maxMp
     };
+    this.enemyDamageBase = Math.round(
+      (enemySnapshot.rank === "D" ? 18 : 12) * statMult(enemySnapshot.level)
+    );
 
     this.log.push(
       `⚔️ Confronto iniciado! [${this.player.rank}] ${this.player.name} (${classInfo.title}) VS [${this.enemy.rank}] ${this.enemy.name}.`
@@ -72,11 +92,24 @@ export class BattleSession {
     this.rng = fn;
   }
 
+  /** Escreve a linha de log e registra o evento correspondente (mesma ordem, mesmo índice). */
+  private note(
+    text: string,
+    kind: BattleEvent["kind"],
+    target: BattleEvent["target"],
+    amount: number,
+    targetHpAfter: number
+  ): void {
+    this.log.push(text);
+    this.events.push({ kind, target, amount, targetHpAfter, logIndex: this.log.length - 1 });
+  }
+
   executeAction(actionId: string): {
     success: boolean;
     error?: "NOT_ENOUGH_MP" | "SKILL_ON_COOLDOWN" | "INVALID_PAYLOAD";
   } {
     if (this.finished) return { success: false, error: "INVALID_PAYLOAD" };
+    this.events = [];
 
     const skillDef = this.skillDefs.get(actionId);
     const skillState = this.player.skills.find((s) => s.id === actionId);
@@ -113,8 +146,12 @@ export class BattleSession {
       if (this.rng() < enemyDodgeChance) {
         isEnemyDodge = true;
         playerDmg = 0;
-        this.log.push(
-          `[ESQUIVOU] 💨 [${this.enemy.rank}] ${this.enemy.name} se esquivou agilmente de ${skillDef.name}! (0 de dano)`
+        this.note(
+          `[ESQUIVOU] 💨 [${this.enemy.rank}] ${this.enemy.name} se esquivou agilmente de ${skillDef.name}! (0 de dano)`,
+          "DODGE",
+          "enemy",
+          0,
+          this.enemy.hp
         );
       } else {
         if (this.rng() < critChance) {
@@ -128,16 +165,28 @@ export class BattleSession {
         this.enemy.hp = Math.max(0, this.enemy.hp - playerDmg);
 
         if (isCrit) {
-          this.log.push(
-            `[CRÍTICO] 💥 GOLPE CRÍTICO! Você usou ${skillDef.name} causando ${playerDmg} de dano devastador!`
+          this.note(
+            `[CRÍTICO] 💥 GOLPE CRÍTICO! Você usou ${skillDef.name} causando ${playerDmg} de dano devastador!`,
+            "CRIT",
+            "enemy",
+            playerDmg,
+            this.enemy.hp
           );
         } else if (isEnemyBlock) {
-          this.log.push(
-            `[BLOQUEIO] 🛡️ ${this.enemy.name} aparou parte do golpe! ${skillDef.name} causou ${playerDmg} de dano.`
+          this.note(
+            `[BLOQUEIO] 🛡️ ${this.enemy.name} aparou parte do golpe! ${skillDef.name} causou ${playerDmg} de dano.`,
+            "BLOCK",
+            "enemy",
+            playerDmg,
+            this.enemy.hp
           );
         } else {
-          this.log.push(
-            `[DANO] ⚔️ Você usou ${skillDef.name} causando ${playerDmg} de dano a ${this.enemy.name}.`
+          this.note(
+            `[DANO] ⚔️ Você usou ${skillDef.name} causando ${playerDmg} de dano a ${this.enemy.name}.`,
+            "HIT",
+            "enemy",
+            playerDmg,
+            this.enemy.hp
           );
         }
       }
@@ -146,32 +195,48 @@ export class BattleSession {
     if (skillDef.healAmount > 0) {
       const heal = Math.min(this.player.maxHp - this.player.hp, skillDef.healAmount);
       this.player.hp += heal;
-      this.log.push(
-        `[CURA] 💚 Canalização Sagrada! Você restaurou +${heal} de HP (Vida atual: ${this.player.hp}/${this.player.maxHp}).`
+      this.note(
+        `[CURA] 💚 Canalização Sagrada! Você restaurou +${heal} de HP (Vida atual: ${this.player.hp}/${this.player.maxHp}).`,
+        "HEAL",
+        "player",
+        heal,
+        this.player.hp
       );
     }
 
     // --- ENEMY ACTION RESOLUTION (if alive) ---
     if (this.enemy.hp > 0) {
-      let enemyDmg = this.enemy.rank === "D" ? 18 : 12;
+      let enemyDmg = this.enemyDamageBase;
       const playerDodgeChance = this.player.hunterClass === "ASSASSIN" ? 0.22 : 0.08;
       const playerBlockChance = this.player.hunterClass === "WARRIOR" ? 0.28 : 0.10;
 
       if (this.rng() < playerDodgeChance) {
-        this.log.push(
-          `[ESQUIVOU] 💨 Você previu o movimento de ${this.enemy.name} e se esquivou com maestria! (0 de dano sofrido)`
+        this.note(
+          `[ESQUIVOU] 💨 Você previu o movimento de ${this.enemy.name} e se esquivou com maestria! (0 de dano sofrido)`,
+          "DODGE",
+          "player",
+          0,
+          this.player.hp
         );
       } else if (this.rng() < playerBlockChance) {
         enemyDmg = Math.floor(enemyDmg * 0.5);
         this.player.hp = Math.max(0, this.player.hp - enemyDmg);
-        this.log.push(
-          `[BLOQUEIO] 🛡️ Você ergueu a guarda e bloqueou o impacto! Sofreu apenas ${enemyDmg} de dano de ${this.enemy.name}.`
+        this.note(
+          `[BLOQUEIO] 🛡️ Você ergueu a guarda e bloqueou o impacto! Sofreu apenas ${enemyDmg} de dano de ${this.enemy.name}.`,
+          "BLOCK",
+          "player",
+          enemyDmg,
+          this.player.hp
         );
       } else {
         // Monster hit
         this.player.hp = Math.max(0, this.player.hp - enemyDmg);
-        this.log.push(
-          `[DANO] 🩸 ${this.enemy.name} revidou com ferocidade causando ${enemyDmg} de dano em você!`
+        this.note(
+          `[DANO] 🩸 ${this.enemy.name} revidou com ferocidade causando ${enemyDmg} de dano em você!`,
+          "HIT",
+          "player",
+          enemyDmg,
+          this.player.hp
         );
       }
     }
@@ -189,18 +254,37 @@ export class BattleSession {
     if (this.player.hp <= 0 && this.enemy.hp <= 0) {
       this.finished = true;
       this.result = "DRAW";
-      this.log.push("⚖️ [EMPATE] Golpe mútuo fatal! Ambos os combatentes tombaram ao mesmo tempo.");
+      // Empate com o monstro caído: metade do EXP (o monstro morreu junto).
+      this.rewardExp = Math.floor(mobExp(this.enemy.level) / 2);
+      this.note(
+        "⚖️ [EMPATE] Golpe mútuo fatal! Ambos os combatentes tombaram ao mesmo tempo.",
+        "DEATH",
+        "enemy",
+        0,
+        0
+      );
+      this.events.push({ kind: "DEATH", target: "player", amount: 0, targetHpAfter: 0, logIndex: this.log.length - 1 });
     } else if (this.enemy.hp <= 0) {
       this.finished = true;
       this.result = "VICTORY";
-      this.rewardExp = this.enemy.rank === "D" ? 80 : 40;
-      this.log.push(
-        `🏆 [VITÓRIA] Oponente aniquilado! [${this.enemy.rank}] ${this.enemy.name} foi eliminado (+${this.rewardExp} EXP).`
+      this.rewardExp = mobExp(this.enemy.level);
+      this.note(
+        `🏆 [VITÓRIA] Oponente aniquilado! [${this.enemy.rank}] ${this.enemy.name} foi eliminado (+${this.rewardExp} EXP).`,
+        "DEATH",
+        "enemy",
+        0,
+        0
       );
     } else if (this.player.hp <= 0) {
       this.finished = true;
       this.result = "DEFEAT";
-      this.log.push(`💀 [DERROTA] Você foi sobrepujado por [${this.enemy.rank}] ${this.enemy.name}!`);
+      this.note(
+        `💀 [DERROTA] Você foi sobrepujado por [${this.enemy.rank}] ${this.enemy.name}!`,
+        "DEATH",
+        "player",
+        0,
+        0
+      );
     } else {
       this.turn++;
       if (this.turn > this.maxTurns) {
@@ -215,6 +299,7 @@ export class BattleSession {
 
   flee(): void {
     if (this.finished) return;
+    this.events = [];
     this.finished = true;
     this.result = "FLED";
     this.log.push("🏃 [FUGA] Você recuou taticamente e escapou com segurança.");
@@ -233,7 +318,9 @@ export class BattleSession {
       log: [...this.log],
       finished: this.finished,
       result: this.result,
-      rewardExp: this.rewardExp > 0 ? this.rewardExp : undefined
+      rewardExp: this.rewardExp > 0 ? this.rewardExp : undefined,
+      rewards: this.rewards ? { ...this.rewards } : undefined,
+      events: this.events.map((e) => ({ ...e }))
     };
   }
 }

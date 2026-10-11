@@ -1,14 +1,18 @@
 import { Inject, Injectable, Optional } from "@nestjs/common";
-import type {
-  BattleSnapshot,
-  CombatLog,
-  Direction,
-  EnemySnapshot,
-  HunterClass,
-  PlayerSnapshot,
-  ServerErrorCode,
-  TileCoord,
-  WorldSnapshot
+import {
+  RANK_CAP,
+  applyExp,
+  expToNext,
+  statMult,
+  type BattleSnapshot,
+  type CombatLog,
+  type Direction,
+  type EnemySnapshot,
+  type HunterClass,
+  type PlayerSnapshot,
+  type ServerErrorCode,
+  type TileCoord,
+  type WorldSnapshot
 } from "@rpg/contracts";
 import { BattleSession } from "./battle.session";
 import { CLOCK, SystemClock, type Clock } from "./clock";
@@ -26,6 +30,8 @@ export const TILE_SIZE = 48;
 export const STEP_COOLDOWN_MS = 200;
 export const ATTACK_COOLDOWN_MS = 600;
 export const PLAYER_ATTACK_DAMAGE = 30;
+/** Respawn lazy: o monstro volta a ficar vivo na próxima leitura do mundo após este intervalo. */
+export const ENEMY_RESPAWN_MS = 30_000;
 
 export const DEFAULT_OBSTACLES: readonly TileCoord[] = [
   { x: 5, y: 3 },
@@ -58,6 +64,7 @@ export class GameService {
         id: "slime-1",
         name: "Dungeon Slime",
         rank: "E",
+        level: 1,
         position: { x: 7, y: 4 },
         hp: 60,
         maxHp: 60,
@@ -72,6 +79,7 @@ export class GameService {
         id: "goblin-1",
         name: "Gate Goblin",
         rank: "E",
+        level: 3,
         position: { x: 12, y: 7 },
         hp: 80,
         maxHp: 80,
@@ -86,6 +94,7 @@ export class GameService {
         id: "wolf-1",
         name: "Shadow Wolf",
         rank: "D",
+        level: 6,
         position: { x: 16, y: 3 },
         hp: 120,
         maxHp: 120,
@@ -96,6 +105,8 @@ export class GameService {
     ]
   ]);
   private readonly activeBattles = new Map<string, BattleSession>();
+  private readonly online = new Set<string>();
+  private readonly diedAt = new Map<string, number>();
   private sequence = 0;
   private battleCounter = 0;
 
@@ -122,8 +133,15 @@ export class GameService {
   connect(id: string): PlayerSnapshot {
     const existing = this.playerRepository.findById(id) as PlayerEntity | null;
     const now = this.clock.nowMs();
+    this.online.add(id);
 
     if (existing) {
+      // Reconexão (F5, aba nova): batalha em andamento é abandonada, o resto do estado persiste.
+      if (existing.activeBattleId) {
+        this.activeBattles.delete(existing.activeBattleId);
+        existing.inBattle = false;
+        existing.activeBattleId = undefined;
+      }
       existing.lastStepAt = now;
       this.playerRepository.save(existing);
       return this.toSnapshot(existing);
@@ -138,6 +156,7 @@ export class GameService {
       rank: "E",
       hunterClass: defaultClass,
       level: 1,
+      exp: 0,
       position: { x: 2, y: 2 },
       hp: classStats.baseHp,
       maxHp: classStats.baseHp,
@@ -156,6 +175,7 @@ export class GameService {
   }
 
   disconnect(id: string) {
+    this.online.delete(id);
     const player = this.playerRepository.findById(id) as PlayerEntity | null;
     if (player && player.activeBattleId) {
       this.activeBattles.delete(player.activeBattleId);
@@ -169,12 +189,10 @@ export class GameService {
     const player = this.playerRepository.findById(id) as PlayerEntity | null;
     if (!player || player.inBattle) return null;
 
-    const stats = CLASS_STATS[hunterClass];
     player.hunterClass = hunterClass;
-    player.hp = stats.baseHp;
-    player.maxHp = stats.baseHp;
-    player.mp = stats.baseMp;
-    player.maxMp = stats.baseMp;
+    this.recomputeMaxStats(player);
+    player.hp = player.maxHp;
+    player.mp = player.maxMp;
     player.sequence = ++this.sequence;
     this.playerRepository.save(player);
 
@@ -186,6 +204,7 @@ export class GameService {
     if (!player) {
       return { success: false, error: "OUT_OF_BOUNDS" };
     }
+    this.reviveEnemies();
 
     if (player.inBattle) {
       return { success: false, error: "ALREADY_IN_BATTLE" };
@@ -227,6 +246,7 @@ export class GameService {
     playerId: string,
     targetEnemyId: string
   ): { success: boolean; battle?: BattleSnapshot; error?: ServerErrorCode } {
+    this.reviveEnemies();
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     const enemy = this.enemies.get(targetEnemyId);
 
@@ -302,11 +322,13 @@ export class GameService {
     player.inBattle = false;
     player.activeBattleId = undefined;
 
-    if (session.result === "VICTORY") {
+    const kill = (): void => {
       const enemy = this.enemies.get(session.enemy.id);
-      if (enemy) {
-        enemy.alive = false;
-      }
+      if (enemy) this.killEnemy(enemy);
+    };
+
+    if (session.result === "VICTORY") {
+      kill();
       player.hp = Math.max(1, session.player.hp);
       player.mp = Math.max(0, session.player.mp);
     } else if (session.result === "DEFEAT") {
@@ -316,10 +338,7 @@ export class GameService {
       player.mp = player.maxMp;
     } else if (session.result === "DRAW") {
       // Draw (like Naruto Game): both knocked down, monstro derrotado e player respawna
-      const enemy = this.enemies.get(session.enemy.id);
-      if (enemy) {
-        enemy.alive = false;
-      }
+      kill();
       player.position = { x: 2, y: 2 };
       player.hp = Math.floor(player.maxHp * 0.5);
       player.mp = Math.floor(player.maxMp * 0.5);
@@ -328,9 +347,69 @@ export class GameService {
       player.mp = Math.max(0, session.player.mp);
     }
 
+    // Servidor é a única fonte de EXP: o valor vem da sessão, nunca do cliente.
+    if (session.rewardExp > 0) {
+      this.grantExp(player, session);
+    }
+
     player.sequence = ++this.sequence;
     this.playerRepository.save(player);
     this.activeBattles.delete(session.battleId);
+  }
+
+  private grantExp(player: PlayerEntity, session: BattleSession): void {
+    const before = { level: player.level, exp: player.exp };
+    const result = applyExp(player, session.rewardExp);
+    player.level = result.level;
+    player.exp = result.exp;
+
+    if (result.level > before.level) {
+      // Level up: stats escalam e HP/MP voltam cheios.
+      this.recomputeMaxStats(player);
+      player.hp = player.maxHp;
+      player.mp = player.maxMp;
+    }
+
+    session.rewards = {
+      expGained: session.rewardExp,
+      levelBefore: before.level,
+      levelAfter: result.level,
+      expBefore: before.exp,
+      expAfter: result.exp,
+      capped: result.capped,
+      levelCap: RANK_CAP[player.rank]
+    };
+  }
+
+  private recomputeMaxStats(player: PlayerEntity): void {
+    const stats = CLASS_STATS[player.hunterClass];
+    const mult = statMult(player.level);
+    player.maxHp = Math.floor(stats.baseHp * mult);
+    player.maxMp = Math.floor(stats.baseMp * mult);
+  }
+
+  private killEnemy(enemy: EnemySnapshot): void {
+    enemy.alive = false;
+    this.diedAt.set(enemy.id, this.clock.nowMs());
+  }
+
+  /** Respawn lazy (ADR 5): sem timers, avalia o tempo decorrido ao ler o mundo. */
+  private reviveEnemies(): void {
+    const now = this.clock.nowMs();
+    const players = this.playerRepository.findAll() as PlayerEntity[];
+    for (const enemy of this.enemies.values()) {
+      if (enemy.alive) continue;
+      const died = this.diedAt.get(enemy.id);
+      if (died === undefined || now - died < ENEMY_RESPAWN_MS) continue;
+      const occupied = players.some(
+        (p) => p.position.x === enemy.position.x && p.position.y === enemy.position.y
+      );
+      if (occupied) continue; // espera o tile ficar livre
+      enemy.alive = true;
+      enemy.hp = enemy.maxHp;
+      enemy.mp = enemy.maxMp;
+      this.diedAt.delete(enemy.id);
+    }
   }
 
   // Backwards-compatible legacy quick attack method
@@ -356,6 +435,7 @@ export class GameService {
     player.lastAttackAt = now;
     enemy.hp = Math.max(0, enemy.hp - PLAYER_ATTACK_DAMAGE);
     enemy.alive = enemy.hp > 0;
+    if (!enemy.alive) this.killEnemy(enemy);
 
     let counterDamage = 0;
     if (enemy.alive) {
@@ -385,9 +465,11 @@ export class GameService {
   }
 
   snapshot(): WorldSnapshot {
-    const allPlayers = (this.playerRepository.findAll() as PlayerEntity[]).map((p) =>
-      this.toSnapshot(p)
-    );
+    this.reviveEnemies();
+    // Só jogadores online aparecem no mundo; o estado persistente continua no repositório.
+    const allPlayers = (this.playerRepository.findAll() as PlayerEntity[])
+      .filter((p) => this.online.has(p.id))
+      .map((p) => this.toSnapshot(p));
     return {
       players: allPlayers,
       enemies: [...this.enemies.values()].map((e) => ({
@@ -406,6 +488,9 @@ export class GameService {
       rank: p.rank,
       hunterClass: p.hunterClass,
       level: p.level,
+      exp: p.exp,
+      expToNext: expToNext(p.level),
+      levelCap: RANK_CAP[p.rank],
       position: { ...p.position },
       hp: p.hp,
       maxHp: p.maxHp,
