@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b1020" />
-    <title>Hunter RPG Web — Fatia Vertical (Grid & Turnos)</title>
+    <title>Hunter RPG Web — Grade de Tiles & Batalha em Turnos</title>
   </head>
   <body>
     <div id="app">
@@ -12,15 +12,109 @@
         <div class="header-main">
           <strong>Hunter RPG <span class="badge">Gate E</span></strong>
           <span id="connection">Conectando…</span>
-          <span id="hunter-info">Rank [E] · HP: 100/100</span>
+          <div class="class-picker">
+            <label for="class-select">Classe:</label>
+            <select id="class-select">
+              <option value="BATTLE_HEALER">Curandeiro de Combate (Sagrado)</option>
+              <option value="ASSASSIN">Assassino de Sombras (Físico/Ágil)</option>
+              <option value="WARRIOR">Guerreiro Guardião (Físico/Tanque)</option>
+              <option value="MAGE">Mago Dimensional (Mágico/Arcano)</option>
+            </select>
+          </div>
+          <span id="hunter-info">Rank [E] · HP: 120/120 · MP: 80/80</span>
         </div>
         <div class="header-status">
-          <span id="status">Use [W,A,S,D] ou Setas para andar · Clique em inimigo adjacente para atacar</span>
+          <span id="status">Use [W,A,S,D] ou Setas para andar · Aproxime-se de um monstro para iniciar combate em turnos</span>
         </div>
       </header>
-      <main id="game"></main>
+
+      <div class="stage-container">
+        <!-- Mapa de Exploração 2D em Tiles -->
+        <main id="game"></main>
+
+        <!-- Tela de Confronto Dedicada (estilo Naruto Game / RPG em Turnos) -->
+        <div id="battle-screen" class="battle-screen hidden">
+          <div class="battle-header">
+            <span class="battle-title">⚔️ CONFRONTO DE MASMORRA</span>
+            <span id="battle-turn-indicator" class="battle-turn">Turno 1 / 20</span>
+          </div>
+
+          <div class="combatants-arena">
+            <!-- Seu Caçador -->
+            <div class="fighter-card player-card">
+              <div class="fighter-header">
+                <span id="battle-player-name" class="fighter-name">Você</span>
+                <span id="battle-player-badge" class="fighter-badge rank-e">Rank [E]</span>
+              </div>
+              <div class="fighter-avatar player-avatar">🛡️</div>
+              <div class="stat-group">
+                <div class="stat-labels">
+                  <span>HP</span>
+                  <span id="battle-player-hp-text">120 / 120</span>
+                </div>
+                <div class="bar-bg"><div id="battle-player-hp-bar" class="bar-fill hp-bar" style="width: 100%;"></div></div>
+              </div>
+              <div class="stat-group">
+                <div class="stat-labels">
+                  <span>MANA</span>
+                  <span id="battle-player-mp-text">80 / 80</span>
+                </div>
+                <div class="bar-bg"><div id="battle-player-mp-bar" class="bar-fill mp-bar" style="width: 100%;"></div></div>
+              </div>
+            </div>
+
+            <div class="versus-divider">VS</div>
+
+            <!-- Monstro Oponente -->
+            <div class="fighter-card enemy-card">
+              <div class="fighter-header">
+                <span id="battle-enemy-name" class="fighter-name">Dungeon Slime</span>
+                <span id="battle-enemy-badge" class="fighter-badge rank-e">Rank [E]</span>
+              </div>
+              <div class="fighter-avatar enemy-avatar">👾</div>
+              <div class="stat-group">
+                <div class="stat-labels">
+                  <span>HP</span>
+                  <span id="battle-enemy-hp-text">60 / 60</span>
+                </div>
+                <div class="bar-bg"><div id="battle-enemy-hp-bar" class="bar-fill enemy-hp-bar" style="width: 100%;"></div></div>
+              </div>
+              <div class="stat-group">
+                <div class="stat-labels">
+                  <span>MANA</span>
+                  <span id="battle-enemy-mp-text">10 / 10</span>
+                </div>
+                <div class="bar-bg"><div id="battle-enemy-mp-bar" class="bar-fill enemy-mp-bar" style="width: 100%;"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Histórico de Ações da Batalha -->
+          <div class="battle-log-container">
+            <div class="log-title">Histórico de Turnos:</div>
+            <div id="battle-log" class="battle-log"></div>
+          </div>
+
+          <!-- Painel de Habilidades e Ações -->
+          <div class="battle-actions-panel">
+            <div class="actions-title">Escolha sua Ação no Turno:</div>
+            <div id="skills-deck" class="skills-deck"></div>
+            <div class="secondary-actions">
+              <button id="btn-flee" class="btn-flee">🏃 Fugir do Confronto</button>
+            </div>
+          </div>
+
+          <!-- Resultado do Confronto (Vitória, Derrota, Empate) -->
+          <div id="battle-result-modal" class="battle-result-modal hidden">
+            <h2 id="result-title">VITÓRIA!</h2>
+            <p id="result-desc">O monstro foi eliminado da masmorra.</p>
+            <button id="btn-return-map" class="btn-return">Retornar ao Mapa</button>
+          </div>
+        </div>
+      </div>
+
       <footer>
-        <span>Grade 20x12 tiles · Validação autoritativa de passo e cooldown no servidor</span>
+        <span>Exploração em Grid 20x12 · Confronto Instanciado em Turnos com Habilidades e Recargas</span>
       </footer>
     </div>
     <script type="module" src="/src/main.ts"></script>

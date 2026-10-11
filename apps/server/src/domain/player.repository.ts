@@ -1,15 +1,20 @@
-import type { HunterRank, TileCoord } from "@rpg/contracts";
+import type { HunterClass, HunterRank, TileCoord } from "@rpg/contracts";
 
 export interface PlayerEntity {
   id: string;
   name: string;
   rank: HunterRank;
+  hunterClass: HunterClass;
   level: number;
   position: TileCoord;
   hp: number;
   maxHp: number;
+  mp: number;
+  maxMp: number;
   stamina: number;
   maxStamina: number;
+  inBattle: boolean;
+  activeBattleId?: string;
   sequence: number;
   lastStepAt: number;
   lastAttackAt: number;
@@ -41,6 +46,9 @@ export class InMemoryPlayerRepository implements PlayerRepository {
   }
 
   findAll(): PlayerEntity[] {
-    return Array.from(this.store.values()).map(p => ({ ...p, position: { ...p.position } }));
+    return Array.from(this.store.values()).map((p) => ({
+      ...p,
+      position: { ...p.position }
+    }));
   }
 }

@@ -1,12 +1,16 @@
 import { Inject, Injectable, Optional } from "@nestjs/common";
 import type {
+  BattleSnapshot,
   CombatLog,
   Direction,
   EnemySnapshot,
+  HunterClass,
   PlayerSnapshot,
+  ServerErrorCode,
   TileCoord,
   WorldSnapshot
 } from "@rpg/contracts";
+import { BattleSession } from "./battle.session";
 import { CLOCK, SystemClock, type Clock } from "./clock";
 import {
   InMemoryPlayerRepository,
@@ -14,6 +18,7 @@ import {
   type PlayerEntity,
   type PlayerRepository
 } from "./player.repository";
+import { CLASS_STATS } from "./skills.data";
 
 export const GRID_WIDTH = 20;
 export const GRID_HEIGHT = 12;
@@ -37,11 +42,11 @@ export const DEFAULT_OBSTACLES: readonly TileCoord[] = [
 
 export type StepResult =
   | { success: true; player: PlayerSnapshot }
-  | { success: false; error: "OUT_OF_BOUNDS" | "OBSTACLE" | "TOO_FAST" };
+  | { success: false; error: ServerErrorCode };
 
 export type AttackResult =
   | { success: true; log: CombatLog; player: PlayerSnapshot }
-  | { success: false; error: "TARGET_UNAVAILABLE" | "TOO_FAR" | "COOLDOWN" };
+  | { success: false; error: ServerErrorCode };
 
 @Injectable()
 export class GameService {
@@ -49,18 +54,50 @@ export class GameService {
   private readonly enemies = new Map<string, EnemySnapshot>([
     [
       "slime-1",
-      { id: "slime-1", name: "Dungeon Slime", rank: "E", position: { x: 7, y: 4 }, hp: 60, maxHp: 60, alive: true }
+      {
+        id: "slime-1",
+        name: "Dungeon Slime",
+        rank: "E",
+        position: { x: 7, y: 4 },
+        hp: 60,
+        maxHp: 60,
+        mp: 10,
+        maxMp: 10,
+        alive: true
+      }
     ],
     [
       "goblin-1",
-      { id: "goblin-1", name: "Gate Goblin", rank: "E", position: { x: 12, y: 7 }, hp: 80, maxHp: 80, alive: true }
+      {
+        id: "goblin-1",
+        name: "Gate Goblin",
+        rank: "E",
+        position: { x: 12, y: 7 },
+        hp: 80,
+        maxHp: 80,
+        mp: 20,
+        maxMp: 20,
+        alive: true
+      }
     ],
     [
       "wolf-1",
-      { id: "wolf-1", name: "Shadow Wolf", rank: "D", position: { x: 16, y: 3 }, hp: 120, maxHp: 120, alive: true }
+      {
+        id: "wolf-1",
+        name: "Shadow Wolf",
+        rank: "D",
+        position: { x: 16, y: 3 },
+        hp: 120,
+        maxHp: 120,
+        mp: 30,
+        maxMp: 30,
+        alive: true
+      }
     ]
   ]);
+  private readonly activeBattles = new Map<string, BattleSession>();
   private sequence = 0;
+  private battleCounter = 0;
 
   constructor(
     @Optional() @Inject(CLOCK) private readonly clock: Clock = new SystemClock(),
@@ -92,16 +129,23 @@ export class GameService {
       return this.toSnapshot(existing);
     }
 
+    const defaultClass: HunterClass = "BATTLE_HEALER";
+    const classStats = CLASS_STATS[defaultClass];
+
     const newPlayer: PlayerEntity = {
       id,
       name: `Hunter-${id.slice(0, 4)}`,
       rank: "E",
+      hunterClass: defaultClass,
       level: 1,
       position: { x: 2, y: 2 },
-      hp: 100,
-      maxHp: 100,
+      hp: classStats.baseHp,
+      maxHp: classStats.baseHp,
+      mp: classStats.baseMp,
+      maxMp: classStats.baseMp,
       stamina: 50,
       maxStamina: 50,
+      inBattle: false,
       sequence: ++this.sequence,
       lastStepAt: now,
       lastAttackAt: 0
@@ -112,13 +156,39 @@ export class GameService {
   }
 
   disconnect(id: string) {
-    // Keep durable character state in repository; session disconnect doesn't erase character.
+    const player = this.playerRepository.findById(id) as PlayerEntity | null;
+    if (player && player.activeBattleId) {
+      this.activeBattles.delete(player.activeBattleId);
+      player.inBattle = false;
+      player.activeBattleId = undefined;
+      this.playerRepository.save(player);
+    }
+  }
+
+  selectClass(id: string, hunterClass: HunterClass): PlayerSnapshot | null {
+    const player = this.playerRepository.findById(id) as PlayerEntity | null;
+    if (!player || player.inBattle) return null;
+
+    const stats = CLASS_STATS[hunterClass];
+    player.hunterClass = hunterClass;
+    player.hp = stats.baseHp;
+    player.maxHp = stats.baseHp;
+    player.mp = stats.baseMp;
+    player.maxMp = stats.baseMp;
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+
+    return this.toSnapshot(player);
   }
 
   step(id: string, direction: Direction): StepResult {
     const player = this.playerRepository.findById(id) as PlayerEntity | null;
     if (!player) {
       return { success: false, error: "OUT_OF_BOUNDS" };
+    }
+
+    if (player.inBattle) {
+      return { success: false, error: "ALREADY_IN_BATTLE" };
     }
 
     const now = this.clock.nowMs();
@@ -153,6 +223,117 @@ export class GameService {
     return { success: true, player: this.toSnapshot(player) };
   }
 
+  startBattle(
+    playerId: string,
+    targetEnemyId: string
+  ): { success: boolean; battle?: BattleSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    const enemy = this.enemies.get(targetEnemyId);
+
+    if (!player || !enemy || !enemy.alive) {
+      return { success: false, error: "TARGET_UNAVAILABLE" };
+    }
+
+    if (player.inBattle) {
+      return { success: false, error: "ALREADY_IN_BATTLE" };
+    }
+
+    // Proximity check: Chebyshev distance <= 1
+    const dx = Math.abs(player.position.x - enemy.position.x);
+    const dy = Math.abs(player.position.y - enemy.position.y);
+    if (Math.max(dx, dy) > 1) {
+      return { success: false, error: "TOO_FAR" };
+    }
+
+    const battleId = `battle-${++this.battleCounter}`;
+    const session = new BattleSession(battleId, player, enemy);
+    this.activeBattles.set(battleId, session);
+
+    player.inBattle = true;
+    player.activeBattleId = battleId;
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+
+    return { success: true, battle: session.toSnapshot() };
+  }
+
+  executeBattleAction(
+    playerId: string,
+    battleId: string,
+    actionId: string
+  ): { success: boolean; battle?: BattleSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    const session = this.activeBattles.get(battleId);
+
+    if (!player || !session || session.player.id !== playerId) {
+      return { success: false, error: "BATTLE_NOT_FOUND" };
+    }
+
+    const result = session.executeAction(actionId);
+    if (!result.success) {
+      return { success: false, error: result.error as ServerErrorCode };
+    }
+
+    if (session.finished) {
+      this.resolveBattleEnd(player, session);
+    }
+
+    return { success: true, battle: session.toSnapshot() };
+  }
+
+  fleeBattle(
+    playerId: string,
+    battleId: string
+  ): { success: boolean; battle?: BattleSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    const session = this.activeBattles.get(battleId);
+
+    if (!player || !session || session.player.id !== playerId) {
+      return { success: false, error: "BATTLE_NOT_FOUND" };
+    }
+
+    session.flee();
+    this.resolveBattleEnd(player, session);
+
+    return { success: true, battle: session.toSnapshot() };
+  }
+
+  private resolveBattleEnd(player: PlayerEntity, session: BattleSession): void {
+    player.inBattle = false;
+    player.activeBattleId = undefined;
+
+    if (session.result === "VICTORY") {
+      const enemy = this.enemies.get(session.enemy.id);
+      if (enemy) {
+        enemy.alive = false;
+      }
+      player.hp = Math.max(1, session.player.hp);
+      player.mp = Math.max(0, session.player.mp);
+    } else if (session.result === "DEFEAT") {
+      // Defeated: respawn at entrance
+      player.position = { x: 2, y: 2 };
+      player.hp = player.maxHp;
+      player.mp = player.maxMp;
+    } else if (session.result === "DRAW") {
+      // Draw (like Naruto Game): both knocked down, monstro derrotado e player respawna
+      const enemy = this.enemies.get(session.enemy.id);
+      if (enemy) {
+        enemy.alive = false;
+      }
+      player.position = { x: 2, y: 2 };
+      player.hp = Math.floor(player.maxHp * 0.5);
+      player.mp = Math.floor(player.maxMp * 0.5);
+    } else if (session.result === "FLED") {
+      player.hp = Math.max(1, session.player.hp);
+      player.mp = Math.max(0, session.player.mp);
+    }
+
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+    this.activeBattles.delete(session.battleId);
+  }
+
+  // Backwards-compatible legacy quick attack method
   attack(attackerId: string, targetId: string): AttackResult {
     const player = this.playerRepository.findById(attackerId) as PlayerEntity | null;
     const enemy = this.enemies.get(targetId);
@@ -161,7 +342,6 @@ export class GameService {
       return { success: false, error: "TARGET_UNAVAILABLE" };
     }
 
-    // Distance in grid: Chebyshev distance must be <= 1 (adjacent 8 tiles)
     const dx = Math.abs(player.position.x - enemy.position.x);
     const dy = Math.abs(player.position.y - enemy.position.y);
     if (Math.max(dx, dy) > 1) {
@@ -174,18 +354,14 @@ export class GameService {
     }
 
     player.lastAttackAt = now;
-
-    // Apply player damage to enemy
     enemy.hp = Math.max(0, enemy.hp - PLAYER_ATTACK_DAMAGE);
     enemy.alive = enemy.hp > 0;
 
-    // Counter-attack damage if enemy survived
     let counterDamage = 0;
     if (enemy.alive) {
       counterDamage = enemy.rank === "D" ? 15 : 10;
       player.hp = Math.max(0, player.hp - counterDamage);
       if (player.hp === 0) {
-        // Player defeated: respawn at entrance
         player.position = { x: 2, y: 2 };
         player.hp = player.maxHp;
       }
@@ -228,12 +404,17 @@ export class GameService {
       id: p.id,
       name: p.name,
       rank: p.rank,
+      hunterClass: p.hunterClass,
       level: p.level,
       position: { ...p.position },
       hp: p.hp,
       maxHp: p.maxHp,
+      mp: p.mp,
+      maxMp: p.maxMp,
       stamina: p.stamina,
       maxStamina: p.maxStamina,
+      inBattle: p.inBattle,
+      activeBattleId: p.activeBattleId,
       sequence: p.sequence
     };
   }

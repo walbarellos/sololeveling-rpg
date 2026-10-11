@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   AttackRequestSchema,
+  BattleActionRequestSchema,
+  BattleSnapshotSchema,
   DirectionSchema,
+  StartBattleRequestSchema,
   StepRequestSchema,
   TileCoordSchema,
   WelcomeSchema,
@@ -30,6 +33,58 @@ describe("network contracts (tile & turn-based)", () => {
     expect(AttackRequestSchema.safeParse({ targetId: "slime-1" }).success).toBe(true);
   });
 
+  it("validates instanced turn-based battle snapshot with skills and MP", () => {
+    const validBattle = {
+      battleId: "battle-123",
+      turn: 1,
+      maxTurns: 20,
+      player: {
+        id: "p1",
+        name: "Min Healer",
+        rank: "E",
+        hunterClass: "BATTLE_HEALER",
+        hp: 120,
+        maxHp: 120,
+        mp: 60,
+        maxMp: 60,
+        skills: [
+          {
+            id: "smite",
+            name: "Smite Sagrado",
+            description: "Causa dano radiante e cura a si mesmo",
+            mpCost: 15,
+            cooldownTurns: 2,
+            currentCooldown: 0
+          }
+        ]
+      },
+      enemy: {
+        id: "e1",
+        name: "Dungeon Goblin",
+        rank: "E",
+        hp: 80,
+        maxHp: 80,
+        mp: 20,
+        maxMp: 20
+      },
+      log: ["Batalha iniciada contra Dungeon Goblin!"],
+      finished: false
+    };
+
+    expect(BattleSnapshotSchema.safeParse(validBattle).success).toBe(true);
+    expect(
+      BattleActionRequestSchema.safeParse({
+        battleId: "battle-123",
+        actionId: "smite"
+      }).success
+    ).toBe(true);
+    expect(
+      StartBattleRequestSchema.safeParse({
+        targetEnemyId: "e1"
+      }).success
+    ).toBe(true);
+  });
+
   it("validates world snapshot with hunter ranks and obstacles", () => {
     expect(
       WorldSnapshotSchema.safeParse({
@@ -38,12 +93,16 @@ describe("network contracts (tile & turn-based)", () => {
             id: "p1",
             name: "Jinwoo",
             rank: "E",
+            hunterClass: "ASSASSIN",
             level: 1,
             position: { x: 2, y: 3 },
             hp: 100,
             maxHp: 100,
+            mp: 50,
+            maxMp: 50,
             stamina: 50,
             maxStamina: 50,
+            inBattle: false,
             sequence: 1
           }
         ],
@@ -55,6 +114,8 @@ describe("network contracts (tile & turn-based)", () => {
             position: { x: 5, y: 5 },
             hp: 40,
             maxHp: 40,
+            mp: 0,
+            maxMp: 0,
             alive: true
           }
         ],

@@ -1,13 +1,14 @@
 import Phaser from "phaser";
 import { io, type Socket } from "socket.io-client";
 import {
+  BattleSnapshotSchema,
   ClientEvents,
-  CombatLogSchema,
   ServerEvents,
   WelcomeSchema,
   WorldSnapshotSchema,
-  type CombatLog,
+  type BattleSnapshot,
   type Direction,
+  type HunterClass,
   type TileCoord,
   type WorldSnapshot
 } from "@rpg/contracts";
@@ -22,11 +23,61 @@ let gridWidth = 20;
 let gridHeight = 12;
 let tileSize = 48;
 let obstacles: TileCoord[] = [];
+let currentBattle: BattleSnapshot | null = null;
 
+// DOM Elements
 const connection = document.querySelector<HTMLSpanElement>("#connection")!;
 const status = document.querySelector<HTMLSpanElement>("#status")!;
 const hunterInfo = document.querySelector<HTMLSpanElement>("#hunter-info")!;
+const classSelect = document.querySelector<HTMLSelectElement>("#class-select")!;
 
+// Battle DOM Elements
+const battleScreen = document.querySelector<HTMLDivElement>("#battle-screen")!;
+const battleTurnIndicator = document.querySelector<HTMLSpanElement>("#battle-turn-indicator")!;
+const battlePlayerName = document.querySelector<HTMLSpanElement>("#battle-player-name")!;
+const battlePlayerBadge = document.querySelector<HTMLSpanElement>("#battle-player-badge")!;
+const battlePlayerHpText = document.querySelector<HTMLSpanElement>("#battle-player-hp-text")!;
+const battlePlayerHpBar = document.querySelector<HTMLDivElement>("#battle-player-hp-bar")!;
+const battlePlayerMpText = document.querySelector<HTMLSpanElement>("#battle-player-mp-text")!;
+const battlePlayerMpBar = document.querySelector<HTMLDivElement>("#battle-player-mp-bar")!;
+
+const battleEnemyName = document.querySelector<HTMLSpanElement>("#battle-enemy-name")!;
+const battleEnemyBadge = document.querySelector<HTMLSpanElement>("#battle-enemy-badge")!;
+const battleEnemyHpText = document.querySelector<HTMLSpanElement>("#battle-enemy-hp-text")!;
+const battleEnemyHpBar = document.querySelector<HTMLDivElement>("#battle-enemy-hp-bar")!;
+const battleEnemyMpText = document.querySelector<HTMLSpanElement>("#battle-enemy-mp-text")!;
+const battleEnemyMpBar = document.querySelector<HTMLDivElement>("#battle-enemy-mp-bar")!;
+
+const battleLog = document.querySelector<HTMLDivElement>("#battle-log")!;
+const skillsDeck = document.querySelector<HTMLDivElement>("#skills-deck")!;
+const btnFlee = document.querySelector<HTMLButtonElement>("#btn-flee")!;
+
+const battleResultModal = document.querySelector<HTMLDivElement>("#battle-result-modal")!;
+const resultTitle = document.querySelector<HTMLHeadingElement>("#result-title")!;
+const resultDesc = document.querySelector<HTMLParagraphElement>("#result-desc")!;
+const btnReturnMap = document.querySelector<HTMLButtonElement>("#btn-return-map")!;
+
+// Class Selector Handler
+classSelect?.addEventListener("change", () => {
+  const chosenClass = classSelect.value as HunterClass;
+  socket.emit(ClientEvents.SelectClassRequest, { hunterClass: chosenClass });
+});
+
+// Flee Button Handler
+btnFlee?.addEventListener("click", () => {
+  if (!currentBattle) return;
+  socket.emit(ClientEvents.BattleFleeRequest, { battleId: currentBattle.battleId });
+});
+
+// Return to Map Button Handler
+btnReturnMap?.addEventListener("click", () => {
+  currentBattle = null;
+  battleResultModal.classList.add("hidden");
+  battleScreen.classList.add("hidden");
+  socket.emit(ClientEvents.SnapshotRequest);
+});
+
+// Socket Events
 socket.on("connect", () => {
   connection.textContent = "Conectado ao Servidor";
   connection.style.color = "#86efac";
@@ -56,35 +107,128 @@ socket.on(ServerEvents.Snapshot, (raw: unknown) => {
 
   const me = world.players.find((p) => p.id === myPlayerId);
   if (me && hunterInfo) {
-    hunterInfo.textContent = `Rank [${me.rank}] · Nv. ${me.level} · HP: ${me.hp}/${me.maxHp} · Estamina: ${me.stamina}/${me.maxStamina}`;
+    hunterInfo.textContent = `Rank [${me.rank}] · ${me.hunterClass} · HP: ${me.hp}/${me.maxHp} · MP: ${me.mp}/${me.maxMp}`;
+    if (classSelect && classSelect.value !== me.hunterClass) {
+      classSelect.value = me.hunterClass;
+    }
   }
 });
 
-socket.on(ServerEvents.CombatLog, (raw: unknown) => {
-  const parsed = CombatLogSchema.safeParse(raw);
+socket.on(ServerEvents.BattleSnapshot, (raw: unknown) => {
+  const parsed = BattleSnapshotSchema.safeParse(raw);
   if (!parsed.success) return;
-  const event: CombatLog = parsed.data;
+  currentBattle = parsed.data;
+  renderBattleScreen(currentBattle);
+});
 
-  let msg = `Ataque: causou ${event.damage} de dano`;
-  if (event.counterDamage) {
-    msg += ` · Inimigo contra-atacou (${event.counterDamage} de dano)`;
-  }
-  if (event.defeated) {
-    msg += " · Inimigo eliminado!";
-  }
-  status.textContent = msg;
-
-  // Trigger floating combat feedback in the current Phaser scene
-  const scene = game.scene.getScene("world") as WorldScene;
-  if (scene) {
-    scene.onCombatFeedback(event);
-  }
+socket.on(ServerEvents.BattleEnded, (raw: unknown) => {
+  const parsed = BattleSnapshotSchema.safeParse(raw);
+  if (!parsed.success) return;
+  currentBattle = parsed.data;
+  renderBattleScreen(currentBattle);
+  showBattleResult(currentBattle);
 });
 
 socket.on(ServerEvents.Error, (raw: unknown) => {
   const error = raw as { message?: string };
   status.textContent = error?.message ?? "Ação rejeitada pelo servidor";
 });
+
+function renderBattleScreen(b: BattleSnapshot) {
+  battleScreen.classList.remove("hidden");
+
+  battleTurnIndicator.textContent = `Turno ${b.turn} / ${b.maxTurns}`;
+
+  // Update Player Stats
+  battlePlayerName.textContent = b.player.name;
+  battlePlayerBadge.textContent = `Rank [${b.player.rank}] · ${b.player.hunterClass}`;
+  battlePlayerHpText.textContent = `${b.player.hp} / ${b.player.maxHp}`;
+  battlePlayerHpBar.style.width = `${Math.max(0, (100 * b.player.hp) / b.player.maxHp)}%`;
+  battlePlayerMpText.textContent = `${b.player.mp} / ${b.player.maxMp}`;
+  battlePlayerMpBar.style.width = `${Math.max(0, (100 * b.player.mp) / b.player.maxMp)}%`;
+
+  // Update Enemy Stats
+  battleEnemyName.textContent = b.enemy.name;
+  battleEnemyBadge.textContent = `Rank [${b.enemy.rank}]`;
+  battleEnemyHpText.textContent = `${b.enemy.hp} / ${b.enemy.maxHp}`;
+  battleEnemyHpBar.style.width = `${Math.max(0, (100 * b.enemy.hp) / b.enemy.maxHp)}%`;
+  battleEnemyMpText.textContent = `${b.enemy.mp} / ${b.enemy.maxMp}`;
+  battleEnemyMpBar.style.width = `${Math.max(0, (100 * b.enemy.mp) / b.enemy.maxMp)}%`;
+
+  // Render Battle Log
+  battleLog.innerHTML = "";
+  for (const entry of b.log) {
+    const div = document.createElement("div");
+    if (entry.includes("Você")) {
+      div.className = "log-entry-player";
+    } else if (entry.includes("revidou") || entry.includes("derrotado")) {
+      div.className = "log-entry-enemy";
+    }
+    div.textContent = entry;
+    battleLog.appendChild(div);
+  }
+  battleLog.scrollTop = battleLog.scrollHeight;
+
+  // Render Skill Buttons Deck
+  skillsDeck.innerHTML = "";
+  for (const skill of b.player.skills) {
+    const btn = document.createElement("button");
+    btn.className = "skill-card-btn";
+
+    const notEnoughMp = b.player.mp < skill.mpCost;
+    const onCooldown = skill.currentCooldown > 0;
+    const isLocked = notEnoughMp || onCooldown || b.finished;
+
+    btn.disabled = isLocked;
+
+    let badgeText = `${skill.mpCost} MP`;
+    if (onCooldown) {
+      badgeText = `Recarga: ${skill.currentCooldown} t`;
+    } else if (notEnoughMp) {
+      badgeText = `Sem MP (${skill.mpCost})`;
+    }
+
+    btn.innerHTML = `
+      <div class="skill-btn-header">
+        <span>${skill.name}</span>
+        <span class="skill-cost ${onCooldown ? 'skill-cooldown-badge' : ''}">${badgeText}</span>
+      </div>
+      <div class="skill-btn-desc">${skill.description}</div>
+    `;
+
+    btn.addEventListener("click", () => {
+      if (b.finished) return;
+      socket.emit(ClientEvents.BattleActionRequest, {
+        battleId: b.battleId,
+        actionId: skill.id
+      });
+    });
+
+    skillsDeck.appendChild(btn);
+  }
+}
+
+function showBattleResult(b: BattleSnapshot) {
+  battleResultModal.classList.remove("hidden");
+
+  if (b.result === "VICTORY") {
+    resultTitle.textContent = "🏆 VITÓRIA!";
+    resultTitle.style.color = "#10b981";
+    resultDesc.textContent = `Você aniquilou [${b.enemy.rank}] ${b.enemy.name}! (+${b.rewardExp ?? 40} EXP obtidos)`;
+  } else if (b.result === "DRAW") {
+    resultTitle.textContent = "⚖️ EMPATE!";
+    resultTitle.style.color = "#f59e0b";
+    resultDesc.textContent = "Ambos os combatentes sucumbiram ou o tempo de turnos esgotou!";
+  } else if (b.result === "DEFEAT") {
+    resultTitle.textContent = "💀 DERROTA!";
+    resultTitle.style.color = "#ef4444";
+    resultDesc.textContent = "Você foi nocauteado e acordou na entrada segura da masmorra.";
+  } else if (b.result === "FLED") {
+    resultTitle.textContent = "🏃 FUGA!";
+    resultTitle.style.color = "#38bdf8";
+    resultDesc.textContent = "Você recuou taticamente e voltou à exploração segura da grade.";
+  }
+}
 
 class WorldScene extends Phaser.Scene {
   private playerGraphics = new Map<string, Phaser.GameObjects.Container>();
@@ -100,22 +244,21 @@ class WorldScene extends Phaser.Scene {
     this.gridGraphics = this.add.graphics();
     this.drawGrid();
 
-    // Mouse / Touch Input
+    // Mouse / Touch Click Input
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      if (currentBattle) return; // Ignore map clicks during active battle
       this.handlePointerClick(pointer);
     });
 
-    // Keyboard Input
+    // Keyboard Arrow / WASD Input
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
+      if (currentBattle) return; // Ignore keyboard walking during active battle
       this.handleKeyInput(event.key);
     });
   }
 
   private drawGrid() {
     this.gridGraphics.clear();
-
-    const worldPixelWidth = gridWidth * tileSize;
-    const worldPixelHeight = gridHeight * tileSize;
 
     // Floor background
     for (let x = 0; x < gridWidth; x++) {
@@ -125,26 +268,22 @@ class WorldScene extends Phaser.Scene {
         this.gridGraphics.fillStyle(color, 1);
         this.gridGraphics.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
 
-        // Tile border
         this.gridGraphics.lineStyle(1, 0x1e293b, 0.4);
         this.gridGraphics.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
       }
     }
 
-    // Obstacles (dungeon pillars / rocks)
+    // Obstacles
     for (const obs of obstacles) {
       const px = obs.x * tileSize;
       const py = obs.y * tileSize;
 
-      // Obstacle base
       this.gridGraphics.fillStyle(0x334155, 1);
       this.gridGraphics.fillRoundedRect(px + 4, py + 4, tileSize - 8, tileSize - 8, 6);
 
-      // Obstacle inner rune
       this.gridGraphics.lineStyle(2, 0x64748b, 0.8);
       this.gridGraphics.strokeRoundedRect(px + 8, py + 8, tileSize - 16, tileSize - 16, 4);
 
-      // Rune center point
       this.gridGraphics.fillStyle(0x38bdf8, 0.6);
       this.gridGraphics.fillCircle(px + tileSize / 2, py + tileSize / 2, 4);
     }
@@ -152,7 +291,7 @@ class WorldScene extends Phaser.Scene {
 
   private handleKeyInput(key: string) {
     const now = Date.now();
-    if (now - this.lastInputTime < 180) return; // Client throttle matching server cooldown
+    if (now - this.lastInputTime < 180) return;
 
     let direction: Direction | null = null;
     const k = key.toLowerCase();
@@ -180,12 +319,12 @@ class WorldScene extends Phaser.Scene {
     );
 
     if (clickedEnemy) {
-      // Check distance in tiles
       const dx = Math.abs(me.position.x - clickedEnemy.position.x);
       const dy = Math.abs(me.position.y - clickedEnemy.position.y);
       if (Math.max(dx, dy) <= 1) {
-        // Adjacent: attack!
-        socket.emit(ClientEvents.AttackRequest, { targetId: clickedEnemy.id });
+        // Adjacent: Initiate instanced turn-based battle!
+        status.textContent = `Iniciando confronto contra [${clickedEnemy.rank}] ${clickedEnemy.name}…`;
+        socket.emit(ClientEvents.StartBattleRequest, { targetEnemyId: clickedEnemy.id });
         return;
       }
     }
@@ -193,7 +332,6 @@ class WorldScene extends Phaser.Scene {
     // Step towards clicked tile
     const diffX = tileX - me.position.x;
     const diffY = tileY - me.position.y;
-
     if (diffX === 0 && diffY === 0) return;
 
     let direction: Direction;
@@ -207,59 +345,6 @@ class WorldScene extends Phaser.Scene {
     if (now - this.lastInputTime < 180) return;
     this.lastInputTime = now;
     socket.emit(ClientEvents.StepRequest, { direction });
-  }
-
-  onCombatFeedback(log: CombatLog) {
-    this.cameras.main.shake(120, 0.005);
-
-    const targetEnemy = world.enemies.find((e) => e.id === log.targetId);
-    if (targetEnemy) {
-      const tx = targetEnemy.position.x * tileSize + tileSize / 2;
-      const ty = targetEnemy.position.y * tileSize + tileSize / 2;
-
-      // Floating damage number on enemy
-      const dmgText = this.add.text(tx, ty - 20, `-${log.damage}`, {
-        fontSize: "16px",
-        fontStyle: "bold",
-        color: "#f87171",
-        stroke: "#000000",
-        strokeThickness: 3
-      }).setOrigin(0.5);
-
-      this.tweens.add({
-        targets: dmgText,
-        y: ty - 45,
-        alpha: 0,
-        duration: 700,
-        ease: "Cubic.easeOut",
-        onComplete: () => dmgText.destroy()
-      });
-    }
-
-    if (log.counterDamage) {
-      const me = world.players.find((p) => p.id === log.attackerId);
-      if (me) {
-        const mx = me.position.x * tileSize + tileSize / 2;
-        const my = me.position.y * tileSize + tileSize / 2;
-
-        const counterText = this.add.text(mx, my - 20, `-${log.counterDamage}`, {
-          fontSize: "14px",
-          fontStyle: "bold",
-          color: "#fb923c",
-          stroke: "#000000",
-          strokeThickness: 3
-        }).setOrigin(0.5);
-
-        this.tweens.add({
-          targets: counterText,
-          y: my - 45,
-          alpha: 0,
-          duration: 700,
-          ease: "Cubic.easeOut",
-          onComplete: () => counterText.destroy()
-        });
-      }
-    }
   }
 
   update() {
@@ -362,7 +447,7 @@ class WorldScene extends Phaser.Scene {
   }
 }
 
-const game = new Phaser.Game({
+new Phaser.Game({
   type: Phaser.AUTO,
   parent: "game",
   width: gridWidth * tileSize,

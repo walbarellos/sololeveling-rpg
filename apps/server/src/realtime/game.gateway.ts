@@ -10,9 +10,14 @@ import {
 import type { Server, Socket } from "socket.io";
 import {
   AttackRequestSchema,
+  BattleActionRequestSchema,
+  BattleFleeRequestSchema,
   ClientEvents,
+  SelectClassRequestSchema,
   ServerEvents,
+  StartBattleRequestSchema,
   StepRequestSchema,
+  type ServerErrorCode,
   type ServerError
 } from "@rpg/contracts";
 import { GameService } from "../domain/game.service";
@@ -39,21 +44,104 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.broadcastSnapshot();
   }
 
+  @SubscribeMessage(ClientEvents.SelectClassRequest)
+  handleSelectClass(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = SelectClassRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Classe inválida.");
+    }
+    const updated = this.game.selectClass(client.id, parsed.data.hunterClass);
+    if (!updated) {
+      return this.sendError(client, "ALREADY_IN_BATTLE", "Não pode trocar de classe em batalha.");
+    }
+    this.broadcastSnapshot();
+  }
+
   @SubscribeMessage(ClientEvents.StepRequest)
   handleStep(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
     const parsed = StepRequestSchema.safeParse(body);
     if (!parsed.success) {
-      return this.sendError(client, "INVALID_PAYLOAD", "Invalid step request.");
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de passo inválida.");
     }
     const result = this.game.step(client.id, parsed.data.direction);
     if (!result.success) {
-      const messages = {
-        OUT_OF_BOUNDS: "Movement out of map bounds.",
-        OBSTACLE: "Path blocked by obstacle or entity.",
-        TOO_FAST: "Step rate limit exceeded."
-      } as const;
-      return this.sendError(client, result.error, messages[result.error]);
+      const messages: Record<string, string> = {
+        OUT_OF_BOUNDS: "Passo fora dos limites do mapa.",
+        OBSTACLE: "Caminho bloqueado por obstáculo ou monstro.",
+        TOO_FAST: "Limite de velocidade de passo excedido.",
+        ALREADY_IN_BATTLE: "Você não pode andar durante um confronto ativo."
+      };
+      return this.sendError(client, result.error, messages[result.error] ?? "Passo rejeitado.");
     }
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.StartBattleRequest)
+  handleStartBattle(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = StartBattleRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de início de batalha inválida.");
+    }
+    const result = this.game.startBattle(client.id, parsed.data.targetEnemyId);
+    if (!result.success || !result.battle) {
+      const messages: Record<string, string> = {
+        TARGET_UNAVAILABLE: "Inimigo indisponível ou já derrotado.",
+        TOO_FAR: "Você precisa estar adjacente ao monstro para iniciar combate.",
+        ALREADY_IN_BATTLE: "Você já está em uma batalha ativa."
+      };
+      return this.sendError(
+        client,
+        result.error ?? "TARGET_UNAVAILABLE",
+        messages[result.error ?? ""] ?? "Não foi possível iniciar o confronto."
+      );
+    }
+    client.emit(ServerEvents.BattleSnapshot, result.battle);
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.BattleActionRequest)
+  handleBattleAction(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = BattleActionRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Ação de combate inválida.");
+    }
+    const result = this.game.executeBattleAction(
+      client.id,
+      parsed.data.battleId,
+      parsed.data.actionId
+    );
+    if (!result.success || !result.battle) {
+      const messages: Record<string, string> = {
+        NOT_ENOUGH_MP: "Mana insuficiente para conjurar esta habilidade!",
+        SKILL_ON_COOLDOWN: "Esta habilidade ainda está em tempo de recarga (cooldown)!",
+        BATTLE_NOT_FOUND: "Sessão de batalha não encontrada."
+      };
+      return this.sendError(
+        client,
+        result.error ?? "INVALID_PAYLOAD",
+        messages[result.error ?? ""] ?? "Ação de combate rejeitada."
+      );
+    }
+
+    client.emit(ServerEvents.BattleSnapshot, result.battle);
+    if (result.battle.finished) {
+      client.emit(ServerEvents.BattleEnded, result.battle);
+      this.broadcastSnapshot();
+    }
+  }
+
+  @SubscribeMessage(ClientEvents.BattleFleeRequest)
+  handleBattleFlee(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = BattleFleeRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de fuga inválida.");
+    }
+    const result = this.game.fleeBattle(client.id, parsed.data.battleId);
+    if (!result.success || !result.battle) {
+      return this.sendError(client, "BATTLE_NOT_FOUND", "Sessão de batalha não encontrada.");
+    }
+    client.emit(ServerEvents.BattleSnapshot, result.battle);
+    client.emit(ServerEvents.BattleEnded, result.battle);
     this.broadcastSnapshot();
   }
 
@@ -65,12 +153,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     const result = this.game.attack(client.id, parsed.data.targetId);
     if (!result.success) {
-      const map = {
-        TARGET_UNAVAILABLE: ["TARGET_UNAVAILABLE", "Target unavailable."],
-        TOO_FAR: ["TOO_FAR", "Target is not in adjacent range."],
-        COOLDOWN: ["COOLDOWN", "Attack is cooling down."]
-      } as const;
-      return this.sendError(client, map[result.error][0], map[result.error][1]);
+      return this.sendError(client, result.error, "Ataque rejeitado.");
     }
     this.server.emit(ServerEvents.CombatLog, result.log);
     this.broadcastSnapshot();
@@ -85,7 +168,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.emit(ServerEvents.Snapshot, this.game.snapshot());
   }
 
-  private sendError(client: Socket, code: ServerError["code"], message: string) {
+  private sendError(client: Socket, code: ServerErrorCode, message: string) {
     client.emit(ServerEvents.Error, { code, message } satisfies ServerError);
   }
 }
