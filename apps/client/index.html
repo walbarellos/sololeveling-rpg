@@ -117,6 +117,15 @@
                   </div>
                 </div>
 
+                <!-- Habilidades (ícones) ao lado do jogador -->
+                <div class="skills-panel">
+                  <div class="deck-header">
+                    <span class="deck-title">HABILIDADES [1 · 2 · 3]</span>
+                  </div>
+                  <div id="skills-deck" class="skills-card-deck"></div>
+                  <div id="skill-info" class="skill-info">Passe o mouse numa habilidade para ver os detalhes.</div>
+                </div>
+
                 <!-- Calculadora de Atributos do Caçador (Estilo NG) -->
                 <div class="attributes-card">
                   <div class="attr-header">ATRIBUTOS & PODER</div>
@@ -141,22 +150,14 @@
                 <div id="battle-log" class="battle-log-feed"></div>
               </div>
 
-              <!-- Deck de Habilidades / Action Bar de Diablo / NG -->
-              <div class="action-deck-container">
-                <div class="deck-header">
-                  <span class="deck-title">DECK DE HABILIDADES [ATALHOS 1, 2, 3]</span>
-                  <span class="deck-tip">Selecione uma ação para finalizar seu turno</span>
-                </div>
-                <div id="skills-deck" class="skills-card-deck"></div>
-                <div class="deck-footer-actions">
-                  <button id="btn-flee" class="btn-rpg-flee">
-                    <span class="flee-icon">🏃</span>
-                    <span>FUGIR DO CONFRONTO [F]</span>
-                  </button>
-                  <button id="btn-calc-toggle" class="btn-rpg-calc" title="Exibe previsão tática de combate">
-                    <span>📊 Calculadora Tática</span>
-                  </button>
-                </div>
+              <div class="deck-footer-actions">
+                <button id="btn-flee" class="btn-rpg-flee">
+                  <span class="flee-icon">🏃</span>
+                  <span>FUGIR DO CONFRONTO [F]</span>
+                </button>
+                <button id="btn-calc-toggle" class="btn-rpg-calc" title="Exibe previsão tática de combate">
+                  <span>📊 Calculadora Tática</span>
+                </button>
               </div>
             </section>
 

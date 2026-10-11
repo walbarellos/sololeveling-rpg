@@ -799,3 +799,156 @@ canvas {
 .hidden {
   display: none !important;
 }
+
+/* =========================================================
+   ARENA: layout compacto, rolável, habilidades ao lado do jogador
+   ========================================================= */
+.battle-screen {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 14px;
+  gap: 8px;
+}
+.stage-container:has(.battle-screen:not(.hidden)) {
+  min-height: 700px;
+}
+.ng-battle-grid {
+  grid-template-columns: 330px minmax(0, 1fr) 270px;
+  gap: 12px;
+  align-items: stretch;
+}
+.ng-fighter-column,
+.ng-center-column {
+  min-height: 0;
+}
+.fighter-frame {
+  padding: 10px;
+  gap: 8px;
+  height: auto;
+  min-height: 100%;
+}
+.player-frame .avatar-canvas-box { height: 150px; }
+.player-frame .portrait-img { object-fit: cover; object-position: center 8%; }
+.enemy-frame .avatar-canvas-box { height: 150px; }
+
+.skills-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #090e1a;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px;
+}
+.skills-card-deck {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.skill-icon-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px 5px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: linear-gradient(180deg, #162035 0%, #0b1120 100%);
+  color: #f1f5f9;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: transform 0.12s ease-out, box-shadow 0.12s, border-color 0.12s;
+}
+.skill-icon-btn:hover:not(:disabled),
+.skill-icon-btn:focus-visible {
+  transform: translateY(-2px);
+  border-color: #fde047;
+  box-shadow: 0 4px 16px rgba(250, 204, 21, 0.25);
+  outline: none;
+}
+.skill-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+.skill-glyph {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.5);
+}
+.skill-glyph svg { width: 100%; height: 100%; display: block; }
+.kind-phys   .skill-glyph { background: radial-gradient(circle at 50% 35%, #7f1d1d, #1c0a0a); }
+.kind-shadow .skill-glyph { background: radial-gradient(circle at 50% 35%, #4c1d95, #0f0a1f); }
+.kind-magic  .skill-glyph { background: radial-gradient(circle at 50% 35%, #1e3a8a, #070b1c); }
+.kind-holy   .skill-glyph { background: radial-gradient(circle at 50% 35%, #854d0e, #1a1205); }
+.kind-heal   .skill-glyph { background: radial-gradient(circle at 50% 35%, #166534, #04140a); }
+.kind-guard  .skill-glyph { background: radial-gradient(circle at 50% 35%, #334155, #0b1220); }
+.skill-key {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  background: #ca8a04;
+  color: #0f172a;
+  padding: 0 5px;
+  border-radius: 3px;
+  z-index: 1;
+}
+.skill-name {
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  color: #fef08a;
+  min-height: 2.2em;
+  display: flex;
+  align-items: center;
+}
+.skill-cost { font-size: 0.68rem; font-weight: 700; color: #38bdf8; }
+.skill-cost-low { color: #f87171; }
+.skill-cd {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.72);
+  color: #f59e0b;
+  font-weight: 800;
+  font-size: 1rem;
+}
+.skill-info {
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: #94a3b8;
+  min-height: 2.6em;
+}
+
+.attributes-card { padding: 6px 8px; gap: 4px; }
+.attr-grid { gap: 3px 8px; }
+
+/* Centro: log ocupa a altura toda, botões embaixo */
+.battle-log-parchment { min-height: 0; flex: 1 1 auto; }
+.battle-log-feed { min-height: 0; }
+.ng-center-column .deck-footer-actions {
+  border-top: none;
+  padding-top: 0;
+  gap: 8px;
+}
+
+/* ícones maiores e mais legíveis */
+.skill-glyph { width: 68px; height: 68px; padding: 5px; }
+.skill-name { font-size: 0.72rem; }
+.skill-cost { font-size: 0.72rem; }
+.kind-phys   .skill-glyph { background: radial-gradient(circle at 50% 35%, #991b1b, #2a0d0d); }
+.kind-shadow .skill-glyph { background: radial-gradient(circle at 50% 35%, #6d28d9, #1a1033); }
+.kind-magic  .skill-glyph { background: radial-gradient(circle at 50% 35%, #2549b8, #0c1330); }
+.kind-holy   .skill-glyph { background: radial-gradient(circle at 50% 35%, #a16207, #2a1d07); }
+.kind-heal   .skill-glyph { background: radial-gradient(circle at 50% 35%, #15803d, #06200f); }
+.kind-guard  .skill-glyph { background: radial-gradient(circle at 50% 35%, #475569, #101828); }

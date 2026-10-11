@@ -13,6 +13,7 @@ import {
   type WorldSnapshot
 } from "@rpg/contracts";
 import { AVATARS } from "./avatars";
+import { skillIcon } from "./skillicons";
 import {
   CLASS_PORTRAIT,
   GUILD_BANNER_URL,
@@ -334,33 +335,35 @@ function renderBattleArena(b: BattleSnapshot) {
   }
   battleLogFeed.scrollTop = battleLogFeed.scrollHeight;
 
-  // 4. Render Action Deck (Skill Slots)
+  // 4. Render Action Deck (ícones de habilidade)
   skillsDeck.innerHTML = "";
+  const skillInfo = document.querySelector<HTMLDivElement>("#skill-info");
   b.player.skills.forEach((skill, idx) => {
     const slot = document.createElement("button");
-    slot.className = "skill-card-slot";
-
+    const icon = skillIcon(skill.id);
     const notEnoughMp = b.player.mp < skill.mpCost;
     const onCooldown = skill.currentCooldown > 0;
-    const isLocked = notEnoughMp || onCooldown || b.finished;
+    slot.className = `skill-icon-btn kind-${icon.kind}`;
+    slot.disabled = notEnoughMp || onCooldown || b.finished;
+    slot.title = `${skill.name} — ${skill.description}`;
+    slot.setAttribute("aria-label", `${skill.name}. ${skill.description}. Custo ${skill.mpCost} MP`);
 
-    slot.disabled = isLocked;
-
-    let costLabel = `${skill.mpCost} MP`;
-    if (onCooldown) {
-      costLabel = `⏳ Recarga: ${skill.currentCooldown} t`;
-    } else if (notEnoughMp) {
-      costLabel = `⚠️ Sem MP (${skill.mpCost})`;
-    }
-
+    const cost = skill.mpCost === 0 ? "grátis" : `${skill.mpCost} MP`;
     slot.innerHTML = `
-      <div class="skill-slot-header">
-        <span class="skill-key-binding">[${idx + 1}]</span>
-        <span class="skill-name-txt">${skill.name}</span>
-        <span class="skill-mp-tag ${onCooldown ? 'skill-cd-overlay' : ''}">${costLabel}</span>
-      </div>
-      <div class="skill-desc-txt">${skill.description}</div>
+      <span class="skill-key">${idx + 1}</span>
+      <span class="skill-glyph">${icon.svg}</span>
+      <span class="skill-name">${skill.name}</span>
+      <span class="skill-cost ${notEnoughMp ? "skill-cost-low" : ""}">${notEnoughMp ? "sem MP" : cost}</span>
+      ${onCooldown ? `<span class="skill-cd">⏳${skill.currentCooldown}</span>` : ""}
     `;
+
+    const showInfo = () => {
+      if (skillInfo) {
+        skillInfo.textContent = `${skill.name} · ${cost}${skill.cooldownTurns ? ` · recarga ${skill.cooldownTurns}t` : ""} — ${skill.description}`;
+      }
+    };
+    slot.addEventListener("mouseenter", showInfo);
+    slot.addEventListener("focus", showInfo);
 
     slot.addEventListener("click", () => {
       if (b.finished) return;
