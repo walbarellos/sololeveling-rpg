@@ -13,6 +13,7 @@ import {
   type Direction,
   type HunterClass,
   type PlayerSnapshot,
+  type PlayerStats,
   type TileCoord,
   type WorldSnapshot
 } from "@rpg/contracts";
@@ -239,6 +240,14 @@ socket.on(ServerEvents.Snapshot, (raw: unknown) => {
 
 let lastMe: PlayerSnapshot | null = null;
 
+function applyPlayerStats(stats?: PlayerStats) {
+  if (!stats) return;
+  attrAtkPhys.textContent = `${stats.physicalAtk}`;
+  attrAtkMag.textContent = `${stats.magicalAtk}`;
+  attrCrit.textContent = `${Math.round(stats.critChance * 100)}%`;
+  attrDef.textContent = `${Math.round(stats.dodgeChance * 100)}% / ${Math.round(stats.blockChance * 100)}%`;
+}
+
 function applyHud(me: PlayerSnapshot) {
   currentHunterClass = me.hunterClass;
   headerHunterNick.textContent = me.name;
@@ -248,6 +257,7 @@ function applyHud(me: PlayerSnapshot) {
     classSelect.value = me.hunterClass;
   }
   updateClassVisuals(me.hunterClass);
+  applyPlayerStats(me.stats);
 
   const capped = me.level >= me.levelCap;
   hudLevel.textContent = `Lv ${me.level}`;
@@ -307,30 +317,6 @@ function updateClassVisuals(hClass: HunterClass) {
   if (battlePlayerClassTitle) {
     battlePlayerClassTitle.textContent = classTitles[hClass];
   }
-
-  // Update Attributes based on Class (Calculadora NG)
-  if (hClass === "ASSASSIN") {
-    attrAtkPhys.textContent = "46";
-    attrAtkMag.textContent = "15";
-    attrCrit.textContent = "35%";
-    attrDef.textContent = "22% / 8%";
-  } else if (hClass === "MAGE") {
-    attrAtkPhys.textContent = "18";
-    attrAtkMag.textContent = "58";
-    attrCrit.textContent = "25%";
-    attrDef.textContent = "8% / 10%";
-  } else if (hClass === "WARRIOR") {
-    attrAtkPhys.textContent = "38";
-    attrAtkMag.textContent = "12";
-    attrCrit.textContent = "15%";
-    attrDef.textContent = "8% / 28%";
-  } else {
-    // Battle Healer
-    attrAtkPhys.textContent = "26";
-    attrAtkMag.textContent = "38 (Luz)";
-    attrCrit.textContent = "15%";
-    attrDef.textContent = "10% / 15%";
-  }
 }
 
 function renderBattleArena(b: BattleSnapshot, locked = pending > 0) {
@@ -345,6 +331,7 @@ function renderBattleArena(b: BattleSnapshot, locked = pending > 0) {
   battlePlayerMpText.textContent = `${b.player.mp} / ${b.player.maxMp}`;
   battlePlayerMpBar.style.width = `${Math.max(0, (100 * b.player.mp) / b.player.maxMp)}%`;
   updateClassVisuals(b.player.hunterClass);
+  applyPlayerStats(b.player.stats ?? lastMe?.stats);
 
   // 2. Update Enemy Card
   battleEnemyName.textContent = b.enemy.name;
@@ -391,6 +378,9 @@ function renderBattleArena(b: BattleSnapshot, locked = pending > 0) {
     } else if (entry.includes("[VITÓRIA]")) {
       badgeClass = "badge-crit";
       badgeText = "VITÓRIA 🏆";
+    } else if (entry.includes("[RECUO TÁTICO]")) {
+      badgeClass = "badge-block";
+      badgeText = "RECUO ⚖️";
     } else if (entry.includes("[EMPATE]")) {
       badgeClass = "badge-dodge";
       badgeText = "EMPATE ⚖️";
@@ -461,9 +451,15 @@ function showBattleOutcome(b: BattleSnapshot) {
     resultDesc.textContent = `A besta [${b.enemy.rank}] ${b.enemy.name} foi exterminada com sucesso.`;
   } else if (b.result === "DRAW") {
     resultIcon.textContent = "⚖️";
-    resultTitle.textContent = "EMPATE EM COMBATE!";
-    resultTitle.style.color = "#38bdf8";
-    resultDesc.textContent = "Golpe fatal simultâneo! Ambos os combatentes sucumbiram na mesma rodada.";
+    if (b.drawReason === "TURN_LIMIT" || (b.player.hp > 0 && b.enemy.hp > 0)) {
+      resultTitle.textContent = "RECUO TÁTICO!";
+      resultTitle.style.color = "#38bdf8";
+      resultDesc.textContent = `Limite de ${b.maxTurns} turnos atingido! O combate terminou sem vencedor e você recuou taticamente.`;
+    } else {
+      resultTitle.textContent = "EMPATE EM COMBATE!";
+      resultTitle.style.color = "#38bdf8";
+      resultDesc.textContent = "Golpe fatal simultâneo! Ambos os combatentes sucumbiram na mesma rodada.";
+    }
   } else if (b.result === "DEFEAT") {
     resultIcon.textContent = "💀";
     resultTitle.textContent = "DERROTA NA MASMORRA!";

@@ -9,7 +9,7 @@ import {
   type EnemySnapshot
 } from "@rpg/contracts";
 import type { PlayerEntity } from "./player.repository";
-import { CLASS_STATS, type SkillDefinition } from "./skills.data";
+import { CLASS_STATS, calculatePlayerStats, type SkillDefinition } from "./skills.data";
 
 export type RngFn = () => number;
 
@@ -22,6 +22,7 @@ export class BattleSession {
   public log: string[] = [];
   public finished = false;
   public result?: "VICTORY" | "DEFEAT" | "DRAW" | "FLED";
+  public drawReason?: "MUTUAL_DEATH" | "TURN_LIMIT";
   public rewardExp = 0;
   /** Preenchido pelo GameService ao aplicar o EXP (a sessão não conhece o estado persistente). */
   public rewards?: BattleRewards;
@@ -66,7 +67,8 @@ export class BattleSession {
       maxHp: playerEntity.maxHp,
       mp: playerEntity.mp,
       maxMp: playerEntity.maxMp,
-      skills: skillsCopy
+      skills: skillsCopy,
+      stats: calculatePlayerStats(playerEntity.hunterClass, playerEntity.level)
     };
 
     this.enemy = {
@@ -126,6 +128,8 @@ export class BattleSession {
       return { success: false, error: "SKILL_ON_COOLDOWN" };
     }
 
+    const enemyHpAtStart = this.enemy.hp;
+
     // Spend MP
     this.player.mp -= skillDef.mpCost;
 
@@ -136,10 +140,8 @@ export class BattleSession {
     let isEnemyBlock = false;
 
     if (playerDmg > 0) {
-      // Rates based on class
-      const critChance =
-        this.player.hunterClass === "ASSASSIN" ? 0.35 :
-        this.player.hunterClass === "MAGE" ? 0.25 : 0.15;
+      // Rates based on class stats
+      const critChance = this.player.stats?.critChance ?? 0.15;
       const enemyDodgeChance = this.enemy.rank === "D" ? 0.12 : 0.06;
       const enemyBlockChance = 0.10;
 
@@ -204,11 +206,11 @@ export class BattleSession {
       );
     }
 
-    // --- ENEMY ACTION RESOLUTION (if alive) ---
-    if (this.enemy.hp > 0) {
+    // --- ENEMY ACTION RESOLUTION (simultaneous turn like Naruto Game) ---
+    if (enemyHpAtStart > 0) {
       let enemyDmg = this.enemyDamageBase;
-      const playerDodgeChance = this.player.hunterClass === "ASSASSIN" ? 0.22 : 0.08;
-      const playerBlockChance = this.player.hunterClass === "WARRIOR" ? 0.28 : 0.10;
+      const playerDodgeChance = this.player.stats?.dodgeChance ?? 0.08;
+      const playerBlockChance = this.player.stats?.blockChance ?? 0.10;
 
       if (this.rng() < playerDodgeChance) {
         this.note(
@@ -254,6 +256,7 @@ export class BattleSession {
     if (this.player.hp <= 0 && this.enemy.hp <= 0) {
       this.finished = true;
       this.result = "DRAW";
+      this.drawReason = "MUTUAL_DEATH";
       // Empate com o monstro caído: metade do EXP (o monstro morreu junto).
       this.rewardExp = Math.floor(mobExp(this.enemy.level) / 2);
       this.note(
@@ -290,7 +293,11 @@ export class BattleSession {
       if (this.turn > this.maxTurns) {
         this.finished = true;
         this.result = "DRAW";
-        this.log.push("⚖️ [EMPATE] Limite de 20 turnos atingido sem um vencedor claro!");
+        this.drawReason = "TURN_LIMIT";
+        this.rewardExp = 0;
+        this.log.push(
+          `⚖️ [RECUO TÁTICO] Limite de ${this.maxTurns} turnos atingido! Você recuou taticamente perante a resistência de [${this.enemy.rank}] ${this.enemy.name}.`
+        );
       }
     }
 
@@ -312,12 +319,14 @@ export class BattleSession {
       maxTurns: this.maxTurns,
       player: {
         ...this.player,
-        skills: this.player.skills.map((s) => ({ ...s }))
+        skills: this.player.skills.map((s) => ({ ...s })),
+        stats: this.player.stats ? { ...this.player.stats } : undefined
       },
       enemy: { ...this.enemy },
       log: [...this.log],
       finished: this.finished,
       result: this.result,
+      drawReason: this.drawReason,
       rewardExp: this.rewardExp > 0 ? this.rewardExp : undefined,
       rewards: this.rewards ? { ...this.rewards } : undefined,
       events: this.events.map((e) => ({ ...e }))

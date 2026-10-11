@@ -119,6 +119,13 @@ describe("network contracts (tile & turn-based)", () => {
             maxMp: 50,
             stamina: 50,
             maxStamina: 50,
+            stats: {
+              physicalAtk: 46,
+              magicalAtk: 15,
+              critChance: 0.35,
+              dodgeChance: 0.22,
+              blockChance: 0.08
+            },
             inBattle: false,
             sequence: 1
           }

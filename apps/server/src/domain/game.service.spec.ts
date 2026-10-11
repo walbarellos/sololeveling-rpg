@@ -252,4 +252,100 @@ describe("Instanced Turn-Based Battle (Naruto Game style)", () => {
     const hasCritLog = res.battle?.log.some((l) => l.includes("[CRÍTICO]"));
     expect(hasCritLog).toBe(true);
   });
+
+  it("returns authoritative player stats calculated by server for class and level", () => {
+    const clock = makeClock();
+    const repo = new InMemoryPlayerRepository();
+    const game = new GameService(clock, repo);
+    const p = game.connect("p1");
+
+    expect(p.stats).toBeDefined();
+    expect(p.stats.physicalAtk).toBe(26);
+    expect(p.stats.magicalAtk).toBe(38);
+    expect(p.stats.critChance).toBe(0.15);
+    expect(p.stats.dodgeChance).toBe(0.10);
+    expect(p.stats.blockChance).toBe(0.15);
+
+    const assassin = game.selectClass("p1", "ASSASSIN")!;
+    expect(assassin.stats.physicalAtk).toBe(46);
+    expect(assassin.stats.magicalAtk).toBe(15);
+    expect(assassin.stats.critChance).toBe(0.35);
+    expect(assassin.stats.dodgeChance).toBe(0.22);
+    expect(assassin.stats.blockChance).toBe(0.08);
+  });
+
+  it("turn limit results in tactical retreat: enemy survives with remaining HP, player retreats without death penalty", () => {
+    const clock = makeClock();
+    const repo = new InMemoryPlayerRepository();
+    const game = new GameService(clock, repo);
+    game.connect("p1");
+    navigateToAdjacentSlime(game, clock);
+
+    const start = game.startBattle("p1", "slime-1");
+    const battleId = start.battle!.battleId;
+    const session = (game as any).activeBattles.get(battleId);
+
+    // Fast-forward session to turn 20
+    session.turn = 20;
+    // Set high HP so neither dies on turn 20
+    session.player.hp = 100;
+    session.enemy.hp = 50;
+
+    // Execute radiant strike (22 damage -> slime at 28 HP, player takes ~12 damage -> 88 HP)
+    const turn20 = game.executeBattleAction("p1", battleId, "radiant_strike");
+    expect(turn20.success).toBe(true);
+    const b = turn20.battle!;
+
+    expect(b.finished).toBe(true);
+    expect(b.result).toBe("DRAW");
+    expect(b.drawReason).toBe("TURN_LIMIT");
+    expect(b.rewardExp).toBeUndefined();
+
+    // World snapshot check: slime is alive with remaining HP, player is not at respawn portal
+    const world = game.snapshot();
+    const slime = world.enemies.find((e) => e.id === "slime-1")!;
+    expect(slime.alive).toBe(true);
+    expect(slime.hp).toBe(28);
+
+    const me = world.players.find((p) => p.id === "p1")!;
+    expect(me.inBattle).toBe(false);
+    expect(me.position).toEqual({ x: 6, y: 4 }); // NOT respawned at (2, 2)
+    expect(me.hp).toBe(88);
+    expect(me.exp).toBe(0); // 0 EXP
+  });
+
+  it("mutual knockout results in mutual death draw: enemy defeated, player respawns at entrance with half EXP", () => {
+    const clock = makeClock();
+    const repo = new InMemoryPlayerRepository();
+    const game = new GameService(clock, repo);
+    game.connect("p1");
+    navigateToAdjacentSlime(game, clock);
+
+    const start = game.startBattle("p1", "slime-1");
+    const battleId = start.battle!.battleId;
+    const session = (game as any).activeBattles.get(battleId);
+
+    // Set HP such that both die in this turn: player HP 5, slime HP 10
+    session.player.hp = 5;
+    session.enemy.hp = 10;
+
+    const turnFatal = game.executeBattleAction("p1", battleId, "radiant_strike");
+    expect(turnFatal.success).toBe(true);
+    const b = turnFatal.battle!;
+
+    expect(b.finished).toBe(true);
+    expect(b.result).toBe("DRAW");
+    expect(b.drawReason).toBe("MUTUAL_DEATH");
+    expect(b.rewardExp).toBe(4); // mobExp(1)/2 = 8/2 = 4
+
+    const world = game.snapshot();
+    const slime = world.enemies.find((e) => e.id === "slime-1")!;
+    expect(slime.alive).toBe(false);
+
+    const me = world.players.find((p) => p.id === "p1")!;
+    expect(me.inBattle).toBe(false);
+    expect(me.position).toEqual({ x: 2, y: 2 }); // Respawno at entrance
+    expect(me.hp).toBe(Math.floor(me.maxHp * 0.5));
+    expect(me.exp).toBe(4);
+  });
 });

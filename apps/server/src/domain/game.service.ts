@@ -9,6 +9,7 @@ import {
   type Direction,
   type EnemySnapshot,
   type HunterClass,
+  type HunterRank,
   type PlayerSnapshot,
   type ServerErrorCode,
   type TileCoord,
@@ -22,7 +23,7 @@ import {
   type PlayerEntity,
   type PlayerRepository
 } from "./player.repository";
-import { CLASS_STATS } from "./skills.data";
+import { CLASS_STATS, calculatePlayerStats } from "./skills.data";
 
 export const GRID_WIDTH = 20;
 export const GRID_HEIGHT = 12;
@@ -32,6 +33,58 @@ export const ATTACK_COOLDOWN_MS = 600;
 export const PLAYER_ATTACK_DAMAGE = 30;
 /** Respawn lazy: o monstro volta a ficar vivo na próxima leitura do mundo após este intervalo. */
 export const ENEMY_RESPAWN_MS = 30_000;
+
+export interface MobTemplate {
+  name: string;
+  rank: HunterRank;
+  baseHp: number;
+  baseMp: number;
+}
+
+export const MOB_TEMPLATES: Record<string, MobTemplate> = {
+  slime: {
+    name: "Dungeon Slime",
+    rank: "E",
+    baseHp: 60,
+    baseMp: 10
+  },
+  goblin: {
+    name: "Gate Goblin",
+    rank: "E",
+    baseHp: 68,
+    baseMp: 17
+  },
+  wolf: {
+    name: "Shadow Wolf",
+    rank: "D",
+    baseHp: 83,
+    baseMp: 21
+  }
+};
+
+export function createEnemyInstance(
+  id: string,
+  templateKey: keyof typeof MOB_TEMPLATES,
+  level: number,
+  position: TileCoord
+): EnemySnapshot {
+  const template = MOB_TEMPLATES[templateKey];
+  const mult = statMult(level);
+  const hp = Math.round(template.baseHp * mult);
+  const mp = Math.round(template.baseMp * mult);
+  return {
+    id,
+    name: template.name,
+    rank: template.rank,
+    level,
+    position,
+    hp,
+    maxHp: hp,
+    mp,
+    maxMp: mp,
+    alive: true
+  };
+}
 
 export const DEFAULT_OBSTACLES: readonly TileCoord[] = [
   { x: 5, y: 3 },
@@ -58,51 +111,9 @@ export type AttackResult =
 export class GameService {
   private readonly obstacleSet = new Set<string>();
   private readonly enemies = new Map<string, EnemySnapshot>([
-    [
-      "slime-1",
-      {
-        id: "slime-1",
-        name: "Dungeon Slime",
-        rank: "E",
-        level: 1,
-        position: { x: 7, y: 4 },
-        hp: 60,
-        maxHp: 60,
-        mp: 10,
-        maxMp: 10,
-        alive: true
-      }
-    ],
-    [
-      "goblin-1",
-      {
-        id: "goblin-1",
-        name: "Gate Goblin",
-        rank: "E",
-        level: 3,
-        position: { x: 12, y: 7 },
-        hp: 80,
-        maxHp: 80,
-        mp: 20,
-        maxMp: 20,
-        alive: true
-      }
-    ],
-    [
-      "wolf-1",
-      {
-        id: "wolf-1",
-        name: "Shadow Wolf",
-        rank: "D",
-        level: 6,
-        position: { x: 16, y: 3 },
-        hp: 120,
-        maxHp: 120,
-        mp: 30,
-        maxMp: 30,
-        alive: true
-      }
-    ]
+    ["slime-1", createEnemyInstance("slime-1", "slime", 1, { x: 7, y: 4 })],
+    ["goblin-1", createEnemyInstance("goblin-1", "goblin", 3, { x: 12, y: 7 })],
+    ["wolf-1", createEnemyInstance("wolf-1", "wolf", 6, { x: 16, y: 3 })]
   ]);
   private readonly activeBattles = new Map<string, BattleSession>();
   private readonly online = new Set<string>();
@@ -337,11 +348,21 @@ export class GameService {
       player.hp = player.maxHp;
       player.mp = player.maxMp;
     } else if (session.result === "DRAW") {
-      // Draw (like Naruto Game): both knocked down, monstro derrotado e player respawna
-      kill();
-      player.position = { x: 2, y: 2 };
-      player.hp = Math.floor(player.maxHp * 0.5);
-      player.mp = Math.floor(player.maxMp * 0.5);
+      if (session.drawReason === "TURN_LIMIT" || (session.player.hp > 0 && session.enemy.hp > 0)) {
+        // Recuo tático por limite de turnos: monstro permanece vivo com o HP restante
+        const enemy = this.enemies.get(session.enemy.id);
+        if (enemy) {
+          enemy.hp = Math.max(1, session.enemy.hp);
+        }
+        player.hp = Math.max(1, session.player.hp);
+        player.mp = Math.max(0, session.player.mp);
+      } else {
+        // Empate por morte simultânea: ambos caem, monstro derrotado e player respawna
+        kill();
+        player.position = { x: 2, y: 2 };
+        player.hp = Math.floor(player.maxHp * 0.5);
+        player.mp = Math.floor(player.maxMp * 0.5);
+      }
     } else if (session.result === "FLED") {
       player.hp = Math.max(1, session.player.hp);
       player.mp = Math.max(0, session.player.mp);
@@ -498,6 +519,7 @@ export class GameService {
       maxMp: p.maxMp,
       stamina: p.stamina,
       maxStamina: p.maxStamina,
+      stats: calculatePlayerStats(p.hunterClass, p.level),
       inBattle: p.inBattle,
       activeBattleId: p.activeBattleId,
       sequence: p.sequence

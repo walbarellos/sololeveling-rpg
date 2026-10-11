@@ -20,6 +20,15 @@ export const HunterClassSchema = z.enum([
 ]);
 export type HunterClass = z.infer<typeof HunterClassSchema>;
 
+export const PlayerStatsSchema = z.object({
+  physicalAtk: z.number().int().nonnegative(),
+  magicalAtk: z.number().int().nonnegative(),
+  critChance: z.number().min(0).max(1),
+  dodgeChance: z.number().min(0).max(1),
+  blockChance: z.number().min(0).max(1)
+});
+export type PlayerStats = z.infer<typeof PlayerStatsSchema>;
+
 export const PlayerSnapshotSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(24),
@@ -36,6 +45,7 @@ export const PlayerSnapshotSchema = z.object({
   maxMp: z.number().int().positive(),
   stamina: z.number().int().nonnegative(),
   maxStamina: z.number().int().positive(),
+  stats: PlayerStatsSchema,
   inBattle: z.boolean(),
   activeBattleId: z.string().optional(),
   sequence: z.number().int().nonnegative()
@@ -103,7 +113,8 @@ export type BattleParticipant = z.infer<typeof BattleParticipantSchema>;
 
 export const BattlePlayerParticipantSchema = BattleParticipantSchema.extend({
   hunterClass: HunterClassSchema,
-  skills: z.array(SkillSchema)
+  skills: z.array(SkillSchema),
+  stats: PlayerStatsSchema.optional()
 });
 export type BattlePlayerParticipant = z.infer<typeof BattlePlayerParticipantSchema>;
 
@@ -143,6 +154,7 @@ export const BattleSnapshotSchema = z.object({
   log: z.array(z.string()),
   finished: z.boolean(),
   result: z.enum(["VICTORY", "DEFEAT", "DRAW", "FLED"]).optional(),
+  drawReason: z.enum(["MUTUAL_DEATH", "TURN_LIMIT"]).optional(),
   rewardExp: z.number().int().nonnegative().optional(),
   rewards: BattleRewardsSchema.optional(),
   /** Eventos do último turno resolvido (vazio no snapshot de início de batalha). */

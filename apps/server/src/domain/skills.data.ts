@@ -1,4 +1,4 @@
-import type { HunterClass, Skill } from "@rpg/contracts";
+import { statMult, type HunterClass, type PlayerStats, type Skill } from "@rpg/contracts";
 
 export interface SkillDefinition extends Skill {
   baseDamage: number;
@@ -6,13 +6,27 @@ export interface SkillDefinition extends Skill {
   damageType: "PHYSICAL" | "MAGICAL" | "HOLY";
 }
 
-export const CLASS_STATS: Record<
-  HunterClass,
-  { baseHp: number; baseMp: number; title: string; defaultSkills: SkillDefinition[] }
-> = {
+export interface ClassConfig {
+  baseHp: number;
+  baseMp: number;
+  basePhysicalAtk: number;
+  baseMagicalAtk: number;
+  critChance: number;
+  dodgeChance: number;
+  blockChance: number;
+  title: string;
+  defaultSkills: SkillDefinition[];
+}
+
+export const CLASS_STATS: Record<HunterClass, ClassConfig> = {
   WARRIOR: {
     baseHp: 140,
     baseMp: 40,
+    basePhysicalAtk: 38,
+    baseMagicalAtk: 12,
+    critChance: 0.15,
+    dodgeChance: 0.08,
+    blockChance: 0.28,
     title: "Guerreiro Guardião",
     defaultSkills: [
       {
@@ -53,6 +67,11 @@ export const CLASS_STATS: Record<
   ASSASSIN: {
     baseHp: 100,
     baseMp: 60,
+    basePhysicalAtk: 46,
+    baseMagicalAtk: 15,
+    critChance: 0.35,
+    dodgeChance: 0.22,
+    blockChance: 0.08,
     title: "Assassino de Sombras",
     defaultSkills: [
       {
@@ -93,6 +112,11 @@ export const CLASS_STATS: Record<
   MAGE: {
     baseHp: 90,
     baseMp: 100,
+    basePhysicalAtk: 18,
+    baseMagicalAtk: 58,
+    critChance: 0.25,
+    dodgeChance: 0.08,
+    blockChance: 0.10,
     title: "Mago Dimensional",
     defaultSkills: [
       {
@@ -133,6 +157,11 @@ export const CLASS_STATS: Record<
   BATTLE_HEALER: {
     baseHp: 120,
     baseMp: 80,
+    basePhysicalAtk: 26,
+    baseMagicalAtk: 38,
+    critChance: 0.15,
+    dodgeChance: 0.10,
+    blockChance: 0.15,
     title: "Curandeiro de Combate",
     defaultSkills: [
       {
@@ -171,3 +200,15 @@ export const CLASS_STATS: Record<
     ]
   }
 };
+
+export function calculatePlayerStats(hunterClass: HunterClass, level: number): PlayerStats {
+  const config = CLASS_STATS[hunterClass] ?? CLASS_STATS.WARRIOR;
+  const mult = statMult(level);
+  return {
+    physicalAtk: Math.round(config.basePhysicalAtk * mult),
+    magicalAtk: Math.round(config.baseMagicalAtk * mult),
+    critChance: config.critChance,
+    dodgeChance: config.dodgeChance,
+    blockChance: config.blockChance
+  };
+}
