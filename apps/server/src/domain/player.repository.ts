@@ -1,4 +1,4 @@
-import type { HunterClass, HunterRank, TileCoord } from "@rpg/contracts";
+import type { HunterClass, HunterRank, MissionRun, TileCoord } from "@rpg/contracts";
 
 export interface PlayerEntity {
   id: string;
@@ -20,6 +20,8 @@ export interface PlayerEntity {
   sequence: number;
   lastStepAt: number;
   lastAttackAt: number;
+  activeMission?: MissionRun;
+  lastClaimedMissionRunId?: string;
 }
 
 export const PLAYER_REPOSITORY = "PLAYER_REPOSITORY";
@@ -36,11 +38,21 @@ export class InMemoryPlayerRepository implements PlayerRepository {
 
   findById(id: string): PlayerEntity | null {
     const found = this.store.get(id);
-    return found ? { ...found, position: { ...found.position } } : null;
+    return found
+      ? {
+          ...found,
+          position: { ...found.position },
+          activeMission: found.activeMission ? { ...found.activeMission } : undefined
+        }
+      : null;
   }
 
   save(player: PlayerEntity): void {
-    this.store.set(player.id, { ...player, position: { ...player.position } });
+    this.store.set(player.id, {
+      ...player,
+      position: { ...player.position },
+      activeMission: player.activeMission ? { ...player.activeMission } : undefined
+    });
   }
 
   delete(id: string): void {
@@ -50,7 +62,8 @@ export class InMemoryPlayerRepository implements PlayerRepository {
   findAll(): PlayerEntity[] {
     return Array.from(this.store.values()).map((p) => ({
       ...p,
-      position: { ...p.position }
+      position: { ...p.position },
+      activeMission: p.activeMission ? { ...p.activeMission } : undefined
     }));
   }
 }

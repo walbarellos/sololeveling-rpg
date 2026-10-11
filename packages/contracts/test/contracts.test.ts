@@ -8,9 +8,14 @@ import {
   DirectionSchema,
   HandshakeAuthSchema,
   MAX_LEVEL,
+  MISSIONS,
+  MissionDefinitionSchema,
+  MissionRunSchema,
+  MissionsStateSchema,
   RANK_CAP,
   applyExp,
   expToNext,
+  isRankAllowed,
   mobExp,
   statMult,
   StartBattleRequestSchema,
@@ -220,5 +225,44 @@ describe("progressão e eventos de combate", () => {
   it("applyExp ignora ganho negativo e respeita o nível máximo", () => {
     expect(applyExp({ level: 5, exp: 10, rank: "E" }, -50)).toEqual({ level: 5, exp: 10, capped: false });
     expect(applyExp({ level: 100, exp: 0, rank: "S" }, 1e9).level).toBe(100);
+  });
+});
+
+describe("missões estilo Naruto Game (contratos)", () => {
+  it("valida esquemas de missão e tabela mestre", () => {
+    expect(MISSIONS.length).toBe(7);
+    for (const m of MISSIONS) {
+      expect(MissionDefinitionSchema.safeParse(m).success).toBe(true);
+    }
+  });
+
+  it("verifica a hierarquia de ranks para missões (isRankAllowed)", () => {
+    expect(isRankAllowed("E", "E")).toBe(true);
+    expect(isRankAllowed("E", "D")).toBe(false);
+    expect(isRankAllowed("D", "E")).toBe(true);
+    expect(isRankAllowed("S", "A")).toBe(true);
+    expect(isRankAllowed("A", "S")).toBe(false);
+  });
+
+  it("valida payload de execução e estado de missões", () => {
+    const validRun = {
+      runId: "run-1",
+      missionId: "patrol_5s",
+      name: "Patrulha Relâmpago",
+      startedAt: 1000,
+      endsAt: 6000,
+      durationMs: 5000,
+      killsEquiv: 1,
+      potentialExp: 8,
+      completed: false
+    };
+    expect(MissionRunSchema.safeParse(validRun).success).toBe(true);
+    expect(
+      MissionsStateSchema.safeParse({
+        available: [...MISSIONS],
+        activeRun: validRun,
+        serverTime: 2000
+      }).success
+    ).toBe(true);
   });
 });

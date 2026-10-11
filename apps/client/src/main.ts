@@ -3,15 +3,23 @@ import { io, type Socket } from "socket.io-client";
 import {
   BattleSnapshotSchema,
   ClientEvents,
+  MissionClaimResultSchema,
+  MissionsStateSchema,
   ServerEvents,
   WelcomeSchema,
   WorldSnapshotSchema,
   expToNext,
+  isRankAllowed,
+  mobExp,
   type BattleEvent,
   type BattleRewards,
   type BattleSnapshot,
   type Direction,
   type HunterClass,
+  type MissionClaimResult,
+  type MissionDefinition,
+  type MissionRun,
+  type MissionsState,
   type PlayerSnapshot,
   type PlayerStats,
   type TileCoord,
@@ -125,6 +133,22 @@ const expFill = document.querySelector<HTMLDivElement>("#exp-fill")!;
 const expGain = document.querySelector<HTMLDivElement>("#exp-gain")!;
 const expNote = document.querySelector<HTMLDivElement>("#exp-note")!;
 const rewardNone = document.querySelector<HTMLSpanElement>("#reward-none")!;
+
+// Mission Board Modal Elements
+const btnMissionsToggle = document.querySelector<HTMLButtonElement>("#btn-missions-toggle")!;
+const missionHudBadge = document.querySelector<HTMLSpanElement>("#mission-hud-badge")!;
+const missionsModal = document.querySelector<HTMLDivElement>("#missions-modal")!;
+const btnMissionsClose = document.querySelector<HTMLButtonElement>("#btn-missions-close")!;
+const activeMissionContainer = document.querySelector<HTMLDivElement>("#active-mission-container")!;
+const activeMissionCard = activeMissionContainer?.querySelector<HTMLDivElement>(".active-mission-card")!;
+const activeMissionName = document.querySelector<HTMLSpanElement>("#active-mission-name")!;
+const activeMissionStatus = document.querySelector<HTMLSpanElement>("#active-mission-status")!;
+const activeMissionTimer = document.querySelector<HTMLSpanElement>("#active-mission-timer")!;
+const activeMissionProgress = document.querySelector<HTMLDivElement>("#active-mission-progress")!;
+const btnClaimMission = document.querySelector<HTMLButtonElement>("#btn-claim-mission")!;
+const btnClaimText = document.querySelector<HTMLSpanElement>("#btn-claim-text")!;
+const btnCancelMission = document.querySelector<HTMLButtonElement>("#btn-cancel-mission")!;
+const missionsList = document.querySelector<HTMLDivElement>("#missions-list")!;
 
 // Class Selector Handler
 classSelect?.addEventListener("change", () => {
@@ -266,7 +290,168 @@ function applyHud(me: PlayerSnapshot) {
   hudExpText.textContent = capped
     ? `EXP ${me.exp} / ${me.expToNext} · TRAVADO: prova de rank`
     : `EXP ${me.exp} / ${me.expToNext}`;
+
+  if (currentMissionsState) {
+    renderMissionsModal(currentMissionsState);
+  }
 }
+
+let currentMissionsState: MissionsState | null = null;
+
+function formatDuration(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) {
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatDurationLabel(ms: number): string {
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} min`;
+  const hr = Math.floor(min / 60);
+  return `${hr} hora${hr > 1 ? "s" : ""}`;
+}
+
+function updateMissionTicker() {
+  if (!currentMissionsState?.activeRun) {
+    missionHudBadge?.classList.add("hidden");
+    activeMissionContainer?.classList.add("hidden");
+    return;
+  }
+
+  const run = currentMissionsState.activeRun;
+  const now = Date.now();
+  const remainingMs = Math.max(0, run.endsAt - now);
+  const elapsed = Math.max(0, now - run.startedAt);
+  const progressPct = Math.min(100, (elapsed / run.durationMs) * 100);
+
+  if (activeMissionContainer) activeMissionContainer.classList.remove("hidden");
+  if (activeMissionName) activeMissionName.textContent = run.name;
+  if (activeMissionProgress) activeMissionProgress.style.width = `${progressPct}%`;
+
+  if (remainingMs === 0) {
+    if (missionHudBadge) {
+      missionHudBadge.textContent = "COLETAR!";
+      missionHudBadge.classList.remove("hidden");
+      missionHudBadge.classList.add("ready");
+    }
+    if (activeMissionStatus) activeMissionStatus.textContent = "✨ Missão concluída! Pronto para coletar.";
+    if (activeMissionTimer) activeMissionTimer.textContent = "00:00";
+    if (activeMissionCard) activeMissionCard.classList.add("ready");
+    if (btnClaimMission) btnClaimMission.disabled = false;
+    if (btnClaimText) btnClaimText.textContent = `COLETAR (+${run.potentialExp} EXP)`;
+  } else {
+    const formatted = formatDuration(remainingMs);
+    if (missionHudBadge) {
+      missionHudBadge.textContent = formatted;
+      missionHudBadge.classList.remove("hidden");
+      missionHudBadge.classList.remove("ready");
+    }
+    if (activeMissionStatus) activeMissionStatus.textContent = "⏳ Em andamento…";
+    if (activeMissionTimer) activeMissionTimer.textContent = formatted;
+    if (activeMissionCard) activeMissionCard.classList.remove("ready");
+    if (btnClaimMission) btnClaimMission.disabled = true;
+    if (btnClaimText) btnClaimText.textContent = "EM PROGRESSO";
+  }
+}
+
+setInterval(updateMissionTicker, 500);
+
+function renderMissionsModal(state: MissionsState) {
+  currentMissionsState = state;
+  updateMissionTicker();
+
+  if (!missionsList) return;
+  missionsList.innerHTML = "";
+
+  const me = lastMe;
+  const hasActiveRun = !!state.activeRun;
+
+  for (const mission of state.available) {
+    const isRankOk = me ? isRankAllowed(me.rank, mission.minRank) : false;
+    const isLevelOk = me ? me.level >= mission.minLevel : false;
+    const isLocked = !isRankOk || !isLevelOk;
+    const potentialExp = me ? mobExp(me.level) * mission.killsEquiv : mission.killsEquiv * 8;
+
+    const card = document.createElement("div");
+    card.className = `mission-item-card ${isLocked ? "locked" : ""}`;
+
+    let reqsText = "";
+    if (isLocked) {
+      const parts: string[] = [];
+      if (!isRankOk) parts.push(`Rank ${mission.minRank}`);
+      if (!isLevelOk) parts.push(`Nível ${mission.minLevel}`);
+      reqsText = `🔒 Requer ${parts.join(" e ")}`;
+    }
+
+    card.innerHTML = `
+      <div class="mission-card-left">
+        <div class="mission-item-icon">${mission.icon ?? "📜"}</div>
+        <div class="mission-item-details">
+          <div class="mission-item-top">
+            <span class="mission-item-name">${mission.name}</span>
+            <span class="mission-badge-time">⏱️ ${formatDurationLabel(mission.durationMs)}</span>
+            <span class="mission-badge-exp">✨ +${potentialExp} EXP</span>
+          </div>
+          <span class="mission-item-desc">${mission.description}</span>
+          ${reqsText ? `<span class="mission-item-reqs">${reqsText}</span>` : ""}
+        </div>
+      </div>
+      <div class="mission-card-right">
+        <button class="btn-start-mission" ${isLocked || hasActiveRun ? "disabled" : ""} title="${hasActiveRun ? "Você já possui uma missão em andamento" : isLocked ? reqsText : "Iniciar missão"}">
+          ${isLocked ? "BLOQUEADO" : "INICIAR"}
+        </button>
+      </div>
+    `;
+
+    const btnStart = card.querySelector<HTMLButtonElement>(".btn-start-mission");
+    btnStart?.addEventListener("click", () => {
+      if (isLocked || hasActiveRun) return;
+      socket.emit(ClientEvents.StartMissionRequest, { missionId: mission.id });
+    });
+
+    missionsList.appendChild(card);
+  }
+}
+
+btnMissionsToggle?.addEventListener("click", () => {
+  missionsModal?.classList.toggle("hidden");
+  if (missionsModal && !missionsModal.classList.contains("hidden")) {
+    socket.emit(ClientEvents.MissionsRequest);
+  }
+});
+
+btnMissionsClose?.addEventListener("click", () => {
+  missionsModal?.classList.add("hidden");
+});
+
+btnClaimMission?.addEventListener("click", () => {
+  if (!currentMissionsState?.activeRun) return;
+  socket.emit(ClientEvents.ClaimMissionRequest, { runId: currentMissionsState.activeRun.runId });
+});
+
+btnCancelMission?.addEventListener("click", () => {
+  if (!currentMissionsState?.activeRun) return;
+  socket.emit(ClientEvents.CancelMissionRequest, { runId: currentMissionsState.activeRun.runId });
+});
+
+socket.on(ServerEvents.MissionsState, (raw: unknown) => {
+  const parsed = MissionsStateSchema.safeParse(raw);
+  if (!parsed.success) return;
+  renderMissionsModal(parsed.data);
+});
+
+socket.on(ServerEvents.MissionClaimResult, (raw: unknown) => {
+  const parsed = MissionClaimResultSchema.safeParse(raw);
+  if (!parsed.success) return;
+  status.textContent = `📜 ${parsed.data.message}`;
+});
 
 socket.on(ServerEvents.BattleSnapshot, (raw: unknown) => {
   const parsed = BattleSnapshotSchema.safeParse(raw);

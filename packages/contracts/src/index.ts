@@ -190,7 +190,13 @@ export const ServerErrorCodeSchema = z.enum([
   "SKILL_ON_COOLDOWN",
   "BATTLE_NOT_FOUND",
   "ALREADY_IN_BATTLE",
-  "NOT_IN_BATTLE"
+  "NOT_IN_BATTLE",
+  "MISSION_NOT_FOUND",
+  "MISSION_LOCKED",
+  "MISSION_ALREADY_ACTIVE",
+  "NO_ACTIVE_MISSION",
+  "MISSION_IN_PROGRESS",
+  "MISSION_ALREADY_CLAIMED"
 ]);
 export type ServerErrorCode = z.infer<typeof ServerErrorCodeSchema>;
 
@@ -208,7 +214,11 @@ export const ClientEvents = {
   BattleActionRequest: "game:battle:action",
   BattleFleeRequest: "game:battle:flee",
   AttackRequest: "game:attack",
-  SnapshotRequest: "game:snapshot:request"
+  SnapshotRequest: "game:snapshot:request",
+  StartMissionRequest: "game:mission:start",
+  ClaimMissionRequest: "game:mission:claim",
+  CancelMissionRequest: "game:mission:cancel",
+  MissionsRequest: "game:mission:list"
 } as const;
 
 export const ServerEvents = {
@@ -218,7 +228,9 @@ export const ServerEvents = {
   BattleEnded: "game:battle:ended",
   Error: "game:error",
   CombatLog: "game:combat-log",
-  SessionReplaced: "game:session:replaced"
+  SessionReplaced: "game:session:replaced",
+  MissionsState: "game:mission:state",
+  MissionClaimResult: "game:mission:claim-result"
 } as const;
 
 /**
@@ -251,3 +263,4 @@ export const CombatLogSchema = z.object({
 export type CombatLog = z.infer<typeof CombatLogSchema>;
 
 export * from "./progression";
+export * from "./missions";

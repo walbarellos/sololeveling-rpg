@@ -31,6 +31,11 @@
               <option value="MAGE">Mago Dimensional (Mágico/Arcano)</option>
             </select>
           </div>
+          <button id="btn-missions-toggle" class="btn-top-missions" title="Quadro de Missões da Associação">
+            <span class="top-icon">📜</span>
+            <span class="top-label">MISSÕES</span>
+            <span id="mission-hud-badge" class="mission-hud-badge hidden">00:00</span>
+          </button>
           <span id="connection" class="conn-status">Conectando ao Gate…</span>
         </div>
 
@@ -247,6 +252,61 @@
                 <span id="reward-none" class="reward-none hidden">Sem recompensas desta vez.</span>
               </div>
               <button id="btn-return-map" class="btn-rpg-return">RETORNAR À MASMORRA</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL DO QUADRO DE MISSÕES (ESTILO NARUTO GAME / ASSOCIAÇÃO DE CAÇADORES) -->
+      <div id="missions-modal" class="missions-modal-overlay hidden">
+        <div class="missions-modal-window">
+          <div class="modal-header-plate">
+            <div class="modal-title-group">
+              <span class="modal-icon">📋</span>
+              <div>
+                <h2 class="modal-title">QUADRO DE MISSÕES DA ASSOCIAÇÃO</h2>
+                <span class="modal-subtitle">Patrulhas e incursões periódicas · EXP autoritativo lazy (ADR 5 & ADR 10)</span>
+              </div>
+            </div>
+            <button id="btn-missions-close" class="btn-modal-close" title="Fechar">✕</button>
+          </div>
+
+          <!-- Seção de Missão Ativa (se houver) -->
+          <div id="active-mission-container" class="active-mission-container hidden">
+            <div class="active-mission-card">
+              <div class="active-mission-header">
+                <span class="active-pulse">●</span>
+                <span class="active-label">MISSÃO EM CURSO</span>
+                <span id="active-mission-name" class="active-mission-name">Patrulha Relâmpago</span>
+              </div>
+              <div class="active-mission-body">
+                <div class="active-mission-meta">
+                  <span id="active-mission-status" class="active-status-text">⏳ Em andamento…</span>
+                  <span id="active-mission-timer" class="active-timer-display">00:05</span>
+                </div>
+                <div class="glossy-track mission-progress-track">
+                  <div id="active-mission-progress" class="glossy-bar bar-mission" style="width: 0%;">
+                    <div class="glass-shine"></div>
+                  </div>
+                </div>
+                <div class="active-mission-actions">
+                  <button id="btn-claim-mission" class="btn-rpg-claim" disabled>
+                    <span class="claim-icon">🎁</span>
+                    <span id="btn-claim-text">COLETAR RECOMPENSA</span>
+                  </button>
+                  <button id="btn-cancel-mission" class="btn-rpg-cancel-mission">
+                    <span>CANCELAR</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de Missões Disponíveis -->
+          <div class="missions-board-body">
+            <div class="board-section-title">MISSÕES DISPONÍVEIS NA REGIÃO</div>
+            <div id="missions-list" class="missions-cards-grid">
+              <!-- Cards gerados dinamicamente via JS -->
             </div>
           </div>
         </div>

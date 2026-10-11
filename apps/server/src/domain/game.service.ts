@@ -1,15 +1,22 @@
 import { Inject, Injectable, Optional } from "@nestjs/common";
 import {
+  MISSIONS,
   RANK_CAP,
   applyExp,
   expToNext,
+  isRankAllowed,
+  mobExp,
   statMult,
+  type BattleRewards,
   type BattleSnapshot,
   type CombatLog,
   type Direction,
   type EnemySnapshot,
   type HunterClass,
   type HunterRank,
+  type MissionClaimResult,
+  type MissionRun,
+  type MissionsState,
   type PlayerSnapshot,
   type ServerErrorCode,
   type TileCoord,
@@ -120,6 +127,7 @@ export class GameService {
   private readonly diedAt = new Map<string, number>();
   private sequence = 0;
   private battleCounter = 0;
+  private missionCounter = 0;
 
   constructor(
     @Optional() @Inject(CLOCK) private readonly clock: Clock = new SystemClock(),
@@ -483,6 +491,147 @@ export class GameService {
     };
 
     return { success: true, log, player: this.toSnapshot(player) };
+  }
+
+  getMissionsState(playerId: string): MissionsState {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    const now = this.clock.nowMs();
+    let activeRun: MissionRun | null = null;
+    if (player?.activeMission) {
+      activeRun = {
+        ...player.activeMission,
+        completed: now >= player.activeMission.endsAt
+      };
+    }
+    return {
+      available: [...MISSIONS],
+      activeRun,
+      serverTime: now
+    };
+  }
+
+  startMission(
+    playerId: string,
+    missionId: string
+  ): { success: boolean; state?: MissionsState; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    if (player.activeMission) {
+      return { success: false, error: "MISSION_ALREADY_ACTIVE" };
+    }
+
+    const mission = MISSIONS.find((m) => m.id === missionId);
+    if (!mission) {
+      return { success: false, error: "MISSION_NOT_FOUND" };
+    }
+
+    if (!isRankAllowed(player.rank, mission.minRank) || player.level < mission.minLevel) {
+      return { success: false, error: "MISSION_LOCKED" };
+    }
+
+    const now = this.clock.nowMs();
+    const runId = `mission-${player.id}-${now}-${++this.missionCounter}`;
+    const potentialExp = mobExp(player.level) * mission.killsEquiv;
+
+    player.activeMission = {
+      runId,
+      missionId: mission.id,
+      name: mission.name,
+      startedAt: now,
+      endsAt: now + mission.durationMs,
+      durationMs: mission.durationMs,
+      killsEquiv: mission.killsEquiv,
+      potentialExp,
+      completed: false
+    };
+
+    this.playerRepository.save(player);
+    return { success: true, state: this.getMissionsState(playerId) };
+  }
+
+  claimMission(
+    playerId: string,
+    runId: string
+  ): {
+    success: boolean;
+    result?: MissionClaimResult;
+    player?: PlayerSnapshot;
+    error?: ServerErrorCode;
+  } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    // ADR 10: Idempotência de recompensas
+    if (player.lastClaimedMissionRunId === runId) {
+      return { success: false, error: "MISSION_ALREADY_CLAIMED" };
+    }
+
+    if (!player.activeMission || player.activeMission.runId !== runId) {
+      return { success: false, error: "NO_ACTIVE_MISSION" };
+    }
+
+    // ADR 5: Avaliação lazy por timestamp, sem timers de servidor
+    const now = this.clock.nowMs();
+    if (now < player.activeMission.endsAt) {
+      return { success: false, error: "MISSION_IN_PROGRESS" };
+    }
+
+    const missionRun = player.activeMission;
+    const expGained = missionRun.potentialExp;
+
+    const before = { level: player.level, exp: player.exp };
+    const expResult = applyExp(player, expGained);
+    player.level = expResult.level;
+    player.exp = expResult.exp;
+
+    if (expResult.level > before.level) {
+      this.recomputeMaxStats(player);
+      player.hp = player.maxHp;
+      player.mp = player.maxMp;
+    }
+
+    const rewards: BattleRewards = {
+      expGained,
+      levelBefore: before.level,
+      levelAfter: expResult.level,
+      expBefore: before.exp,
+      expAfter: expResult.exp,
+      capped: expResult.capped,
+      levelCap: RANK_CAP[player.rank]
+    };
+
+    player.lastClaimedMissionRunId = runId;
+    player.activeMission = undefined;
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+
+    const result: MissionClaimResult = {
+      success: true,
+      runId,
+      missionId: missionRun.missionId,
+      expGained,
+      rewards,
+      message: `Missão "${missionRun.name}" concluída com sucesso! +${expGained} EXP coletados.`
+    };
+
+    return { success: true, result, player: this.toSnapshot(player) };
+  }
+
+  cancelMission(
+    playerId: string,
+    runId: string
+  ): { success: boolean; state?: MissionsState; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    if (!player.activeMission || player.activeMission.runId !== runId) {
+      return { success: false, error: "NO_ACTIVE_MISSION" };
+    }
+
+    player.activeMission = undefined;
+    this.playerRepository.save(player);
+    return { success: true, state: this.getMissionsState(playerId) };
   }
 
   snapshot(): WorldSnapshot {

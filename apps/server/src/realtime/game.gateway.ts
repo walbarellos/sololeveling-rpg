@@ -12,10 +12,13 @@ import {
   AttackRequestSchema,
   BattleActionRequestSchema,
   BattleFleeRequestSchema,
+  CancelMissionRequestSchema,
+  ClaimMissionRequestSchema,
   ClientEvents,
   SelectClassRequestSchema,
   ServerEvents,
   StartBattleRequestSchema,
+  StartMissionRequestSchema,
   StepRequestSchema,
   type ServerErrorCode,
   type ServerError
@@ -57,6 +60,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       playerId: player.id,
       ...this.game.dimensions
     });
+    client.emit(ServerEvents.MissionsState, this.game.getMissionsState(player.id));
     this.broadcastSnapshot();
   }
 
@@ -189,6 +193,70 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage(ClientEvents.SnapshotRequest)
   handleSnapshotRequest(@ConnectedSocket() client: Socket) {
     client.emit(ServerEvents.Snapshot, this.game.snapshot());
+  }
+
+  @SubscribeMessage(ClientEvents.MissionsRequest)
+  handleMissionsRequest(@ConnectedSocket() client: Socket) {
+    client.emit(ServerEvents.MissionsState, this.game.getMissionsState(this.pid(client)));
+  }
+
+  @SubscribeMessage(ClientEvents.StartMissionRequest)
+  handleStartMission(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = StartMissionRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de missão inválida.");
+    }
+    const result = this.game.startMission(this.pid(client), parsed.data.missionId);
+    if (!result.success || !result.state) {
+      const messages: Record<string, string> = {
+        MISSION_ALREADY_ACTIVE: "Você já possui uma missão em andamento!",
+        MISSION_NOT_FOUND: "Missão não encontrada na Associação.",
+        MISSION_LOCKED: "Você não possui o Rank ou Nível exigido para esta missão!"
+      };
+      return this.sendError(
+        client,
+        result.error ?? "MISSION_NOT_FOUND",
+        messages[result.error ?? ""] ?? "Não foi possível iniciar a missão."
+      );
+    }
+    client.emit(ServerEvents.MissionsState, result.state);
+  }
+
+  @SubscribeMessage(ClientEvents.ClaimMissionRequest)
+  handleClaimMission(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = ClaimMissionRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de resgate inválida.");
+    }
+    const result = this.game.claimMission(this.pid(client), parsed.data.runId);
+    if (!result.success || !result.result) {
+      const messages: Record<string, string> = {
+        NO_ACTIVE_MISSION: "Nenhuma missão ativa encontrada para resgatar.",
+        MISSION_IN_PROGRESS: "A missão ainda está em andamento! Aguarde o tempo necessário.",
+        MISSION_ALREADY_CLAIMED: "Recompensa desta missão já foi resgatada."
+      };
+      return this.sendError(
+        client,
+        result.error ?? "NO_ACTIVE_MISSION",
+        messages[result.error ?? ""] ?? "Não foi possível coletar a recompensa."
+      );
+    }
+    client.emit(ServerEvents.MissionClaimResult, result.result);
+    client.emit(ServerEvents.MissionsState, this.game.getMissionsState(this.pid(client)));
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.CancelMissionRequest)
+  handleCancelMission(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = CancelMissionRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de cancelamento inválida.");
+    }
+    const result = this.game.cancelMission(this.pid(client), parsed.data.runId);
+    if (!result.success || !result.state) {
+      return this.sendError(client, "NO_ACTIVE_MISSION", "Nenhuma missão ativa para cancelar.");
+    }
+    client.emit(ServerEvents.MissionsState, result.state);
   }
 
   private broadcastSnapshot() {
