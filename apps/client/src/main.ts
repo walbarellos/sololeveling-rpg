@@ -818,7 +818,7 @@ socket.on(ServerEvents.Error, (raw: unknown) => {
 
 function updateClassVisuals(hClass: HunterClass) {
   if (playerAvatarBox) {
-    const src = portraitUrl(CLASS_PORTRAIT[hClass] ?? "bruiser");
+    const src = portraitUrl(CLASS_PORTRAIT[hClass] ?? "healer");
     if (playerAvatarBox.dataset.cls !== hClass) {
       playerAvatarBox.dataset.cls = hClass;
       playerAvatarBox.innerHTML = `<img class="portrait-img" src="${src}" alt="${hClass}" draggable="false">`;

@@ -11,19 +11,23 @@ import type { HunterClass } from "@rpg/contracts";
 const BASE = import.meta.env.BASE_URL;
 
 export const PORTRAIT_FILES = {
-  jinwoo_front: "portraits/jinwoo_front.png",
-  jinwoo_back: "portraits/jinwoo_back.png",
-  bruiser: "portraits/bruiser.png",
-  director: "portraits/director.png"
+  healer: "portraits/healer.png",
+  assassin: "portraits/assassin.png",
+  warrior: "portraits/warrior.png",
+  mage: "portraits/mage.png",
+  jinwoo_front: "portraits/assassin.png",
+  jinwoo_back: "portraits/mage.png",
+  bruiser: "portraits/warrior.png",
+  director: "portraits/healer.png"
 } as const;
 export type PortraitKey = keyof typeof PORTRAIT_FILES;
 
 /** Qual retrato representa cada classe. */
 export const CLASS_PORTRAIT: Record<HunterClass, PortraitKey> = {
-  ASSASSIN: "jinwoo_front",
-  MAGE: "jinwoo_back",
-  WARRIOR: "bruiser",
-  BATTLE_HEALER: "director"
+  BATTLE_HEALER: "healer",
+  ASSASSIN: "assassin",
+  WARRIOR: "warrior",
+  MAGE: "mage"
 };
 
 export const portraitUrl = (key: PortraitKey) => `${BASE}assets/${PORTRAIT_FILES[key]}`;
