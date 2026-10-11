@@ -231,4 +231,25 @@ describe("Instanced Turn-Based Battle (Naruto Game style)", () => {
     expect(fleeRes.battle?.result).toBe("FLED");
     expect(game.snapshot().players[0].inBattle).toBe(false);
   });
+
+  it("calculates critical hits and registers [CRÍTICO] in combat log", () => {
+    const clock = makeClock();
+    const repo = new InMemoryPlayerRepository();
+    const game = new GameService(clock, repo);
+    game.connect("p1");
+    game.selectClass("p1", "ASSASSIN");
+    navigateToAdjacentSlime(game, clock);
+
+    const start = game.startBattle("p1", "slime-1");
+    const battleId = start.battle!.battleId;
+
+    const session = (game as any).activeBattles.get(battleId);
+    let rolls = [0.5, 0.05, 0.5, 0.5];
+    session.setRng(() => rolls.shift() ?? 0.5);
+
+    const res = game.executeBattleAction("p1", battleId, "dagger_slash");
+    expect(res.success).toBe(true);
+    const hasCritLog = res.battle?.log.some((l) => l.includes("[CRÍTICO]"));
+    expect(hasCritLog).toBe(true);
+  });
 });

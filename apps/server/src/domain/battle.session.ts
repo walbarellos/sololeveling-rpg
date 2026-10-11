@@ -8,6 +8,8 @@ import type {
 import type { PlayerEntity } from "./player.repository";
 import { CLASS_STATS, type SkillDefinition } from "./skills.data";
 
+export type RngFn = () => number;
+
 export class BattleSession {
   public readonly battleId: string;
   public turn = 1;
@@ -20,13 +22,17 @@ export class BattleSession {
   public rewardExp = 0;
 
   private skillDefs: Map<string, SkillDefinition>;
+  public rng: RngFn;
 
   constructor(
     battleId: string,
     playerEntity: PlayerEntity,
-    enemySnapshot: EnemySnapshot
+    enemySnapshot: EnemySnapshot,
+    rng?: RngFn
   ) {
     this.battleId = battleId;
+    this.rng = rng ?? (() => (process.env.NODE_ENV === "test" ? 0.99 : Math.random()));
+
     const classInfo = CLASS_STATS[playerEntity.hunterClass] ?? CLASS_STATS.WARRIOR;
 
     this.skillDefs = new Map();
@@ -58,8 +64,12 @@ export class BattleSession {
     };
 
     this.log.push(
-      `Confronto iniciado! ${this.player.name} (${classInfo.title}) vs [${this.enemy.rank}] ${this.enemy.name}.`
+      `⚔️ Confronto iniciado! [${this.player.rank}] ${this.player.name} (${classInfo.title}) VS [${this.enemy.rank}] ${this.enemy.name}.`
     );
+  }
+
+  setRng(fn: RngFn) {
+    this.rng = fn;
   }
 
   executeAction(actionId: string): {
@@ -86,26 +96,84 @@ export class BattleSession {
     // Spend MP
     this.player.mp -= skillDef.mpCost;
 
-    // Apply Player Action
-    let playerLog = `[Turno ${this.turn}] Você usou ${skillDef.name}`;
-    if (skillDef.baseDamage > 0) {
-      this.enemy.hp = Math.max(0, this.enemy.hp - skillDef.baseDamage);
-      playerLog += ` causando ${skillDef.baseDamage} de dano!`;
+    // --- PLAYER ACTION RESOLUTION ---
+    let playerDmg = skillDef.baseDamage;
+    let isCrit = false;
+    let isEnemyDodge = false;
+    let isEnemyBlock = false;
+
+    if (playerDmg > 0) {
+      // Rates based on class
+      const critChance =
+        this.player.hunterClass === "ASSASSIN" ? 0.35 :
+        this.player.hunterClass === "MAGE" ? 0.25 : 0.15;
+      const enemyDodgeChance = this.enemy.rank === "D" ? 0.12 : 0.06;
+      const enemyBlockChance = 0.10;
+
+      if (this.rng() < enemyDodgeChance) {
+        isEnemyDodge = true;
+        playerDmg = 0;
+        this.log.push(
+          `[ESQUIVOU] 💨 [${this.enemy.rank}] ${this.enemy.name} se esquivou agilmente de ${skillDef.name}! (0 de dano)`
+        );
+      } else {
+        if (this.rng() < critChance) {
+          isCrit = true;
+          playerDmg = Math.floor(playerDmg * 1.6);
+        } else if (this.rng() < enemyBlockChance) {
+          isEnemyBlock = true;
+          playerDmg = Math.floor(playerDmg * 0.5);
+        }
+
+        this.enemy.hp = Math.max(0, this.enemy.hp - playerDmg);
+
+        if (isCrit) {
+          this.log.push(
+            `[CRÍTICO] 💥 GOLPE CRÍTICO! Você usou ${skillDef.name} causando ${playerDmg} de dano devastador!`
+          );
+        } else if (isEnemyBlock) {
+          this.log.push(
+            `[BLOQUEIO] 🛡️ ${this.enemy.name} aparou parte do golpe! ${skillDef.name} causou ${playerDmg} de dano.`
+          );
+        } else {
+          this.log.push(
+            `[DANO] ⚔️ Você usou ${skillDef.name} causando ${playerDmg} de dano a ${this.enemy.name}.`
+          );
+        }
+      }
     }
+
     if (skillDef.healAmount > 0) {
       const heal = Math.min(this.player.maxHp - this.player.hp, skillDef.healAmount);
       this.player.hp += heal;
-      playerLog += ` e recuperou ${heal} de HP!`;
-    }
-    this.log.push(playerLog);
-
-    // Enemy Turn (if alive)
-    if (this.enemy.hp > 0) {
-      const enemyDmg = this.enemy.rank === "D" ? 18 : 12;
-      this.player.hp = Math.max(0, this.player.hp - enemyDmg);
       this.log.push(
-        `[Turno ${this.turn}] ${this.enemy.name} revidou causando ${enemyDmg} de dano a você!`
+        `[CURA] 💚 Canalização Sagrada! Você restaurou +${heal} de HP (Vida atual: ${this.player.hp}/${this.player.maxHp}).`
       );
+    }
+
+    // --- ENEMY ACTION RESOLUTION (if alive) ---
+    if (this.enemy.hp > 0) {
+      let enemyDmg = this.enemy.rank === "D" ? 18 : 12;
+      const playerDodgeChance = this.player.hunterClass === "ASSASSIN" ? 0.22 : 0.08;
+      const playerBlockChance = this.player.hunterClass === "WARRIOR" ? 0.28 : 0.10;
+
+      if (this.rng() < playerDodgeChance) {
+        this.log.push(
+          `[ESQUIVOU] 💨 Você previu o movimento de ${this.enemy.name} e se esquivou com maestria! (0 de dano sofrido)`
+        );
+      } else if (this.rng() < playerBlockChance) {
+        enemyDmg = Math.floor(enemyDmg * 0.5);
+        this.player.hp = Math.max(0, this.player.hp - enemyDmg);
+        this.log.push(
+          `[BLOQUEIO] 🛡️ Você ergueu a guarda e bloqueou o impacto! Sofreu apenas ${enemyDmg} de dano de ${this.enemy.name}.`
+        );
+      } else {
+        // Monster hit
+        this.player.hp = Math.max(0, this.player.hp - enemyDmg);
+        this.log.push(
+          `[DANO] 🩸 ${this.enemy.name} revidou com ferocidade causando ${enemyDmg} de dano em você!`
+        );
+      }
     }
 
     // Decrement cooldowns for other skills, and set cooldown for the used skill
@@ -117,26 +185,28 @@ export class BattleSession {
       }
     }
 
-    // Check End Conditions (including DRAW / Empate)
+    // Check End Conditions (including DRAW / Empate estilo NG)
     if (this.player.hp <= 0 && this.enemy.hp <= 0) {
       this.finished = true;
       this.result = "DRAW";
-      this.log.push("Empate fatal! Ambos caíram simultaneamente.");
+      this.log.push("⚖️ [EMPATE] Golpe mútuo fatal! Ambos os combatentes tombaram ao mesmo tempo.");
     } else if (this.enemy.hp <= 0) {
       this.finished = true;
       this.result = "VICTORY";
       this.rewardExp = this.enemy.rank === "D" ? 80 : 40;
-      this.log.push(`Vitória gloriosa! [${this.enemy.rank}] ${this.enemy.name} foi derrotado! (+${this.rewardExp} EXP)`);
+      this.log.push(
+        `🏆 [VITÓRIA] Oponente aniquilado! [${this.enemy.rank}] ${this.enemy.name} foi eliminado (+${this.rewardExp} EXP).`
+      );
     } else if (this.player.hp <= 0) {
       this.finished = true;
       this.result = "DEFEAT";
-      this.log.push(`Você foi derrotado por ${this.enemy.name}!`);
+      this.log.push(`💀 [DERROTA] Você foi sobrepujado por [${this.enemy.rank}] ${this.enemy.name}!`);
     } else {
       this.turn++;
       if (this.turn > this.maxTurns) {
         this.finished = true;
         this.result = "DRAW";
-        this.log.push("Tempo esgotado! Batalha empatada por limite de turnos.");
+        this.log.push("⚖️ [EMPATE] Limite de 20 turnos atingido sem um vencedor claro!");
       }
     }
 
@@ -147,7 +217,7 @@ export class BattleSession {
     if (this.finished) return;
     this.finished = true;
     this.result = "FLED";
-    this.log.push("Você recuou e escapou estrategicamente do confronto.");
+    this.log.push("🏃 [FUGA] Você recuou taticamente e escapou com segurança.");
   }
 
   toSnapshot(): BattleSnapshot {
