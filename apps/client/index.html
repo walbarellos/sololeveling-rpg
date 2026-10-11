@@ -3,18 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#111827" />
-    <title>RPG Web — Vertical Slice</title>
+    <meta name="theme-color" content="#0b1020" />
+    <title>Hunter RPG Web — Fatia Vertical (Grid & Turnos)</title>
   </head>
   <body>
     <div id="app">
       <header>
-        <strong>RPG Web</strong>
-        <span id="connection">Conectando…</span>
-        <span id="status">Clique para mover · Clique no slime para atacar</span>
+        <div class="header-main">
+          <strong>Hunter RPG <span class="badge">Gate E</span></strong>
+          <span id="connection">Conectando…</span>
+          <span id="hunter-info">Rank [E] · HP: 100/100</span>
+        </div>
+        <div class="header-status">
+          <span id="status">Use [W,A,S,D] ou Setas para andar · Clique em inimigo adjacente para atacar</span>
+        </div>
       </header>
       <main id="game"></main>
-      <footer>Protótipo de fundação · Estado autoritativo no servidor · Arte provisória</footer>
+      <footer>
+        <span>Grade 20x12 tiles · Validação autoritativa de passo e cooldown no servidor</span>
+      </footer>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

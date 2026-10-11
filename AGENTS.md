@@ -1,23 +1,24 @@
-# AGENTS.md — RPG Web Foundation
+# AGENTS.md — Hunter RPG Web Foundation (Tiles & Turnos)
 
 ## Mission
-Build a browser-based 2D top-down/isometric-capable shared-world RPG with hybrid persistence:
-- Persistent world state: characters, inventory, guilds, reputation, regional state.
-- Instanced state: combat encounters, dungeons, Gates, and Tower runs.
-- Server authority: the server validates movement, combat, rewards, cooldowns, and persistence.
-- Client presentation: rendering and animation never decide game outcomes.
+Build a browser-based 2D grid/tile-based shared-world Hunter RPG with hybrid persistence and discrete turn-based mechanics:
+- References: Naruto Game (grid exploration, discrete steps, action cooldowns, turn-based combat) and Solo Leveling (Hunter Ranks E–S, Gates, 100-floor Tower, Shadow summons).
+- Persistent world state: characters, inventory, guilds, reputation, regional Gate instability.
+- Instanced state: combat encounters, Gate dungeons, and Tower runs.
+- Server authority: the server validates discrete movement, obstacles, turn-based combat, rewards, cooldowns, and persistence.
+- Client presentation: Phaser handles smooth visual interpolation (tweens) and VFX; rendering never decides game outcomes.
 
 ## Architecture decisions (ADRs)
-1. TypeScript across client, server, and shared contracts.
-2. npm workspaces monorepo; modular monolith first, no premature microservices.
-3. NestJS + Socket.IO for authoritative realtime server; Vite + Phaser for 2D rendering.
-4. PostgreSQL is the intended durable store. The first vertical slice uses in-memory state behind a repository boundary and is explicitly non-persistent across server restarts.
-5. Zod schemas in `packages/contracts` are the runtime validation source of truth for client/server messages.
-6. All gameplay time is injected through a `Clock` abstraction. Avoid direct wall-clock reads in domain rules.
-7. Server simulation tick is independent of client frame rate. Client predicts presentation only; server state is authoritative.
-8. Every reward claim must eventually be idempotent, keyed by a unique operation/idempotency key.
-9. No generated content enters the game without schema validation and balance constraints.
-10. Avoid external asset dependencies in the first vertical slice; placeholder graphics are intentional.
+1. TypeScript across client, server, and shared contracts in an npm workspaces monorepo.
+2. Grid & Tiles: Game world is strictly modeled as integer tile coordinates (`TileCoord { x, y }`). Movement is directional steps (`UP`, `DOWN`, `LEFT`, `RIGHT`) bounded by map limits and obstacle sets.
+3. Anti-Speedhack by Discrete Rate Limit: Anti-cheat does not rely on floating-point velocity integration. Steps are rejected if `now - lastStepAt < STEP_COOLDOWN_MS`.
+4. Turn-Based & Adjacent Combat: Combat actions require Chebyshev adjacency ($\max(|dx|, |dy|) \le 1$). Attacks resolve with deterministic damage, enemy counter-attack retaliation, and action cooldowns.
+5. Lazy World Simulation: Living world mechanics (Gate outbreaks, threat levels, NPC routines) use timestamp-based lazy evaluation (`elapsed = now - lastEvaluatedAt`) upon region access, consuming zero idle server CPU.
+6. Repository Pattern for Persistence: `PlayerRepository` provides a clean boundary. In-memory storage is used for unit tests/scaffolding, while PostgreSQL is the durable production store.
+7. Zod schemas in `packages/contracts` are the runtime validation source of truth for client/server messages.
+8. Injectable `Clock` abstraction in domain logic; no direct wall-clock reads.
+9. Presentation Separation: Client animates smooth tweens between tiles, floating combat text, and screen shake, but cannot assert state changes.
+10. Idempotent Rewards: Every reward claim must be keyed by an idempotency key.
 
 ## Agent task protocol
 Every task must specify:
@@ -45,25 +46,19 @@ Every task must specify:
 - Do not merge a branch with failing checks, unexplained test skips, or generated files accidentally committed.
 
 ## Coding rules
-- Strict TypeScript; avoid `any`. If unavoidable, explain why and narrow immediately.
-- Validate all network input at runtime. TypeScript types do not validate untrusted JSON.
-- Use stable IDs; never trust client-supplied player identity, damage, position, item ownership, or rewards.
+- Strict TypeScript; avoid `any`.
+- Validate all network input at runtime using Zod schemas.
+- Use stable IDs; never trust client-supplied player identity, damage, position, or rewards.
 - Keep pure domain logic free of NestJS, Phaser, database, and transport imports.
 - Keep event names and payloads in `packages/contracts`; no ad-hoc event strings.
-- Errors are structured and do not leak secrets or stack traces to clients.
+- Errors are structured with explicit codes (`"OUT_OF_BOUNDS"`, `"OBSTACLE"`, `"TOO_FAST"`, `"TARGET_UNAVAILABLE"`, `"TOO_FAR"`, `"COOLDOWN"`).
 - Use UTC timestamps in ISO-8601 when timestamps are needed; prefer server sequence numbers for ordering.
-- Avoid per-frame network messages. Send input intent and state/events at bounded rates.
-- Effects are cosmetic. A visual hit effect must not apply damage or grant rewards.
 - Respect reduced-motion preference and provide scalable effects quality.
 - No credentials, `.env` files, user data, or production secrets in commits.
 
 ## Gameplay and security invariants
-- Movement is server-validated against speed and elapsed simulation time.
-- Combat range, cooldown, alive state, and target validity are checked on the server.
-- Reward application must be atomic and idempotent when persistence is introduced.
+- Step movement is server-validated against grid bounds, obstacles, and cooldown.
+- Combat range (adjacency), cooldown, alive state, and target validity are checked on the server.
+- Reward application must be atomic and idempotent.
 - Client may request an action, never assert its result.
 - Disconnects must not erase persistent character state.
-- PvP requires explicit server-side rules for safe zones, consent/flags, level differences, and combat logging before public release.
-
-## Definition of done
-A change is done only when contracts, implementation, tests, documentation, and observability are updated together. The first slice is a scaffold, not a production-ready MMO.

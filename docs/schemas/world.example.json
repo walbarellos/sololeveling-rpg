@@ -1,22 +1,33 @@
 {
   "players": [
     {
-      "id": "socket-demo-id",
-      "name": "Adventurer-a1b2",
-      "position": { "x": 160, "y": 180 },
-      "hp": 100,
+      "id": "hunter-demo-id",
+      "name": "Hunter-a1b2",
+      "rank": "E",
+      "level": 1,
+      "position": { "x": 2, "y": 2 },
+      "hp": 90,
       "maxHp": 100,
+      "stamina": 50,
+      "maxStamina": 50,
       "sequence": 12
     }
   ],
   "enemies": [
     {
       "id": "slime-1",
-      "position": { "x": 470, "y": 290 },
-      "hp": 75,
-      "maxHp": 100,
+      "name": "Dungeon Slime",
+      "rank": "E",
+      "position": { "x": 7, "y": 4 },
+      "hp": 30,
+      "maxHp": 60,
       "alive": true
     }
+  ],
+  "obstacles": [
+    { "x": 5, "y": 3 },
+    { "x": 5, "y": 4 },
+    { "x": 5, "y": 5 }
   ],
   "serverTime": 1760000000000
 }

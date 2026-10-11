@@ -1,24 +1,21 @@
 # Architecture overview
 
 ## Runtime boundaries
-- Client: input intent, interpolation, rendering, effects, UI and audio.
-- Server: identity binding, input validation, authoritative movement/combat, world snapshots.
-- Contracts: runtime schemas and event names shared by both sides.
-- Domain: transport-independent gameplay rules.
-- Persistence (next increment): PostgreSQL repository interfaces and migrations.
+- **Client (Phaser + Vite)**: Input intent (WASD, setas, clique no grid), interpolação suave de apresentação (tweens de 160ms entre tiles), renderização de masmorra, feedback de dano flutuante e UI do caçador.
+- **Server (NestJS + Socket.IO)**: Validação autoritativa de passo por direção (`UP`, `DOWN`, `LEFT`, `RIGHT`), anti-speedhack por taxa de passo discreta (`STEP_COOLDOWN_MS`), colisão com obstáculos e limites de mapa, combate adjacente por turnos com dano e contra-ataque.
+- **Contracts (Zod + TypeScript)**: Schemas runtime tipados para coordenadas inteiras de tiles, ranks de caçadores (E–S), eventos de passo e combate.
+- **Domain**: Regras puras desacopladas de transporte e frameworks, com relógio injetável (`Clock`).
+- **Persistence**: Interface `PlayerRepository` com implementação em memória para testes e schema relacional pronto para PostgreSQL (`docs/schemas/schema.sql`).
 
-## First vertical slice
-1. Socket connects; server assigns a temporary socket identity.
-2. Server emits `game:welcome` with world dimensions.
-3. Client requests/receives a validated snapshot.
-4. Click requests movement; server bounds-checks and caps movement distance.
-5. Click a slime requests attack; server validates target, range and cooldown.
-6. Server emits combat log and updated world snapshot.
+## Primeira fatia vertical (Tiles & Turnos)
+1. Conexão via Socket: servidor vincula identidade do caçador (`Hunter-XXXX`, Rank E, Nv. 1).
+2. Servidor emite `game:welcome` com dimensões da grade (20x12 tiles de 48px) e lista de obstáculos.
+3. Cliente requisita e recebe `game:snapshot`.
+4. Movimentação: cliente envia `game:step` com direção; servidor valida limites, obstáculos e cooldown de passo; cliente faz interpolação visual contínua.
+5. Combate: caçador adjacente ao monstro ataca (`game:attack`); servidor valida distância de Chebyshev $\le 1$ e cooldown; causa dano ao alvo e processa contra-ataque de retaliação.
+6. Servidor emite `game:combat-log` e snapshot sincronizado do mundo.
 
-## Event envelope evolution
-The current slice uses small direct payloads for simplicity. Before adding public multiplayer features, migrate to a versioned envelope:
-`{ schemaVersion: 1, eventId, sequence, occurredAt, payload }`.
-Use sequence numbers for ordering; timestamps are observability metadata, not a trusted source of game logic.
-
-## Production blockers
-Authentication, durable persistence, database transactions, collision map, fixed tick, rate limiting, anti-cheat telemetry, instance lifecycle, reconnect semantics, load tests, backups, moderation/reporting, and PvP policy.
+## Mundo Vivo por Lazy Evaluation (Simulação Barata)
+Em vez de simular o mundo todo a cada tick, regiões e Gates acumulam instabilidade com base no delta de tempo decorrido desde a última avaliação:
+`elapsed = now - lastEvaluatedAt`.
+Quando um caçador entra na região ou acessa um Gate, o estado é atualizado sob demanda no banco.
