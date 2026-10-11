@@ -1,4 +1,12 @@
-import type { HunterClass, HunterRank, MissionRun, TileCoord } from "@rpg/contracts";
+import {
+  DEFAULT_PLAYER_ATTRIBUTES,
+  STARTING_STAT_POINTS,
+  type HunterClass,
+  type HunterRank,
+  type MissionRun,
+  type PlayerAttributes,
+  type TileCoord
+} from "@rpg/contracts";
 
 export interface PlayerEntity {
   id: string;
@@ -15,6 +23,8 @@ export interface PlayerEntity {
   maxMp: number;
   stamina: number;
   maxStamina: number;
+  attributes: PlayerAttributes;
+  unallocatedStatPoints: number;
   inBattle: boolean;
   activeBattleId?: string;
   sequence: number;
@@ -42,6 +52,8 @@ export class InMemoryPlayerRepository implements PlayerRepository {
       ? {
           ...found,
           position: { ...found.position },
+          attributes: found.attributes ? { ...found.attributes } : { ...DEFAULT_PLAYER_ATTRIBUTES },
+          unallocatedStatPoints: found.unallocatedStatPoints ?? STARTING_STAT_POINTS,
           activeMission: found.activeMission ? { ...found.activeMission } : undefined
         }
       : null;
@@ -51,6 +63,8 @@ export class InMemoryPlayerRepository implements PlayerRepository {
     this.store.set(player.id, {
       ...player,
       position: { ...player.position },
+      attributes: player.attributes ? { ...player.attributes } : { ...DEFAULT_PLAYER_ATTRIBUTES },
+      unallocatedStatPoints: player.unallocatedStatPoints ?? 0,
       activeMission: player.activeMission ? { ...player.activeMission } : undefined
     });
   }
@@ -63,6 +77,8 @@ export class InMemoryPlayerRepository implements PlayerRepository {
     return Array.from(this.store.values()).map((p) => ({
       ...p,
       position: { ...p.position },
+      attributes: p.attributes ? { ...p.attributes } : { ...DEFAULT_PLAYER_ATTRIBUTES },
+      unallocatedStatPoints: p.unallocatedStatPoints ?? 0,
       activeMission: p.activeMission ? { ...p.activeMission } : undefined
     }));
   }

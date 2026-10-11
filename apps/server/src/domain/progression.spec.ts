@@ -176,6 +176,8 @@ describe("escala por nível", () => {
     maxMp: 1000,
     stamina: 50,
     maxStamina: 50,
+    attributes: { str: 10, agi: 10, vit: 10, int: 10 },
+    unallocatedStatPoints: 0,
     inBattle: false,
     sequence: 0,
     lastStepAt: 0,

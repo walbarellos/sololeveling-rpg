@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { BattleRewardsSchema, HunterRankSchema } from "./base";
+import {
+  BattleRewardsSchema,
+  HunterRankSchema,
+  PlayerAttributesSchema,
+  DEFAULT_PLAYER_ATTRIBUTES
+} from "./base";
 export * from "./base";
 
 export const TileCoordSchema = z.object({
@@ -45,6 +50,8 @@ export const PlayerSnapshotSchema = z.object({
   stamina: z.number().int().nonnegative(),
   maxStamina: z.number().int().positive(),
   stats: PlayerStatsSchema,
+  attributes: PlayerAttributesSchema.default(DEFAULT_PLAYER_ATTRIBUTES),
+  unallocatedStatPoints: z.number().int().nonnegative().default(0),
   inBattle: z.boolean(),
   activeBattleId: z.string().optional(),
   sequence: z.number().int().nonnegative()
@@ -87,6 +94,18 @@ export const StartBattleRequestSchema = z.object({
   targetEnemyId: z.string().min(1).max(100)
 });
 export type StartBattleRequest = z.infer<typeof StartBattleRequestSchema>;
+
+export const AllocateStatsRequestSchema = z
+  .object({
+    str: z.number().int().min(0).default(0),
+    agi: z.number().int().min(0).default(0),
+    vit: z.number().int().min(0).default(0),
+    int: z.number().int().min(0).default(0)
+  })
+  .refine((d) => d.str + d.agi + d.vit + d.int > 0, {
+    message: "Ao menos um ponto deve ser distribuído."
+  });
+export type AllocateStatsRequest = z.infer<typeof AllocateStatsRequestSchema>;
 
 export const SkillSchema = z.object({
   id: z.string().min(1),
@@ -182,7 +201,9 @@ export const ServerErrorCodeSchema = z.enum([
   "MISSION_ALREADY_ACTIVE",
   "NO_ACTIVE_MISSION",
   "MISSION_IN_PROGRESS",
-  "MISSION_ALREADY_CLAIMED"
+  "MISSION_ALREADY_CLAIMED",
+  "INSUFFICIENT_STAT_POINTS",
+  "CANNOT_ALLOCATE_IN_BATTLE"
 ]);
 export type ServerErrorCode = z.infer<typeof ServerErrorCodeSchema>;
 
@@ -204,7 +225,8 @@ export const ClientEvents = {
   StartMissionRequest: "game:mission:start",
   ClaimMissionRequest: "game:mission:claim",
   CancelMissionRequest: "game:mission:cancel",
-  MissionsRequest: "game:mission:list"
+  MissionsRequest: "game:mission:list",
+  AllocateStatsRequest: "game:stats:allocate"
 } as const;
 
 export const ServerEvents = {

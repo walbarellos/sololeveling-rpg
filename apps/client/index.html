@@ -113,6 +113,7 @@
             <button id="menu-status" class="sidebar-nav-btn" type="button">
               <span class="nav-btn-indicator">›</span>
               <span class="nav-btn-text">STATUS & PERFIL</span>
+              <span id="sidebar-stat-points-badge" class="nav-badge stat-badge hidden">0 PTS</span>
             </button>
             <button id="menu-missions" class="sidebar-nav-btn" type="button">
               <span class="nav-btn-indicator">›</span>
@@ -438,6 +439,96 @@
                 </div>
               </div>
 
+              <!-- SEÇÃO DE DISTRIBUIÇÃO DE ATRIBUTOS (SOLO LEVELING / RPG CLÁSSICO) -->
+              <div class="profile-section stat-distribution-section">
+                <div class="profile-section-heading stat-distrib-heading">
+                  <span class="heading-title">DISTRIBUIÇÃO DE ATRIBUTOS</span>
+                  <div class="unallocated-badge-plate">
+                    <span class="unallocated-label">PONTOS DISPONÍVEIS:</span>
+                    <span id="profile-unallocated-pts" class="unallocated-val">0</span>
+                  </div>
+                </div>
+
+                <div class="stat-distrib-list">
+                  <!-- FORÇA -->
+                  <div class="stat-distrib-row" data-stat="str">
+                    <div class="stat-distrib-info">
+                      <div class="stat-distrib-name-row">
+                        <span class="stat-name-label">FORÇA (FOR)</span>
+                        <span class="stat-impact-tag">+2 ATK Físico / pt</span>
+                      </div>
+                      <span class="stat-distrib-desc">Amplifica o poder de corte e golpes físicos</span>
+                    </div>
+                    <div class="stat-distrib-ctrls">
+                      <span id="stat-val-str" class="stat-curr-val">10</span>
+                      <span id="stat-pending-str" class="stat-pending-val">+0</span>
+                      <button id="btn-dec-str" class="btn-stat-adj" type="button" disabled aria-label="Reduzir Força">-</button>
+                      <button id="btn-inc-str" class="btn-stat-adj" type="button" aria-label="Aumentar Força">+</button>
+                    </div>
+                  </div>
+
+                  <!-- AGILIDADE -->
+                  <div class="stat-distrib-row" data-stat="agi">
+                    <div class="stat-distrib-info">
+                      <div class="stat-distrib-name-row">
+                        <span class="stat-name-label">AGILIDADE (AGI)</span>
+                        <span class="stat-impact-tag">+0.5% Crit · +0.4% Esq / pt</span>
+                      </div>
+                      <span class="stat-distrib-desc">Aumenta velocidade de reação, chance crítica e esquiva</span>
+                    </div>
+                    <div class="stat-distrib-ctrls">
+                      <span id="stat-val-agi" class="stat-curr-val">10</span>
+                      <span id="stat-pending-agi" class="stat-pending-val">+0</span>
+                      <button id="btn-dec-agi" class="btn-stat-adj" type="button" disabled aria-label="Reduzir Agilidade">-</button>
+                      <button id="btn-inc-agi" class="btn-stat-adj" type="button" aria-label="Aumentar Agilidade">+</button>
+                    </div>
+                  </div>
+
+                  <!-- VITALIDADE -->
+                  <div class="stat-distrib-row" data-stat="vit">
+                    <div class="stat-distrib-info">
+                      <div class="stat-distrib-name-row">
+                        <span class="stat-name-label">VITALIDADE (VIT)</span>
+                        <span class="stat-impact-tag">+10 HP Máx · +0.3% Bloq / pt</span>
+                      </div>
+                      <span class="stat-distrib-desc">Fortalece a constituição física, HP e firmeza de bloqueio</span>
+                    </div>
+                    <div class="stat-distrib-ctrls">
+                      <span id="stat-val-vit" class="stat-curr-val">10</span>
+                      <span id="stat-pending-vit" class="stat-pending-val">+0</span>
+                      <button id="btn-dec-vit" class="btn-stat-adj" type="button" disabled aria-label="Reduzir Vitalidade">-</button>
+                      <button id="btn-inc-vit" class="btn-stat-adj" type="button" aria-label="Aumentar Vitalidade">+</button>
+                    </div>
+                  </div>
+
+                  <!-- INTELIGÊNCIA -->
+                  <div class="stat-distrib-row" data-stat="int">
+                    <div class="stat-distrib-info">
+                      <div class="stat-distrib-name-row">
+                        <span class="stat-name-label">INTELIGÊNCIA (INT)</span>
+                        <span class="stat-impact-tag">+8 MP Máx · +2.5 ATK Mágico / pt</span>
+                      </div>
+                      <span class="stat-distrib-desc">Potencializa mana dimensional, feitiços e artes sagradas</span>
+                    </div>
+                    <div class="stat-distrib-ctrls">
+                      <span id="stat-val-int" class="stat-curr-val">10</span>
+                      <span id="stat-pending-int" class="stat-pending-val">+0</span>
+                      <button id="btn-dec-int" class="btn-stat-adj" type="button" disabled aria-label="Reduzir Inteligência">-</button>
+                      <button id="btn-inc-int" class="btn-stat-adj" type="button" aria-label="Aumentar Inteligência">+</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="stat-distrib-actions">
+                  <button id="btn-reset-stats" class="btn-stat-reset" type="button" disabled>
+                    REDEFINIR
+                  </button>
+                  <button id="btn-confirm-stats" class="btn-stat-confirm" type="button" disabled>
+                    CONFIRMAR DISTRIBUIÇÃO
+                  </button>
+                </div>
+              </div>
+
               <div class="profile-section">
                 <div class="profile-section-heading">PARÂMETROS DE COMBATE AUTORITATIVOS</div>
                 <div class="profile-stats-grid">
@@ -554,6 +645,10 @@
                 <div class="tip-row">
                   <span class="tip-name">Gestão de Mana:</span>
                   <span class="tip-desc">O ataque básico tem custo zero de MP. Guarde seu MP para magias de dano concentrado ou curas em momentos críticos.</span>
+                </div>
+                <div class="tip-row">
+                  <span class="tip-name">Distribuição de Pontos (Status):</span>
+                  <span class="tip-desc">Você inicia com 5 pontos livres no Nível 1 e recebe +3 pontos a cada novo nível. Acesse STATUS & PERFIL para alocar pontos em FOR (+2 ATK Físico), AGI (+0.5% Crítico, +0.4% Esquiva), VIT (+10 HP Máx, +0.3% Bloqueio) ou INT (+8 MP Máx, +2.5 ATK Mágico).</span>
                 </div>
               </div>
             </article>

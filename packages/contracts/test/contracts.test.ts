@@ -22,7 +22,12 @@ import {
   StepRequestSchema,
   TileCoordSchema,
   WelcomeSchema,
-  WorldSnapshotSchema
+  WorldSnapshotSchema,
+  AllocateStatsRequestSchema,
+  PlayerAttributesSchema,
+  DEFAULT_PLAYER_ATTRIBUTES,
+  STARTING_STAT_POINTS,
+  STAT_POINTS_PER_LEVEL
 } from "../src/index";
 
 describe("network contracts (tile & turn-based)", () => {
@@ -265,4 +270,32 @@ describe("missões estilo Naruto Game (contratos)", () => {
       }).success
     ).toBe(true);
   });
+
+  describe("atributos primários e distribuição de pontos (Solo Leveling)", () => {
+    it("valida esquema de atributos primários padrão e restrições mínimas", () => {
+      expect(PlayerAttributesSchema.safeParse(DEFAULT_PLAYER_ATTRIBUTES).success).toBe(true);
+      expect(DEFAULT_PLAYER_ATTRIBUTES).toEqual({ str: 10, agi: 10, vit: 10, int: 10 });
+      expect(STARTING_STAT_POINTS).toBe(5);
+      expect(STAT_POINTS_PER_LEVEL).toBe(3);
+
+      // Atributos não podem ser menores que 10
+      expect(PlayerAttributesSchema.safeParse({ str: 9, agi: 10, vit: 10, int: 10 }).success).toBe(false);
+      // Atributos válidos maiores que 10
+      expect(PlayerAttributesSchema.safeParse({ str: 15, agi: 12, vit: 20, int: 10 }).success).toBe(true);
+    });
+
+    it("valida requisição de alocação de atributos", () => {
+      // Válido: alocando 1 ou mais pontos
+      expect(AllocateStatsRequestSchema.safeParse({ str: 2, agi: 1 }).success).toBe(true);
+      expect(AllocateStatsRequestSchema.safeParse({ vit: 5 }).success).toBe(true);
+
+      // Inválido: zero pontos no total
+      expect(AllocateStatsRequestSchema.safeParse({ str: 0, agi: 0, vit: 0, int: 0 }).success).toBe(false);
+      expect(AllocateStatsRequestSchema.safeParse({}).success).toBe(false);
+
+      // Inválido: valores negativos
+      expect(AllocateStatsRequestSchema.safeParse({ str: -1, agi: 2 }).success).toBe(false);
+    });
+  });
 });
+

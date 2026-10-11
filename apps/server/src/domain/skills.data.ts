@@ -1,4 +1,10 @@
-import { statMult, type HunterClass, type PlayerStats, type Skill } from "@rpg/contracts";
+import {
+  statMult,
+  type HunterClass,
+  type PlayerAttributes,
+  type PlayerStats,
+  type Skill
+} from "@rpg/contracts";
 
 export interface SkillDefinition extends Skill {
   baseDamage: number;
@@ -201,14 +207,38 @@ export const CLASS_STATS: Record<HunterClass, ClassConfig> = {
   }
 };
 
-export function calculatePlayerStats(hunterClass: HunterClass, level: number): PlayerStats {
+export function calculatePlayerStats(
+  hunterClass: HunterClass,
+  level: number,
+  attributes?: PlayerAttributes
+): PlayerStats {
   const config = CLASS_STATS[hunterClass] ?? CLASS_STATS.WARRIOR;
   const mult = statMult(level);
+
+  const bonusStr = attributes ? Math.max(0, attributes.str - 10) : 0;
+  const bonusAgi = attributes ? Math.max(0, attributes.agi - 10) : 0;
+  const bonusVit = attributes ? Math.max(0, attributes.vit - 10) : 0;
+  const bonusInt = attributes ? Math.max(0, attributes.int - 10) : 0;
+
   return {
-    physicalAtk: Math.round(config.basePhysicalAtk * mult),
-    magicalAtk: Math.round(config.baseMagicalAtk * mult),
-    critChance: config.critChance,
-    dodgeChance: config.dodgeChance,
-    blockChance: config.blockChance
+    physicalAtk: Math.round(config.basePhysicalAtk * mult + bonusStr * 2),
+    magicalAtk: Math.round(config.baseMagicalAtk * mult + bonusInt * 2.5),
+    critChance: Math.min(0.75, Number((config.critChance + bonusAgi * 0.005).toFixed(4))),
+    dodgeChance: Math.min(0.50, Number((config.dodgeChance + bonusAgi * 0.004).toFixed(4))),
+    blockChance: Math.min(0.60, Number((config.blockChance + bonusVit * 0.003).toFixed(4)))
   };
+}
+
+export function calculatePlayerMaxHp(hunterClass: HunterClass, level: number, vit = 10): number {
+  const config = CLASS_STATS[hunterClass] ?? CLASS_STATS.WARRIOR;
+  const mult = statMult(level);
+  const bonusVit = Math.max(0, vit - 10);
+  return Math.floor(config.baseHp * mult + bonusVit * 10);
+}
+
+export function calculatePlayerMaxMp(hunterClass: HunterClass, level: number, int = 10): number {
+  const config = CLASS_STATS[hunterClass] ?? CLASS_STATS.WARRIOR;
+  const mult = statMult(level);
+  const bonusInt = Math.max(0, int - 10);
+  return Math.floor(config.baseMp * mult + bonusInt * 8);
 }

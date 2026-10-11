@@ -68,7 +68,11 @@ export class BattleSession {
       mp: playerEntity.mp,
       maxMp: playerEntity.maxMp,
       skills: skillsCopy,
-      stats: calculatePlayerStats(playerEntity.hunterClass, playerEntity.level)
+      stats: calculatePlayerStats(
+        playerEntity.hunterClass,
+        playerEntity.level,
+        playerEntity.attributes
+      )
     };
 
     this.enemy = {

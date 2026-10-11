@@ -15,3 +15,21 @@ export const BattleRewardsSchema = z.object({
   levelCap: z.number().int().positive()
 });
 export type BattleRewards = z.infer<typeof BattleRewardsSchema>;
+
+export const PlayerAttributesSchema = z.object({
+  str: z.number().int().min(10),
+  agi: z.number().int().min(10),
+  vit: z.number().int().min(10),
+  int: z.number().int().min(10)
+});
+export type PlayerAttributes = z.infer<typeof PlayerAttributesSchema>;
+
+export const DEFAULT_PLAYER_ATTRIBUTES: PlayerAttributes = {
+  str: 10,
+  agi: 10,
+  vit: 10,
+  int: 10
+};
+
+export const STARTING_STAT_POINTS = 5;
+export const STAT_POINTS_PER_LEVEL = 3;

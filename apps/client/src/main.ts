@@ -188,6 +188,32 @@ const profileMaxHp = document.querySelector<HTMLSpanElement>("#profile-max-hp");
 const profileMaxMp = document.querySelector<HTMLSpanElement>("#profile-max-mp");
 const profileMult = document.querySelector<HTMLSpanElement>("#profile-mult");
 
+// Stat Distribution Elements
+const sidebarStatPointsBadge = document.querySelector<HTMLSpanElement>("#sidebar-stat-points-badge");
+const profileUnallocatedPts = document.querySelector<HTMLSpanElement>("#profile-unallocated-pts");
+const statValStr = document.querySelector<HTMLSpanElement>("#stat-val-str");
+const statPendingStr = document.querySelector<HTMLSpanElement>("#stat-pending-str");
+const btnDecStr = document.querySelector<HTMLButtonElement>("#btn-dec-str");
+const btnIncStr = document.querySelector<HTMLButtonElement>("#btn-inc-str");
+
+const statValAgi = document.querySelector<HTMLSpanElement>("#stat-val-agi");
+const statPendingAgi = document.querySelector<HTMLSpanElement>("#stat-pending-agi");
+const btnDecAgi = document.querySelector<HTMLButtonElement>("#btn-dec-agi");
+const btnIncAgi = document.querySelector<HTMLButtonElement>("#btn-inc-agi");
+
+const statValVit = document.querySelector<HTMLSpanElement>("#stat-val-vit");
+const statPendingVit = document.querySelector<HTMLSpanElement>("#stat-pending-vit");
+const btnDecVit = document.querySelector<HTMLButtonElement>("#btn-dec-vit");
+const btnIncVit = document.querySelector<HTMLButtonElement>("#btn-inc-vit");
+
+const statValInt = document.querySelector<HTMLSpanElement>("#stat-val-int");
+const statPendingInt = document.querySelector<HTMLSpanElement>("#stat-pending-int");
+const btnDecInt = document.querySelector<HTMLButtonElement>("#btn-dec-int");
+const btnIncInt = document.querySelector<HTMLButtonElement>("#btn-inc-int");
+
+const btnResetStats = document.querySelector<HTMLButtonElement>("#btn-reset-stats");
+const btnConfirmStats = document.querySelector<HTMLButtonElement>("#btn-confirm-stats");
+
 // Academy Modal Elements
 const academyModal = document.querySelector<HTMLDivElement>("#academy-modal");
 const btnAcademyClose = document.querySelector<HTMLButtonElement>("#btn-academy-close");
@@ -386,6 +412,151 @@ const CLASS_TITLES: Record<HunterClass, string> = {
   MAGE: "Mago Dimensional (Mágico/Arcano)"
 };
 
+let pendingStats = { str: 0, agi: 0, vit: 0, int: 0 };
+
+function getRemainingPoints(): number {
+  const totalPending = pendingStats.str + pendingStats.agi + pendingStats.vit + pendingStats.int;
+  return Math.max(0, (lastMe?.unallocatedStatPoints ?? 0) - totalPending);
+}
+
+function updateStatDistributionUI() {
+  const me = lastMe;
+  if (!me) return;
+
+  const attrs = me.attributes ?? { str: 10, agi: 10, vit: 10, int: 10 };
+  const remaining = getRemainingPoints();
+  const totalPending = pendingStats.str + pendingStats.agi + pendingStats.vit + pendingStats.int;
+
+  if (profileUnallocatedPts) {
+    profileUnallocatedPts.textContent = `${remaining}`;
+    profileUnallocatedPts.classList.toggle("has-points", remaining > 0);
+  }
+
+  // Atualiza linhas dos 4 atributos
+  const statsKeys = ["str", "agi", "vit", "int"] as const;
+  const valEls = { str: statValStr, agi: statValAgi, vit: statValVit, int: statValInt };
+  const pendingEls = { str: statPendingStr, agi: statPendingAgi, vit: statPendingVit, int: statPendingInt };
+  const decBtns = { str: btnDecStr, agi: btnDecAgi, vit: btnDecVit, int: btnDecInt };
+  const incBtns = { str: btnIncStr, agi: btnIncAgi, vit: btnIncVit, int: btnIncInt };
+
+  for (const k of statsKeys) {
+    const currentVal = attrs[k];
+    const pendingVal = pendingStats[k];
+    if (valEls[k]) valEls[k]!.textContent = `${currentVal}`;
+    if (pendingEls[k]) {
+      pendingEls[k]!.textContent = `+${pendingVal}`;
+      pendingEls[k]!.classList.toggle("has-pending", pendingVal > 0);
+    }
+    if (decBtns[k]) decBtns[k]!.disabled = pendingVal <= 0;
+    if (incBtns[k]) incBtns[k]!.disabled = remaining <= 0;
+  }
+
+  if (btnResetStats) btnResetStats.disabled = totalPending <= 0;
+  if (btnConfirmStats) btnConfirmStats.disabled = totalPending <= 0;
+
+  // Pré-visualização de atributos derivados em PARÂMETROS DE COMBATE
+  if (me.stats) {
+    const bonusStr = pendingStats.str * 2;
+    const bonusInt = pendingStats.int * 2.5;
+    const bonusAgiCrit = pendingStats.agi * 0.005;
+    const bonusAgiDodge = pendingStats.agi * 0.004;
+    const bonusVitHp = pendingStats.vit * 10;
+    const bonusVitBlock = pendingStats.vit * 0.003;
+    const bonusIntMp = pendingStats.int * 8;
+
+    const previewAtkPhys = me.stats.physicalAtk + bonusStr;
+    const previewAtkMag = Math.round(me.stats.magicalAtk + bonusInt);
+    const previewCrit = Math.min(0.75, me.stats.critChance + bonusAgiCrit);
+    const previewDodge = Math.min(0.50, me.stats.dodgeChance + bonusAgiDodge);
+    const previewBlock = Math.min(0.60, me.stats.blockChance + bonusVitBlock);
+    const previewHp = me.maxHp + bonusVitHp;
+    const previewMp = me.maxMp + bonusIntMp;
+
+    if (profileAtkPhys) {
+      profileAtkPhys.textContent = totalPending > 0 && bonusStr > 0
+        ? `${previewAtkPhys} (+${bonusStr})`
+        : `${me.stats.physicalAtk}`;
+      profileAtkPhys.classList.toggle("stat-preview-up", bonusStr > 0);
+    }
+    if (profileAtkMag) {
+      profileAtkMag.textContent = totalPending > 0 && bonusInt > 0
+        ? `${previewAtkMag} (+${Math.round(bonusInt)})`
+        : `${me.stats.magicalAtk}`;
+      profileAtkMag.classList.toggle("stat-preview-up", bonusInt > 0);
+    }
+    if (profileCrit) {
+      profileCrit.textContent = totalPending > 0 && bonusAgiCrit > 0
+        ? `${Math.round(previewCrit * 100)}% (+${(bonusAgiCrit * 100).toFixed(1)}%)`
+        : `${Math.round(me.stats.critChance * 100)}%`;
+      profileCrit.classList.toggle("stat-preview-up", bonusAgiCrit > 0);
+    }
+    if (profileDodge) {
+      profileDodge.textContent = totalPending > 0 && bonusAgiDodge > 0
+        ? `${Math.round(previewDodge * 100)}% (+${(bonusAgiDodge * 100).toFixed(1)}%)`
+        : `${Math.round(me.stats.dodgeChance * 100)}%`;
+      profileDodge.classList.toggle("stat-preview-up", bonusAgiDodge > 0);
+    }
+    if (profileBlock) {
+      profileBlock.textContent = totalPending > 0 && bonusVitBlock > 0
+        ? `${Math.round(previewBlock * 100)}% (+${(bonusVitBlock * 100).toFixed(1)}%)`
+        : `${Math.round(me.stats.blockChance * 100)}%`;
+      profileBlock.classList.toggle("stat-preview-up", bonusVitBlock > 0);
+    }
+    if (profileMaxHp) {
+      profileMaxHp.textContent = totalPending > 0 && bonusVitHp > 0
+        ? `${previewHp} HP (+${bonusVitHp})`
+        : `${me.maxHp} HP`;
+      profileMaxHp.classList.toggle("stat-preview-up", bonusVitHp > 0);
+    }
+    if (profileMaxMp) {
+      profileMaxMp.textContent = totalPending > 0 && bonusIntMp > 0
+        ? `${previewMp} MP (+${bonusIntMp})`
+        : `${me.maxMp} MP`;
+      profileMaxMp.classList.toggle("stat-preview-up", bonusIntMp > 0);
+    }
+  }
+}
+
+function adjustStat(stat: "str" | "agi" | "vit" | "int", delta: number) {
+  if (delta > 0) {
+    if (getRemainingPoints() > 0) {
+      pendingStats[stat]++;
+    }
+  } else if (delta < 0) {
+    if (pendingStats[stat] > 0) {
+      pendingStats[stat]--;
+    }
+  }
+  updateStatDistributionUI();
+}
+
+btnIncStr?.addEventListener("click", () => adjustStat("str", 1));
+btnDecStr?.addEventListener("click", () => adjustStat("str", -1));
+btnIncAgi?.addEventListener("click", () => adjustStat("agi", 1));
+btnDecAgi?.addEventListener("click", () => adjustStat("agi", -1));
+btnIncVit?.addEventListener("click", () => adjustStat("vit", 1));
+btnDecVit?.addEventListener("click", () => adjustStat("vit", -1));
+btnIncInt?.addEventListener("click", () => adjustStat("int", 1));
+btnDecInt?.addEventListener("click", () => adjustStat("int", -1));
+
+btnResetStats?.addEventListener("click", () => {
+  pendingStats = { str: 0, agi: 0, vit: 0, int: 0 };
+  updateStatDistributionUI();
+});
+
+btnConfirmStats?.addEventListener("click", () => {
+  const total = pendingStats.str + pendingStats.agi + pendingStats.vit + pendingStats.int;
+  if (total <= 0) return;
+  socket.emit(ClientEvents.AllocateStatsRequest, {
+    str: pendingStats.str,
+    agi: pendingStats.agi,
+    vit: pendingStats.vit,
+    int: pendingStats.int
+  });
+  pendingStats = { str: 0, agi: 0, vit: 0, int: 0 };
+  updateStatDistributionUI();
+});
+
 function updateProfileModal() {
   const me = lastMe;
   if (!me) return;
@@ -398,16 +569,9 @@ function updateProfileModal() {
   }
   if (profileLevelVal) profileLevelVal.textContent = `Lv ${me.level}`;
   if (profileExpVal) profileExpVal.textContent = `${me.exp} / ${me.expToNext} (Cap: Lv ${me.levelCap})`;
-  if (me.stats) {
-    if (profileAtkPhys) profileAtkPhys.textContent = `${me.stats.physicalAtk}`;
-    if (profileAtkMag) profileAtkMag.textContent = `${me.stats.magicalAtk}`;
-    if (profileCrit) profileCrit.textContent = `${Math.round(me.stats.critChance * 100)}%`;
-    if (profileDodge) profileDodge.textContent = `${Math.round(me.stats.dodgeChance * 100)}%`;
-    if (profileBlock) profileBlock.textContent = `${Math.round(me.stats.blockChance * 100)}%`;
-    if (profileMaxHp) profileMaxHp.textContent = `${me.maxHp} HP`;
-    if (profileMaxMp) profileMaxMp.textContent = `${me.maxMp} MP`;
-    if (profileMult) profileMult.textContent = `${(1 + 0.09 * (me.level - 1)).toFixed(2)}x`;
-  }
+  if (profileMult) profileMult.textContent = `${(1 + 0.09 * (me.level - 1)).toFixed(2)}x`;
+
+  updateStatDistributionUI();
 }
 
 function applyHud(me: PlayerSnapshot) {
@@ -445,6 +609,17 @@ function applyHud(me: PlayerSnapshot) {
   if (sidebarMpBar) sidebarMpBar.style.width = `${Math.max(0, (100 * me.mp) / me.maxMp)}%`;
   if (sidebarExpFill) sidebarExpFill.style.width = `${Math.min(100, (100 * me.exp) / me.expToNext)}%`;
   if (sidebarExpText) sidebarExpText.textContent = `${me.exp} / ${me.expToNext} EXP`;
+
+  // Badge de pontos não alocados no menu lateral
+  const unallocated = me.unallocatedStatPoints ?? 0;
+  if (sidebarStatPointsBadge) {
+    if (unallocated > 0) {
+      sidebarStatPointsBadge.textContent = `${unallocated} PTS`;
+      sidebarStatPointsBadge.classList.remove("hidden");
+    } else {
+      sidebarStatPointsBadge.classList.add("hidden");
+    }
+  }
 
   updateProfileModal();
 

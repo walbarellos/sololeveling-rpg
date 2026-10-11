@@ -9,6 +9,7 @@ import {
 } from "@nestjs/websockets";
 import type { Server, Socket } from "socket.io";
 import {
+  AllocateStatsRequestSchema,
   AttackRequestSchema,
   BattleActionRequestSchema,
   BattleFleeRequestSchema,
@@ -257,6 +258,28 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return this.sendError(client, "NO_ACTIVE_MISSION", "Nenhuma missão ativa para cancelar.");
     }
     client.emit(ServerEvents.MissionsState, result.state);
+  }
+
+  @SubscribeMessage(ClientEvents.AllocateStatsRequest)
+  handleAllocateStats(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = AllocateStatsRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Distribuição de atributos inválida.");
+    }
+    const result = this.game.allocateStats(this.pid(client), parsed.data);
+    if (!result.success) {
+      const messages: Record<string, string> = {
+        INSUFFICIENT_STAT_POINTS: "Pontos de atributo insuficientes para distribuir.",
+        CANNOT_ALLOCATE_IN_BATTLE: "Não é permitido distribuir pontos durante um confronto.",
+        TARGET_UNAVAILABLE: "Caçador não encontrado."
+      };
+      return this.sendError(
+        client,
+        result.error ?? "INVALID_PAYLOAD",
+        messages[result.error ?? ""] ?? "Falha ao distribuir pontos de atributo."
+      );
+    }
+    this.broadcastSnapshot();
   }
 
   private broadcastSnapshot() {

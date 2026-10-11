@@ -1,12 +1,16 @@
 import { Inject, Injectable, Optional } from "@nestjs/common";
 import {
+  DEFAULT_PLAYER_ATTRIBUTES,
   MISSIONS,
   RANK_CAP,
+  STARTING_STAT_POINTS,
+  STAT_POINTS_PER_LEVEL,
   applyExp,
   expToNext,
   isRankAllowed,
   mobExp,
   statMult,
+  type AllocateStatsRequest,
   type BattleRewards,
   type BattleSnapshot,
   type CombatLog,
@@ -30,7 +34,12 @@ import {
   type PlayerEntity,
   type PlayerRepository
 } from "./player.repository";
-import { CLASS_STATS, calculatePlayerStats } from "./skills.data";
+import {
+  CLASS_STATS,
+  calculatePlayerMaxHp,
+  calculatePlayerMaxMp,
+  calculatePlayerStats
+} from "./skills.data";
 
 export const GRID_WIDTH = 20;
 export const GRID_HEIGHT = 12;
@@ -161,13 +170,20 @@ export class GameService {
         existing.inBattle = false;
         existing.activeBattleId = undefined;
       }
+      if (!existing.attributes) {
+        existing.attributes = { ...DEFAULT_PLAYER_ATTRIBUTES };
+      }
+      if (existing.unallocatedStatPoints === undefined) {
+        existing.unallocatedStatPoints = STARTING_STAT_POINTS;
+      }
       existing.lastStepAt = now;
       this.playerRepository.save(existing);
       return this.toSnapshot(existing);
     }
 
     const defaultClass: HunterClass = "BATTLE_HEALER";
-    const classStats = CLASS_STATS[defaultClass];
+    const initialHp = calculatePlayerMaxHp(defaultClass, 1, DEFAULT_PLAYER_ATTRIBUTES.vit);
+    const initialMp = calculatePlayerMaxMp(defaultClass, 1, DEFAULT_PLAYER_ATTRIBUTES.int);
 
     const newPlayer: PlayerEntity = {
       id,
@@ -177,12 +193,14 @@ export class GameService {
       level: 1,
       exp: 0,
       position: { x: 2, y: 2 },
-      hp: classStats.baseHp,
-      maxHp: classStats.baseHp,
-      mp: classStats.baseMp,
-      maxMp: classStats.baseMp,
+      hp: initialHp,
+      maxHp: initialHp,
+      mp: initialMp,
+      maxMp: initialMp,
       stamina: 50,
       maxStamina: 50,
+      attributes: { ...DEFAULT_PLAYER_ATTRIBUTES },
+      unallocatedStatPoints: STARTING_STAT_POINTS,
       inBattle: false,
       sequence: ++this.sequence,
       lastStepAt: now,
@@ -393,6 +411,9 @@ export class GameService {
     player.exp = result.exp;
 
     if (result.level > before.level) {
+      const levelsGained = result.level - before.level;
+      player.unallocatedStatPoints =
+        (player.unallocatedStatPoints ?? 0) + levelsGained * STAT_POINTS_PER_LEVEL;
       // Level up: stats escalam e HP/MP voltam cheios.
       this.recomputeMaxStats(player);
       player.hp = player.maxHp;
@@ -411,10 +432,16 @@ export class GameService {
   }
 
   private recomputeMaxStats(player: PlayerEntity): void {
-    const stats = CLASS_STATS[player.hunterClass];
-    const mult = statMult(player.level);
-    player.maxHp = Math.floor(stats.baseHp * mult);
-    player.maxMp = Math.floor(stats.baseMp * mult);
+    player.maxHp = calculatePlayerMaxHp(
+      player.hunterClass,
+      player.level,
+      player.attributes?.vit ?? 10
+    );
+    player.maxMp = calculatePlayerMaxMp(
+      player.hunterClass,
+      player.level,
+      player.attributes?.int ?? 10
+    );
   }
 
   private killEnemy(enemy: EnemySnapshot): void {
@@ -586,6 +613,9 @@ export class GameService {
     player.exp = expResult.exp;
 
     if (expResult.level > before.level) {
+      const levelsGained = expResult.level - before.level;
+      player.unallocatedStatPoints =
+        (player.unallocatedStatPoints ?? 0) + levelsGained * STAT_POINTS_PER_LEVEL;
       this.recomputeMaxStats(player);
       player.hp = player.maxHp;
       player.mp = player.maxMp;
@@ -634,6 +664,54 @@ export class GameService {
     return { success: true, state: this.getMissionsState(playerId) };
   }
 
+  allocateStats(
+    playerId: string,
+    allocation: AllocateStatsRequest
+  ): { success: boolean; player?: PlayerSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    if (player.inBattle) {
+      return { success: false, error: "CANNOT_ALLOCATE_IN_BATTLE" };
+    }
+
+    const cost = allocation.str + allocation.agi + allocation.vit + allocation.int;
+    if (cost <= 0) {
+      return { success: false, error: "INVALID_PAYLOAD" };
+    }
+    const available = player.unallocatedStatPoints ?? 0;
+    if (cost > available) {
+      return { success: false, error: "INSUFFICIENT_STAT_POINTS" };
+    }
+
+    if (!player.attributes) {
+      player.attributes = { ...DEFAULT_PLAYER_ATTRIBUTES };
+    }
+
+    const oldMaxHp = player.maxHp;
+    const oldMaxMp = player.maxMp;
+
+    player.attributes.str += allocation.str;
+    player.attributes.agi += allocation.agi;
+    player.attributes.vit += allocation.vit;
+    player.attributes.int += allocation.int;
+    player.unallocatedStatPoints = available - cost;
+
+    this.recomputeMaxStats(player);
+
+    if (player.maxHp > oldMaxHp) {
+      player.hp = Math.min(player.maxHp, player.hp + (player.maxHp - oldMaxHp));
+    }
+    if (player.maxMp > oldMaxMp) {
+      player.mp = Math.min(player.maxMp, player.mp + (player.maxMp - oldMaxMp));
+    }
+
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+
+    return { success: true, player: this.toSnapshot(player) };
+  }
+
   snapshot(): WorldSnapshot {
     this.reviveEnemies();
     // Só jogadores online aparecem no mundo; o estado persistente continua no repositório.
@@ -668,7 +746,9 @@ export class GameService {
       maxMp: p.maxMp,
       stamina: p.stamina,
       maxStamina: p.maxStamina,
-      stats: calculatePlayerStats(p.hunterClass, p.level),
+      stats: calculatePlayerStats(p.hunterClass, p.level, p.attributes),
+      attributes: p.attributes ? { ...p.attributes } : { ...DEFAULT_PLAYER_ATTRIBUTES },
+      unallocatedStatPoints: p.unallocatedStatPoints ?? 0,
       inBattle: p.inBattle,
       activeBattleId: p.activeBattleId,
       sequence: p.sequence
