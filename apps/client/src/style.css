@@ -765,3 +765,37 @@ canvas {
   letter-spacing: 0.05em;
   padding: 6px 2px;
 }
+
+/* =========================================================
+   ASSETS: retratos e fundo do arena
+   ========================================================= */
+.battle-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--battle-banner, none) center 30% / cover no-repeat;
+  opacity: 0.13;
+  filter: saturate(0.7) blur(1px);
+  pointer-events: none;
+  z-index: 0;
+}
+.battle-top-banner,
+.ng-battle-grid {
+  position: relative;
+  z-index: 1;
+}
+.portrait-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center top;
+  filter: drop-shadow(0 4px 14px rgba(56, 189, 248, 0.35));
+  user-select: none;
+  pointer-events: none;
+}
+
+/* O modal de resultado (e qualquer outro .hidden) ficava visível e interceptava todos os cliques */
+.hidden {
+  display: none !important;
+}
