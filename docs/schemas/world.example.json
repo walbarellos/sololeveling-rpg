@@ -1,0 +1,22 @@
+{
+  "players": [
+    {
+      "id": "socket-demo-id",
+      "name": "Adventurer-a1b2",
+      "position": { "x": 160, "y": 180 },
+      "hp": 100,
+      "maxHp": 100,
+      "sequence": 12
+    }
+  ],
+  "enemies": [
+    {
+      "id": "slime-1",
+      "position": { "x": 470, "y": 290 },
+      "hp": 75,
+      "maxHp": 100,
+      "alive": true
+    }
+  ],
+  "serverTime": 1760000000000
+}

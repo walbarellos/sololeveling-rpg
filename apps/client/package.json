@@ -1,0 +1,23 @@
+{
+  "name": "@rpg/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@rpg/contracts": "0.1.0",
+    "phaser": "^3.88.2",
+    "socket.io-client": "^4.8.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vitest": "^2.1.8"
+  }
+}

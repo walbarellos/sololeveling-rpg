@@ -1,0 +1,11 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #e5e7eb; background: #0b1020; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at top, #172554 0, #0b1020 65%); }
+#app { max-width: 1100px; margin: 0 auto; padding: 18px; }
+header { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; padding: 12px 14px; background: #111827; border: 1px solid #334155; border-radius: 12px 12px 0 0; }
+header strong { font-size: 1.1rem; color: #93c5fd; }
+#connection { font-size: .82rem; color: #86efac; }
+#status { color: #cbd5e1; font-size: .9rem; }
+#game { width: 100%; overflow: hidden; border: 1px solid #334155; border-top: 0; background: #111827; }
+canvas { display: block; width: 100%; height: auto; image-rendering: auto; }
+footer { color: #94a3b8; padding: 12px 2px; font-size: .8rem; }
