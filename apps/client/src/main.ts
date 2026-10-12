@@ -46,7 +46,16 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [WorldScene]
 };
 
+declare global {
+  interface Window {
+    __game?: Phaser.Game;
+    __gameState?: typeof gameState;
+  }
+}
+
 const game = new Phaser.Game(config);
+window.__game = game;
+window.__gameState = gameState;
 game.events.once("ready", () => {
   worldScene = game.scene.getScene("world") as WorldScene;
 });

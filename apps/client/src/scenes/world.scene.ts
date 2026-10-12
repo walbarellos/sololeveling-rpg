@@ -22,6 +22,7 @@ import { socket } from "../network/game-socket";
 import { gameState, getMyPlayer } from "../state/game-state";
 import { hudController } from "../ui/hud.controller";
 import { npcController } from "../ui/npc.controller";
+import { buildDungeonCanvas } from "../terrain";
 
 const STEP_INTERVAL_MS = 215; // > STEP_COOLDOWN_MS do servidor (200) para não tomar TOO_FAST
 const PREFERS_REDUCED_MOTION = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -41,7 +42,7 @@ const manhattan = (a: TileCoord, b: TileCoord) => Math.abs(a.x - b.x) + Math.abs
 export class WorldScene extends Phaser.Scene {
   private playerGraphics = new Map<string, Phaser.GameObjects.Container>();
   private enemyGraphics = new Map<string, Phaser.GameObjects.Container>();
-  private terrainRT: Phaser.GameObjects.RenderTexture | null = null;
+  private terrainImage: Phaser.GameObjects.Image | null = null;
   private terrainKey = "";
   private overlay!: Phaser.GameObjects.Graphics;
   private hint!: Phaser.GameObjects.Text;
@@ -242,51 +243,24 @@ export class WorldScene extends Phaser.Scene {
     if (this.terrainKey === key) return;
     this.terrainKey = key;
 
-    const worldW = gameState.gridWidth * ts;
-    const worldH = gameState.gridHeight * ts;
+    const texKey = "dungeon_terrain_map";
+    const canvas = buildDungeonCanvas(
+      gameState.gridWidth,
+      gameState.gridHeight,
+      ts,
+      gameState.obstacles
+    );
 
-    if (!this.terrainRT) {
-      this.terrainRT = this.add.renderTexture(0, 0, worldW, worldH).setOrigin(0, 0).setDepth(0);
+    if (this.textures.exists(texKey)) {
+      this.textures.remove(texKey);
+    }
+    this.textures.addCanvas(texKey, canvas);
+
+    if (!this.terrainImage) {
+      this.terrainImage = this.add.image(0, 0, texKey).setOrigin(0, 0).setDepth(0);
     } else {
-      this.terrainRT.clear();
-      this.terrainRT.resize(worldW, worldH);
+      this.terrainImage.setTexture(texKey);
     }
-
-    const obsSet = new Set(gameState.obstacles.map((o) => `${o.x},${o.y}`));
-    const isObs = (x: number, y: number) => obsSet.has(`${x},${y}`);
-
-    this.terrainRT.beginDraw();
-    for (let y = 0; y < gameState.gridHeight; y++) {
-      for (let x = 0; x < gameState.gridWidth; x++) {
-        const px = x * ts;
-        const py = y * ts;
-        const biomeIdx = biomeAt(x, y);
-        const tileTex = TEX.floor(biomeIdx);
-        this.terrainRT.batchDrawFrame(tileTex, undefined, px, py);
-
-        if (isObs(x, y)) {
-          const hasAbove = isObs(x, y - 1);
-          const hasBelow = isObs(x, y + 1);
-          const hasLeft = isObs(x - 1, y);
-          const hasRight = isObs(x + 1, y);
-
-          let wallTex: string = TEX.wall;
-
-          if (!hasAbove && hasBelow) {
-            wallTex = TEX.wallTop;
-          } else if (hasAbove && hasBelow) {
-            wallTex = TEX.wallMid;
-          } else if (hasAbove && !hasBelow) {
-            wallTex = TEX.wallBase;
-          } else if (!hasAbove && !hasBelow && !hasLeft && !hasRight) {
-            wallTex = TEX.pillar;
-          }
-
-          this.terrainRT.batchDrawFrame(wallTex, undefined, px, py);
-        }
-      }
-    }
-    this.terrainRT.endDraw();
   }
 
   private updateZoneDisplay(x: number, y: number) {

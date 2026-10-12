@@ -134,131 +134,264 @@ export function buildTextures(scene: Phaser.Scene, tile: number) {
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
   const T = tile;
 
-  // ---- Pisos por bioma (6 temas: swamp, nature, crypt, hell, space, frost) ----
+  // ---- Pisos por bioma (6 temas: Santuário, Ruínas, Catacumbas, Covil, Abismo, Gelo) ----
   const biomePalettes = [
-    // 0 swamp / Santuário — bruma mística verde-água mais luminosa
-    { base: 0x0f241c, noise: 0x143028, crack: 0x0a1c14, edge: 0x2a5a42, hi: 0x3a7a58 },
-    // 1 nature / Ruínas — musgo vivo e terra fértil
-    { base: 0x1a2e1e, noise: 0x223c28, crack: 0x122018, edge: 0x3a6a42, hi: 0x4a8a52 },
-    // 2 crypt / Catacumbas — pedra azulada com toques de runas
-    { base: 0x141e32, noise: 0x1a283c, crack: 0x0c1624, edge: 0x2a3e5a, hi: 0x3a5278 },
-    // 3 hell / Covil Vulcânico — carvão quente + brasa viva
-    { base: 0x221010, noise: 0x2c1814, crack: 0x180c0c, edge: 0x5a2820, hi: 0x7a3a28 },
-    // 4 space / Abismo Dimensional — violeta cósmico com brilho
-    { base: 0x12102a, noise: 0x1a1838, crack: 0x0c0a20, edge: 0x3a2e70, hi: 0x4a48a0 },
-    // 5 frost / Câmara de Gelo — gelo cristalino mais claro
-    { base: 0x122028, noise: 0x1a2c38, crack: 0x0c1820, edge: 0x3a5a70, hi: 0x4a7a90 }
+    // 0 Santuário do Gate — templo arcano místico com lajes de pedra esmeralda/ardósia e runas de mana
+    {
+      base: 0x182c23,
+      slab: 0x223d31,
+      mortar: 0x0c1712,
+      hi: 0x3b6652,
+      shadow: 0x112019,
+      accent: 0x34d399,
+      glow: 0x38bdf8
+    },
+    // 1 Ruínas Esquecidas — lajes de pedra ancestral com musgo vibrante e fendas
+    {
+      base: 0x223324,
+      slab: 0x2d4430,
+      mortar: 0x101a11,
+      hi: 0x476b4c,
+      shadow: 0x172419,
+      accent: 0x4ade80,
+      glow: 0x22c55e
+    },
+    // 2 Catacumbas Antigas — lajes góticas de ardósia cinza-azulada com runas frias
+    {
+      base: 0x1e2a38,
+      slab: 0x293a4d,
+      mortar: 0x0f1620,
+      hi: 0x445f7e,
+      shadow: 0x141e2b,
+      accent: 0x60a5fa,
+      glow: 0x93c5fd
+    },
+    // 3 Covil Vulcânico — basalto negro com fissuras de magma incandescente e brasas
+    {
+      base: 0x2c1818,
+      slab: 0x3b2222,
+      mortar: 0x160a0a,
+      hi: 0x5e3737,
+      shadow: 0x1e0f0f,
+      accent: 0xf97316,
+      glow: 0xfacc15
+    },
+    // 4 Abismo Dimensional — obsidiana cósmica com fendas de energia do Void violeta
+    {
+      base: 0x221738,
+      slab: 0x31224f,
+      mortar: 0x120a1f,
+      hi: 0x523b82,
+      shadow: 0x180f29,
+      accent: 0xa855f7,
+      glow: 0xc084fc
+    },
+    // 5 Câmara de Gelo — permafrost e gelo glacial translúcido com reflexos cristalinos
+    {
+      base: 0x1c3444,
+      slab: 0x27495e,
+      mortar: 0x0d1c26,
+      hi: 0x437696,
+      shadow: 0x132633,
+      accent: 0x7dd3fc,
+      glow: 0xe0f2fe
+    }
   ];
+
   for (let v = 0; v < 6; v++) {
-    const r = rng(1000 + v * 77);
+    const r = rng(2000 + v * 123);
     const p = biomePalettes[v];
     g.clear();
-    g.fillStyle(p.base, 1).fillRect(0, 0, T, T);
-    for (let i = 0; i < 28; i++) {
-      const shade = p.noise + Math.floor(r() * 0x08) * 0x010101;
-      g.fillStyle(shade, 1).fillRect(Math.floor(r() * T), Math.floor(r() * T), 2 + Math.floor(r() * 6), 2 + Math.floor(r() * 4));
-    }
-    if (v !== 0) {
-      g.lineStyle(1, p.crack, 0.85).beginPath();
-      let cx = r() * T, cy = r() * T * 0.3;
-      g.moveTo(cx, cy);
-      for (let s = 0; s < 4; s++) {
-        cx += (r() - 0.4) * 12;
-        cy += 6 + r() * 6;
-        g.lineTo(cx, cy);
+
+    // Fundo base e argamassa de rejunte profundo
+    g.fillStyle(p.mortar, 1).fillRect(0, 0, T, T);
+
+    // 4 Lajes de pedra talhada em formato 2x2 com rejunte e chanfros
+    const slabs = [
+      { x: 1, y: 1, w: Math.floor(T * 0.52) - 2, h: Math.floor(T * 0.48) - 2 },
+      { x: Math.floor(T * 0.52), y: 1, w: T - Math.floor(T * 0.52) - 1, h: Math.floor(T * 0.54) - 2 },
+      { x: 1, y: Math.floor(T * 0.48), w: Math.floor(T * 0.46) - 2, h: T - Math.floor(T * 0.48) - 1 },
+      { x: Math.floor(T * 0.46), y: Math.floor(T * 0.54), w: T - Math.floor(T * 0.46) - 1, h: T - Math.floor(T * 0.54) - 1 }
+    ];
+
+    for (let si = 0; si < slabs.length; si++) {
+      const s = slabs[si];
+      const slabShade = p.slab + Math.floor((r() - 0.5) * 8) * 0x010101;
+      g.fillStyle(slabShade, 1).fillRect(s.x, s.y, s.w, s.h);
+
+      // Chanfro de iluminação no topo e esquerda da laje
+      g.lineStyle(1, p.hi, 0.75).lineBetween(s.x, s.y, s.x + s.w - 1, s.y);
+      g.lineStyle(1, p.hi, 0.55).lineBetween(s.x, s.y, s.x, s.y + s.h - 1);
+
+      // Chanfro de sombra na base e direita da laje
+      g.lineStyle(1, p.shadow, 0.85).lineBetween(s.x, s.y + s.h - 1, s.x + s.w - 1, s.y + s.h - 1);
+      g.lineStyle(1, p.shadow, 0.75).lineBetween(s.x + s.w - 1, s.y, s.x + s.w - 1, s.y + s.h - 1);
+
+      // Textura granular de pedra
+      for (let gi = 0; gi < 8; gi++) {
+        const gx = s.x + 2 + Math.floor(r() * (s.w - 4));
+        const gy = s.y + 2 + Math.floor(r() * (s.h - 4));
+        const dotCol = r() > 0.5 ? p.hi : p.shadow;
+        g.fillStyle(dotCol, 0.35).fillRect(gx, gy, 1 + Math.floor(r() * 2), 1);
       }
+    }
+
+    // Detalhes estilizados característicos por Bioma:
+    if (v === 0) {
+      // Santuário: Runas de Mana entalhadas e círculo arcano sutil
+      g.lineStyle(1, p.accent, 0.45).strokeCircle(T / 2, T / 2, T * 0.28);
+      g.lineStyle(1, p.glow, 0.7).strokeCircle(T / 2, T / 2, 4);
+      g.fillStyle(p.glow, 0.85).fillCircle(T / 2, T / 2, 2);
+      // Runas lineares de mana nos canais
+      g.lineStyle(1, p.accent, 0.55).lineBetween(T / 2 - 8, T / 2, T / 2 + 8, T / 2);
+      g.lineStyle(1, p.accent, 0.55).lineBetween(T / 2, T / 2 - 8, T / 2, T / 2 + 8);
+    } else if (v === 1) {
+      // Ruínas: Musgo vivo verde e folhagens crescendo nas fendas
+      for (let m = 0; m < 5; m++) {
+        const mx = 6 + Math.floor(r() * (T - 12));
+        const my = 6 + Math.floor(r() * (T - 12));
+        g.fillStyle(p.accent, 0.8).fillCircle(mx, my, 2 + Math.floor(r() * 2));
+        g.fillStyle(p.glow, 0.6).fillCircle(mx + 1, my - 1, 1.5);
+      }
+    } else if (v === 2) {
+      // Catacumbas: Rachaduras com reflexo gélido
+      g.lineStyle(1, p.accent, 0.7).beginPath();
+      g.moveTo(6, 12);
+      g.lineTo(18, 22);
+      g.lineTo(24, 20);
+      g.lineTo(34, 38);
       g.strokePath();
+      g.fillStyle(p.glow, 0.75).fillCircle(24, 20, 1.5);
+    } else if (v === 3) {
+      // Covil Vulcânico: Fenda de magma vivo e incandescente
+      g.lineStyle(3, 0x991b1b, 0.85).beginPath();
+      g.moveTo(4, 8);
+      g.lineTo(16, 20);
+      g.lineTo(28, 18);
+      g.lineTo(42, 38);
+      g.strokePath();
+      // Núcleo brilhante de lava amarela/laranja
+      g.lineStyle(1.5, p.accent, 0.95).beginPath();
+      g.moveTo(4, 8);
+      g.lineTo(16, 20);
+      g.lineTo(28, 18);
+      g.lineTo(42, 38);
+      g.strokePath();
+      g.fillStyle(p.glow, 0.9).fillCircle(16, 20, 2);
+      g.fillStyle(p.glow, 0.9).fillCircle(28, 18, 2);
+      // Brasas espalhadas
+      g.fillStyle(0xf97316, 0.7).fillCircle(10, 36, 1.5);
+      g.fillStyle(0xef4444, 0.6).fillCircle(38, 12, 1.5);
+    } else if (v === 4) {
+      // Abismo: Fendas cósmicas do Void e micropontos estelares
+      g.lineStyle(1.5, p.accent, 0.85).beginPath();
+      g.moveTo(8, 40);
+      g.lineTo(22, 24);
+      g.lineTo(26, 26);
+      g.lineTo(40, 6);
+      g.strokePath();
+      g.fillStyle(p.glow, 0.9).fillCircle(22, 24, 2);
+      g.fillStyle(0xf5f3ff, 0.85).fillCircle(12, 10, 1.2);
+      g.fillStyle(0xf5f3ff, 0.85).fillCircle(36, 36, 1.2);
+      g.fillStyle(0xc4b5fd, 0.7).fillCircle(30, 14, 1);
+    } else if (v === 5) {
+      // Câmara de Gelo: Fendas de gelo cristalino translúcido
+      g.lineStyle(1.5, 0xe0f2fe, 0.8).beginPath();
+      g.moveTo(6, 6);
+      g.lineTo(20, 22);
+      g.lineTo(26, 18);
+      g.lineTo(40, 42);
+      g.strokePath();
+      g.fillStyle(p.glow, 0.75).fillRect(10, 28, 8, 2);
+      g.fillStyle(p.accent, 0.8).fillRect(28, 10, 6, 2);
     }
-    // detalhes de bioma
-    if (v === 1) { // folhas
-      g.fillStyle(0x3d8b4f, 0.35).fillCircle(r() * T, r() * T, 2 + r() * 2);
-      g.fillStyle(0x2d6b3f, 0.3).fillCircle(r() * T, r() * T, 1.5 + r() * 2);
-    }
-    if (v === 3) { // brasas
-      g.fillStyle(0xf97316, 0.4).fillCircle(8 + r() * (T - 16), 8 + r() * (T - 16), 1.5);
-      g.fillStyle(0xef4444, 0.3).fillCircle(8 + r() * (T - 16), 8 + r() * (T - 16), 1.2);
-    }
-    if (v === 4) { // estrelas
-      g.fillStyle(0xa78bfa, 0.5).fillCircle(r() * T, r() * T, 1);
-      g.fillStyle(0xc4b5fd, 0.4).fillCircle(r() * T, r() * T, 0.8);
-    }
-    if (v === 5) { // gelo
-      g.fillStyle(0x7dd3fc, 0.2).fillRect(r() * T, r() * T, 3 + r() * 4, 1);
-    }
-    g.lineStyle(1, p.edge, 0.9).strokeRect(0.5, 0.5, T - 1, T - 1);
-    g.lineStyle(1, p.hi, 0.4).lineBetween(1, 1, T - 1, 1);
-    g.lineStyle(1, 0x04060c, 0.6).lineBetween(1, T - 1, T - 1, T - 1);
+
+    // Moldura perimetral externa com relevo sutil
+    g.lineStyle(1, 0x050a08, 0.65).strokeRect(0, 0, T, T);
     g.generateTexture(TEX.floor(v), T, T);
   }
 
-  // ---- 1. Topo da Muralha (Crest / Battlement Capstone) ----
+  // ---- 1. Topo da Muralha (Crest / Parapet com chanfro iluminado) ----
   g.clear();
-  g.fillStyle(0x18202c, 1).fillRect(0, 0, T, T);
-  g.fillStyle(0x334155, 1).fillRect(0, 0, T, 16);
-  g.fillStyle(0x64748b, 0.9).fillRect(0, 0, T, 2);
-  g.fillStyle(0x475569, 0.7).fillRect(0, 2, T, 3);
-  g.fillStyle(0x0a0f18, 1).fillRect(0, 15, T, 3);
-  g.fillStyle(0x1e293b, 1).fillRect(1, 18, T - 2, T - 18);
-  g.fillStyle(0x0f172a, 1).fillRect(T / 2 - 1, 18, 2, T - 18);
-  g.fillStyle(0x384a62, 0.5).fillRect(1, 18, T / 2 - 2, 1);
-  g.fillStyle(0x384a62, 0.5).fillRect(T / 2 + 1, 18, T / 2 - 2, 1);
+  // Fundo de alvenaria
+  g.fillStyle(0x1a2634, 1).fillRect(0, 0, T, T);
+  // Beiral superior iluminado (Pedra de topo polida)
+  g.fillStyle(0x475569, 1).fillRect(0, 0, T, 16);
+  g.fillStyle(0x94a3b8, 0.95).fillRect(0, 0, T, 2); // borda de luz
+  g.fillStyle(0x64748b, 0.85).fillRect(0, 2, T, 4);
+  // Chanfro e corte de sombra sob o beiral
+  g.fillStyle(0x0a0f18, 1).fillRect(0, 16, T, 4);
+  // Parede de tijolos frontal abaixo do beiral
+  g.fillStyle(0x273546, 1).fillRect(1, 20, T - 2, T - 20);
+  g.fillStyle(0x0f172a, 1).fillRect(T / 2 - 1, 20, 2, T - 20);
+  g.fillStyle(0x475a72, 0.6).fillRect(1, 20, T / 2 - 2, 1);
+  g.fillStyle(0x475a72, 0.6).fillRect(T / 2 + 1, 20, T / 2 - 2, 1);
   g.generateTexture(TEX.wallTop, T, T);
 
-  // ---- 2. Meio da Muralha ----
+  // ---- 2. Meio da Muralha (Blocos de cantaria de pedra com relevo 3D) ----
   g.clear();
-  g.fillStyle(0x18202c, 1).fillRect(0, 0, T, T);
-  g.fillStyle(0x1e293b, 1).fillRect(1, 0, T - 2, 23);
-  g.fillStyle(0x0f172a, 1).fillRect(11, 0, 2, 23);
-  g.fillStyle(0x0f172a, 1).fillRect(35, 0, 2, 23);
-  g.fillStyle(0x2e3f53, 0.5).fillRect(1, 0, 10, 1);
-  g.fillStyle(0x2e3f53, 0.5).fillRect(13, 0, 22, 1);
-  g.fillStyle(0x2e3f53, 0.5).fillRect(37, 0, 10, 1);
-  g.fillStyle(0x0a0f18, 1).fillRect(0, 23, T, 2);
-  g.fillStyle(0x16202c, 1).fillRect(1, 25, T - 2, 23);
-  g.fillStyle(0x090d16, 1).fillRect(T / 2 - 1, 25, 2, 23);
-  g.fillStyle(0x2e3f53, 0.45).fillRect(1, 25, T / 2 - 2, 1);
-  g.fillStyle(0x2e3f53, 0.45).fillRect(T / 2 + 1, 25, T / 2 - 2, 1);
+  g.fillStyle(0x0a0f18, 1).fillRect(0, 0, T, T);
+  // Fileira 1 de tijolos
+  g.fillStyle(0x273546, 1).fillRect(1, 1, T - 2, 22);
+  g.fillStyle(0x475a72, 0.7).fillRect(1, 1, T - 2, 1); // luz do tijolo
+  g.fillStyle(0x0f172a, 1).fillRect(12, 1, 2, 22);
+  g.fillStyle(0x0f172a, 1).fillRect(36, 1, 2, 22);
+  // Argamassa horizontal divisória
+  g.fillStyle(0x080c14, 1).fillRect(0, 23, T, 2);
+  // Fileira 2 de tijolos (deslocada)
+  g.fillStyle(0x243242, 1).fillRect(1, 25, T - 2, 22);
+  g.fillStyle(0x475a72, 0.6).fillRect(1, 25, T - 2, 1); // luz do tijolo
+  g.fillStyle(0x0f172a, 1).fillRect(T / 2 - 1, 25, 2, 22);
   g.generateTexture(TEX.wallMid, T, T);
 
-  // ---- 3. Base da Muralha ----
+  // ---- 3. Base da Muralha (Rodapé maciço reforçado + sombra de piso) ----
   g.clear();
-  g.fillStyle(0x000000, 0.6).fillRect(0, T - 5, T, 5);
-  g.fillStyle(0x18202c, 1).fillRect(0, 0, T, T - 3);
-  g.fillStyle(0x16202c, 1).fillRect(1, 0, T - 2, 38);
-  g.fillStyle(0x090d16, 1).fillRect(T / 2 - 1, 0, 2, 38);
-  g.fillStyle(0x2e3f53, 0.45).fillRect(1, 0, T / 2 - 2, 1);
-  g.fillStyle(0x2e3f53, 0.45).fillRect(T / 2 + 1, 0, T / 2 - 2, 1);
-  g.fillStyle(0x223042, 1).fillRect(0, 38, T, 6);
-  g.fillStyle(0x384a62, 0.7).fillRect(0, 38, T, 1);
-  g.fillStyle(0x090d16, 1).fillRect(0, 44, T, 2);
+  g.fillStyle(0x000000, 0.65).fillRect(0, T - 6, T, 6); // sombra de contato com o chão
+  g.fillStyle(0x243242, 1).fillRect(1, 0, T - 2, 36);
+  g.fillStyle(0x0f172a, 1).fillRect(T / 2 - 1, 0, 2, 36);
+  g.fillStyle(0x475a72, 0.5).fillRect(1, 0, T / 2 - 2, 1);
+  g.fillStyle(0x475a72, 0.5).fillRect(T / 2 + 1, 0, T / 2 - 2, 1);
+  // Rodapé chanfrado saliente
+  g.fillStyle(0x334155, 1).fillRect(0, 36, T, 7);
+  g.fillStyle(0x64748b, 0.85).fillRect(0, 36, T, 1); // destaque de luz do rodapé
+  g.fillStyle(0x0b111a, 1).fillRect(0, 42, T, 2);
   g.generateTexture(TEX.wallBase, T, T);
 
-  // ---- 4. Bloco de Muralha Padrão ----
+  // ---- 4. Bloco de Muralha Padrão (Isolado) ----
   g.clear();
-  g.fillStyle(0x000000, 0.55).fillRect(0, T - 4, T, 4);
-  g.fillStyle(0x18202c, 1).fillRect(0, 0, T, T - 2);
-  g.fillStyle(0x334155, 1).fillRect(0, 0, T, 16);
-  g.fillStyle(0x64748b, 0.9).fillRect(0, 0, T, 2);
-  g.fillStyle(0x475569, 0.7).fillRect(0, 2, T, 3);
-  g.fillStyle(0x0a0f18, 1).fillRect(0, 15, T, 3);
-  g.fillStyle(0x1e293b, 1).fillRect(1, 18, T - 2, 26);
-  g.fillStyle(0x0f172a, 1).fillRect(T / 2 - 1, 18, 2, 26);
-  g.fillStyle(0x223042, 1).fillRect(0, 40, T, 4);
+  g.fillStyle(0x000000, 0.6).fillRect(0, T - 4, T, 4);
+  // Beiral
+  g.fillStyle(0x475569, 1).fillRect(0, 0, T, 14);
+  g.fillStyle(0x94a3b8, 0.95).fillRect(0, 0, T, 2);
+  g.fillStyle(0x0a0f18, 1).fillRect(0, 14, T, 3);
+  // Tijolo central
+  g.fillStyle(0x273546, 1).fillRect(1, 17, T - 2, 24);
+  g.fillStyle(0x475a72, 0.6).fillRect(1, 17, T - 2, 1);
+  g.fillStyle(0x0f172a, 1).fillRect(T / 2 - 1, 17, 2, 24);
+  // Base
+  g.fillStyle(0x334155, 1).fillRect(0, 41, T, 4);
+  g.fillStyle(0x64748b, 0.8).fillRect(0, 41, T, 1);
   g.generateTexture(TEX.wall, T, T);
 
-  // ---- Pilar Monolítico ----
+  // ---- Pilar Monolítico (Coluna de Templo Arcano com Gema de Mana) ----
   g.clear();
-  g.fillStyle(0x000000, 0.5).fillEllipse(T / 2, T - 4, T * 0.9, 12);
-  g.fillStyle(0x1e293b, 1).fillRoundedRect(3, T - 16, T - 6, 14, 2);
-  g.fillStyle(0x334155, 1).fillRect(3, T - 16, T - 6, 2);
-  g.fillStyle(0x253346, 1).fillRect(7, 8, T - 14, T - 22);
-  g.fillStyle(0x384a62, 0.8).fillRect(9, 8, 4, T - 22);
-  g.fillStyle(0x16202c, 0.8).fillRect(T - 13, 8, 4, T - 22);
-  g.fillStyle(0x334155, 1).fillRoundedRect(4, 2, T - 8, 8, 2);
-  g.fillStyle(0x64748b, 0.9).fillRect(4, 2, T - 8, 2);
-  g.lineStyle(2, 0x0284c7, 0.85).strokeCircle(T / 2, T / 2 - 2, 7);
-  g.lineStyle(2, 0x38bdf8, 0.95).lineBetween(T / 2, T / 2 - 10, T / 2, T / 2 + 6);
-  g.fillStyle(0x7dd3fc, 1).fillCircle(T / 2, T / 2 - 2, 2.5);
+  g.fillStyle(0x000000, 0.6).fillEllipse(T / 2, T - 4, T * 0.9, 12);
+  // Base alargada
+  g.fillStyle(0x273546, 1).fillRoundedRect(3, T - 16, T - 6, 14, 2);
+  g.fillStyle(0x475569, 1).fillRect(3, T - 16, T - 6, 2);
+  // Fuste do pilar (corpo central)
+  g.fillStyle(0x334155, 1).fillRect(7, 8, T - 14, T - 22);
+  g.fillStyle(0x64748b, 0.85).fillRect(8, 8, 4, T - 22); // destaque de luz lateral
+  g.fillStyle(0x1a2634, 0.9).fillRect(T - 13, 8, 5, T - 22); // sombra lateral
+  // Capitel do pilar (topo)
+  g.fillStyle(0x475569, 1).fillRoundedRect(4, 2, T - 8, 8, 2);
+  g.fillStyle(0x94a3b8, 0.95).fillRect(4, 2, T - 8, 2);
+  // Gema de Mana Arcano Central no Pilar
+  g.fillStyle(0x0284c7, 0.9).fillCircle(T / 2, T / 2 - 2, 8);
+  g.fillStyle(0x38bdf8, 1).fillCircle(T / 2, T / 2 - 2, 5);
+  g.fillStyle(0xe0f2fe, 1).fillCircle(T / 2 - 1, T / 2 - 3, 2);
+  // Aros de ferro dourado prendendo a gema
+  g.lineStyle(2, 0xf59e0b, 0.95).strokeCircle(T / 2, T / 2 - 2, 8);
   g.generateTexture(TEX.pillar, T, T);
 
   // ---- Slime ----
@@ -398,11 +531,26 @@ export function buildTextures(scene: Phaser.Scene, tile: number) {
   g.fillTriangle(T / 2, T / 2 - 1, T / 2 + 2, T / 2 - 5, T / 2 + 4, T / 2 - 1);
   g.generateTexture(TEX.boss, T, T);
 
-  // ---- Portal do Gate (anel místico) ----
+  // ---- Portal do Gate (Fenda Dimensional Solo Leveling) ----
   g.clear();
-  g.lineStyle(3, 0x38bdf8, 0.95).strokeCircle(T / 2, T / 2, T * 0.38);
-  g.lineStyle(2, 0xa855f7, 0.9).strokeCircle(T / 2, T / 2, T * 0.28);
-  g.fillStyle(0x38bdf8, 0.12).fillCircle(T / 2, T / 2, T * 0.36);
+  // Aura de distorção dimensional escura
+  g.fillStyle(0x020617, 0.7).fillCircle(T / 2, T / 2, T * 0.46);
+  // Anel rúnico externo
+  g.lineStyle(2.5, 0x38bdf8, 0.95).strokeCircle(T / 2, T / 2, T * 0.42);
+  g.lineStyle(1.5, 0x818cf8, 0.8).strokeCircle(T / 2, T / 2, T * 0.35);
+  // Marcadores de runas nos 8 eixos
+  for (let a = 0; a < 8; a++) {
+    const angle = (a / 8) * Math.PI * 2;
+    const rx = T / 2 + Math.cos(angle) * (T * 0.42);
+    const ry = T / 2 + Math.sin(angle) * (T * 0.42);
+    g.fillStyle(0xfde047, 0.95).fillCircle(rx, ry, 1.8);
+  }
+  // Vórtice de mana intermediário
+  g.fillStyle(0x1d4ed8, 0.4).fillCircle(T / 2, T / 2, T * 0.32);
+  g.fillStyle(0x2563eb, 0.55).fillCircle(T / 2, T / 2, T * 0.24);
+  // Singularidade branca incandescente
+  g.fillStyle(0x38bdf8, 0.85).fillCircle(T / 2, T / 2, T * 0.16);
+  g.fillStyle(0xffffff, 1).fillCircle(T / 2, T / 2, T * 0.08);
   g.generateTexture(TEX.portal, T, T);
 
   g.destroy();
@@ -414,9 +562,9 @@ export function addVignette(scene: Phaser.Scene, w: number, h: number) {
     const tex = scene.textures.createCanvas(TEX.vignette, w, h);
     if (tex) {
       const ctx = tex.getContext();
-      const grad = ctx.createRadialGradient(w / 2, h / 2, h * 0.25, w / 2, h / 2, Math.max(w, h) * 0.65);
+      const grad = ctx.createRadialGradient(w / 2, h / 2, h * 0.35, w / 2, h / 2, Math.max(w, h) * 0.65);
       grad.addColorStop(0, "rgba(2,4,10,0)");
-      grad.addColorStop(1, "rgba(2,4,10,0.78)");
+      grad.addColorStop(1, "rgba(2,4,10,0.45)");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
       tex.refresh();
