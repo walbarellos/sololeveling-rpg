@@ -6,7 +6,7 @@
   --font-display: "Cinzel", Georgia, "Times New Roman", serif;
   --font-ui: "Rajdhani", Inter, ui-sans-serif, system-ui, sans-serif;
 
-  /* Paleta Dark Fantasy Hunter */
+  /* Paleta Dark Fantasy Hunter — mais vibrante e menos depressiva */
   --bg-deep: #0a0e12;
   --bg-panel: #121a16;
   --bg-panel-alt: #182218;
@@ -42,6 +42,11 @@
   padding: 0;
 }
 
+html, body {
+  height: 100%;
+  overflow: hidden; /* impede scrollbar da página inteira */
+}
+
 body {
   min-height: 100vh;
   background:
@@ -51,7 +56,7 @@ body {
   color: var(--text-primary);
   font-family: var(--font-ui);
   user-select: none;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .hidden {
@@ -59,12 +64,14 @@ body {
 }
 
 #app {
-  max-width: 1240px;
+  height: 100vh;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 10px;
+  padding: 6px 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  overflow: hidden;
 }
 
 /* CABEÇALHO SUPERIOR SÓBRIO (ASSOCIAÇÃO DE CAÇADORES) */
@@ -76,8 +83,9 @@ body {
   border: 1px solid var(--border-slate);
   border-bottom: 2px solid var(--border-gold-bright);
   border-radius: 6px;
-  padding: 8px 16px;
+  padding: 6px 14px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
 }
 
 .rpg-brand {
@@ -95,7 +103,7 @@ body {
 .brand-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   color: #f8fafc;
@@ -103,7 +111,7 @@ body {
 
 .gate-dungeon-tag {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -218,13 +226,14 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background: #080b12;
   border: 1px solid #141c2c;
   border-radius: 3px;
   font-size: 0.68rem;
   color: #64748b;
   letter-spacing: 0.06em;
+  flex-shrink: 0;
 }
 
 /* RESPONSIVIDADE */
