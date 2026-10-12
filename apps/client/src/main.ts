@@ -24,7 +24,6 @@ import { profileController } from "./ui/profile.controller";
 import { npcController } from "./ui/npc.controller";
 import "./style.css";
 
-// 1. Phaser Game Initialization
 let worldScene: WorldScene | null = null;
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -35,8 +34,12 @@ const config: Phaser.Types.Core.GameConfig = {
   backgroundColor: "#030712",
   pixelArt: true,
   scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    // ENVELOP preenche o palco inteiro, mantém proporção (sem esticar sprite)
+    // e o mapeamento do mouse continua correto.
+    mode: Phaser.Scale.ENVELOP,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: 960,
+    height: 576
   },
   scene: [WorldScene]
 };
@@ -44,9 +47,16 @@ const config: Phaser.Types.Core.GameConfig = {
 const game = new Phaser.Game(config);
 game.events.once("ready", () => {
   worldScene = game.scene.getScene("world") as WorldScene;
+  game.scale.refresh();
 });
 
-// 2. Banner do Gate Clear
+const refreshScale = () => {
+  if (game.scale) game.scale.refresh();
+};
+window.addEventListener("resize", refreshScale);
+requestAnimationFrame(refreshScale);
+setTimeout(refreshScale, 300);
+
 const gateClearBanner = document.querySelector<HTMLDivElement>("#gate-clear-banner");
 const gateClearMsg = document.querySelector<HTMLSpanElement>("#gate-clear-message");
 let gateClearTimer: ReturnType<typeof setTimeout> | null = null;
@@ -63,7 +73,6 @@ function triggerGateClearBanner(bossName: string, slayerName: string) {
   }, 6000);
 }
 
-// 3. Network Events Dispatching
 socket.on("connect", () => {
   hudController.setConnection("● Gate Conectado", "#4ade80");
   socket.emit(ClientEvents.InventoryRequest);
@@ -102,6 +111,7 @@ socket.on(ServerEvents.Snapshot, (raw: unknown) => {
       hudController.applyHud(me);
     }
   }
+  worldScene?.rebuildTerrain();
 });
 
 socket.on(ServerEvents.InventoryState, (raw: unknown) => {
@@ -186,7 +196,6 @@ socket.on(ServerEvents.Error, (raw: unknown) => {
   worldScene?.onServerError(error?.code);
 });
 
-// 4. Global Keyboard Shortcuts
 const MAP_KEYS = new Set([
   "arrowup", "arrowdown", "arrowleft", "arrowright",
   "w", "a", "s", "d", "e", "enter", " ", "escape", "i", "c", "m"
@@ -236,11 +245,9 @@ window.addEventListener("keydown", (e: KeyboardEvent) => {
   worldScene?.handleKey(k);
 });
 
-// 5. Initial Modal URL Parameter
 const urlParams = new URLSearchParams(window.location.search);
 const initialModal = urlParams.get("modal");
 if (initialModal === "inventory") setTimeout(() => modalsController.menuInventory?.click(), 300);
 else if (initialModal === "profile" || initialModal === "status") setTimeout(() => modalsController.menuStatus?.click(), 300);
 else if (initialModal === "academy") setTimeout(() => modalsController.menuAcademy?.click(), 300);
 else if (initialModal === "missions") setTimeout(() => modalsController.menuMissions?.click(), 300);
-
