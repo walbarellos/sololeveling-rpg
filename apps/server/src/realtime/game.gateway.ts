@@ -442,7 +442,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     const result = this.game.teleportPlayerToZone(this.pid(client), parsed.data.zoneId);
     if (!result.success) {
-      return this.sendError(client, result.error ?? "INVALID_PAYLOAD", "Falha ao teleportar para o setor.");
+      const messages: Record<string, string> = {
+        ZONE_LOCKED: "Acesso negado: seu Rank de Caçador é insuficiente para entrar neste setor!",
+        ALREADY_IN_BATTLE: "Não é possível teleportar enquanto estiver em combate ativo!",
+        ZONE_NOT_FOUND: "Setor dimensional não localizado."
+      };
+      return this.sendError(
+        client,
+        result.error ?? "INVALID_PAYLOAD",
+        messages[result.error ?? ""] ?? "Falha ao teleportar para o setor."
+      );
     }
     this.broadcastSnapshot();
   }

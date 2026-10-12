@@ -390,4 +390,35 @@ describe("Instanced Turn-Based Battle (Naruto Game style)", () => {
     expect(me.hp).toBe(Math.floor(me.maxHp * 0.5));
     expect(me.exp).toBe(4);
   });
+
+  it("restricts zone teleportation by hunter rank", () => {
+    const clock = makeClock();
+    const repo = new InMemoryPlayerRepository();
+    const game = new GameService(clock, repo);
+    game.connect("p1"); // starts at Rank E
+
+    // Catacumbas (Rank E) is allowed
+    const cataRes = game.teleportPlayerToZone("p1", "CATACUMBAS");
+    expect(cataRes.success).toBe(true);
+
+    // Covil (Rank D) is locked for Rank E
+    const covilRes = game.teleportPlayerToZone("p1", "COVIL");
+    expect(covilRes.success).toBe(false);
+    expect((covilRes as any).error).toBe("ZONE_LOCKED");
+
+    // Promote to Rank D
+    const player = repo.findById("p1")!;
+    player.rank = "D";
+    repo.save(player);
+
+    // Now Covil is allowed
+    const covilDRes = game.teleportPlayerToZone("p1", "COVIL");
+    expect(covilDRes.success).toBe(true);
+    expect(covilDRes.player?.position).toEqual({ x: 6, y: 21 });
+
+    // Chamber (Rank C) is still locked for Rank D
+    const chamberRes = game.teleportPlayerToZone("p1", "CHAMBER");
+    expect(chamberRes.success).toBe(false);
+    expect((chamberRes as any).error).toBe("ZONE_LOCKED");
+  });
 });

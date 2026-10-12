@@ -226,6 +226,7 @@ export const ServerErrorCodeSchema = z.enum([
   "CANNOT_SELL_EQUIPPED",
   "CANNOT_SELL_TROPHY",
   "ZONE_NOT_FOUND",
+  "ZONE_LOCKED",
   "NPC_NOT_FOUND"
 ]);
 export type ServerErrorCode = z.infer<typeof ServerErrorCodeSchema>;

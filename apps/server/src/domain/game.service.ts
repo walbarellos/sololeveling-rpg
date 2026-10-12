@@ -1008,6 +1008,19 @@ export class GameService {
     if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
     if (player.inBattle) return { success: false, error: "ALREADY_IN_BATTLE" };
 
+    const zoneMinRank: Record<string, HunterRank> = {
+      SANTUARIO: "E",
+      CATACUMBAS: "E",
+      COVIL: "D",
+      ABISMO: "D",
+      CHAMBER: "C"
+    };
+
+    const minRank = zoneMinRank[zoneId] ?? "E";
+    if (!isRankAllowed(player.rank, minRank)) {
+      return { success: false, error: "ZONE_LOCKED" };
+    }
+
     const zoneCoords: Record<string, TileCoord> = {
       SANTUARIO: { x: 2, y: 2 },
       CATACUMBAS: { x: 18, y: 5 },
