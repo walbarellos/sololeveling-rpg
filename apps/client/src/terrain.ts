@@ -68,6 +68,84 @@ export const CRIMSON_CITADEL_THEMES: Record<number, BiomeTheme> = {
   }
 };
 
+export const FROZEN_ABYSS_THEME: BiomeTheme = {
+  name: "Fenda Glacial de Niflheim",
+  mortar: "#05131f",
+  slabBase: "#0c283d",
+  slabMid: "#133854",
+  slabLight: "#1d4c70",
+  bevelHi: "#38bdf8",
+  bevelShadow: "#061826",
+  accent: "#67e8f9",
+  glow: "#a5f3fc",
+  gem: "#06b6d4"
+};
+
+export const SHADOW_NECROPOLIS_THEME: BiomeTheme = {
+  name: "Necrópole das Sombras",
+  mortar: "#12081c",
+  slabBase: "#1f1030",
+  slabMid: "#2a1640",
+  slabLight: "#381d54",
+  bevelHi: "#7e22ce",
+  bevelShadow: "#0d0514",
+  accent: "#a855f7",
+  glow: "#c084fc",
+  gem: "#9333ea"
+};
+
+export const DRAGON_VOLCANO_THEME: BiomeTheme = {
+  name: "Calamidade Vulcânica",
+  mortar: "#1c0905",
+  slabBase: "#2e1208",
+  slabMid: "#40190a",
+  slabLight: "#54210d",
+  bevelHi: "#c2410c",
+  bevelShadow: "#140603",
+  accent: "#f97316",
+  glow: "#fde047",
+  gem: "#ea580c"
+};
+
+export const MONARCH_SANCTUM_THEME: BiomeTheme = {
+  name: "Templo dos Deuses Antigos",
+  mortar: "#191508",
+  slabBase: "#2b240f",
+  slabMid: "#3d3316",
+  slabLight: "#52441d",
+  bevelHi: "#ca8a04",
+  bevelShadow: "#120f05",
+  accent: "#facc15",
+  glow: "#fef08a",
+  gem: "#eab308"
+};
+
+export const COSMIC_VOID_THEME: BiomeTheme = {
+  name: "Fenda Cósmica",
+  mortar: "#08061a",
+  slabBase: "#100d30",
+  slabMid: "#181347",
+  slabLight: "#221b61",
+  bevelHi: "#6366f1",
+  bevelShadow: "#060414",
+  accent: "#818cf8",
+  glow: "#c7d2fe",
+  gem: "#4f46e5"
+};
+
+export const SHADOW_THRONE_THEME: BiomeTheme = {
+  name: "Trono do Monarca das Sombras",
+  mortar: "#020408",
+  slabBase: "#050b14",
+  slabMid: "#091221",
+  slabLight: "#0f1c33",
+  bevelHi: "#0284c7",
+  bevelShadow: "#010205",
+  accent: "#38bdf8",
+  glow: "#7dd3fc",
+  gem: "#0284c7"
+};
+
 const BIOMES: Record<number, BiomeTheme> = {
   // 0: Santuário do Gate — Templo arcano de ardósia esmeralda com canais de mana
   0: {
@@ -185,8 +263,20 @@ export function buildDungeonCanvas(
       let b: BiomeTheme;
       let biomeIdx = 0;
       if (style === "CRIMSON_CITADEL") {
-        biomeIdx = x <= 10 ? 0 : x <= 22 ? 1 : 2;
+        biomeIdx = x <= 12 ? 0 : x <= 26 ? 1 : 2;
         b = CRIMSON_CITADEL_THEMES[biomeIdx];
+      } else if (style === "FROZEN_ABYSS") {
+        b = FROZEN_ABYSS_THEME;
+      } else if (style === "SHADOW_NECROPOLIS") {
+        b = SHADOW_NECROPOLIS_THEME;
+      } else if (style === "DRAGON_VOLCANO") {
+        b = DRAGON_VOLCANO_THEME;
+      } else if (style === "MONARCH_SANCTUM") {
+        b = MONARCH_SANCTUM_THEME;
+      } else if (style === "COSMIC_VOID") {
+        b = COSMIC_VOID_THEME;
+      } else if (style === "SHADOW_THRONE") {
+        b = SHADOW_THRONE_THEME;
       } else {
         biomeIdx = biomeAt(x, y);
         b = BIOMES[biomeIdx] ?? BIOMES[0];
@@ -426,17 +516,33 @@ export function buildDungeonCanvas(
   };
 
   if (style === "CRIMSON_CITADEL") {
-    // Portal de Retorno ao Santuário dos NPCs em (3, 4)
     drawArcaneDais(3 * ts + ts / 2, 4 * ts + ts / 2, "rgba(56, 189, 248, 0.4)", "#38bdf8");
-    // Portal do Trono da Sentinela Carmesim em (29, 10)
-    drawArcaneDais(29 * ts + ts / 2, 10 * ts + ts / 2, "rgba(244, 63, 94, 0.5)", "#f43f5e");
+    drawArcaneDais(41 * ts + ts / 2, 6 * ts + ts / 2, "rgba(244, 63, 94, 0.5)", "#f43f5e");
+  } else if (style === "FROZEN_ABYSS") {
+    drawArcaneDais(3 * ts + ts / 2, 4 * ts + ts / 2, "rgba(56, 189, 248, 0.4)", "#38bdf8");
+    drawArcaneDais(45 * ts + ts / 2, 6 * ts + ts / 2, "rgba(6, 182, 212, 0.5)", "#06b6d4");
+  } else if (style === "SHADOW_NECROPOLIS") {
+    drawArcaneDais(4 * ts + ts / 2, 4 * ts + ts / 2, "rgba(56, 189, 248, 0.4)", "#38bdf8");
+    drawArcaneDais(49 * ts + ts / 2, 7 * ts + ts / 2, "rgba(168, 85, 247, 0.5)", "#a855f7");
+  } else if (style === "DRAGON_VOLCANO") {
+    drawArcaneDais(4 * ts + ts / 2, 5 * ts + ts / 2, "rgba(56, 189, 248, 0.4)", "#38bdf8");
+    drawArcaneDais(53 * ts + ts / 2, 8 * ts + ts / 2, "rgba(249, 115, 22, 0.5)", "#f97316");
+  } else if (style === "MONARCH_SANCTUM") {
+    drawArcaneDais(5 * ts + ts / 2, 5 * ts + ts / 2, "rgba(56, 189, 248, 0.4)", "#38bdf8");
+    drawArcaneDais(57 * ts + ts / 2, 9 * ts + ts / 2, "rgba(250, 204, 21, 0.5)", "#facc15");
+  } else if (style === "COSMIC_VOID") {
+    drawArcaneDais(5 * ts + ts / 2, 5 * ts + ts / 2, "rgba(56, 189, 248, 0.4)", "#38bdf8");
+    drawArcaneDais(61 * ts + ts / 2, 9 * ts + ts / 2, "rgba(129, 140, 248, 0.5)", "#818cf8");
+  } else if (style === "SHADOW_THRONE") {
+    drawArcaneDais(6 * ts + ts / 2, 5 * ts + ts / 2, "rgba(56, 189, 248, 0.4)", "#38bdf8");
+    drawArcaneDais(65 * ts + ts / 2, 10 * ts + ts / 2, "rgba(56, 189, 248, 0.5)", "#38bdf8");
   } else {
     // Portal de Respawn do Gate E em (2, 2)
     drawArcaneDais(2 * ts + ts / 2, 2 * ts + ts / 2, "rgba(56, 189, 248, 0.35)", "#38bdf8");
-    // Portal Fenda da Aurora (Gate D) em (5, 2)
+    // Portal Fenda Dimensional (Gate D+) em (5, 2)
     drawArcaneDais(5 * ts + ts / 2, 2 * ts + ts / 2, "rgba(168, 85, 247, 0.4)", "#c084fc");
-    // Portal de Retorno do Chefe do Gate E em (42, 12)
-    drawArcaneDais(42 * ts + ts / 2, 12 * ts + ts / 2, "rgba(56, 189, 248, 0.35)", "#38bdf8");
+    // Portal de Retorno do Chefe do Gate E em (46, 7) — câmara de extração segura
+    drawArcaneDais(46 * ts + ts / 2, 7 * ts + ts / 2, "rgba(56, 189, 248, 0.35)", "#38bdf8");
   }
 
   // =========================================================================
@@ -481,8 +587,20 @@ export function buildDungeonCanvas(
 
       let b: BiomeTheme;
       if (style === "CRIMSON_CITADEL") {
-        const sector = x <= 10 ? 0 : x <= 22 ? 1 : 2;
+        const sector = x <= 12 ? 0 : x <= 26 ? 1 : 2;
         b = CRIMSON_CITADEL_THEMES[sector];
+      } else if (style === "FROZEN_ABYSS") {
+        b = FROZEN_ABYSS_THEME;
+      } else if (style === "SHADOW_NECROPOLIS") {
+        b = SHADOW_NECROPOLIS_THEME;
+      } else if (style === "DRAGON_VOLCANO") {
+        b = DRAGON_VOLCANO_THEME;
+      } else if (style === "MONARCH_SANCTUM") {
+        b = MONARCH_SANCTUM_THEME;
+      } else if (style === "COSMIC_VOID") {
+        b = COSMIC_VOID_THEME;
+      } else if (style === "SHADOW_THRONE") {
+        b = SHADOW_THRONE_THEME;
       } else {
         const biomeIdx = biomeAt(x, y);
         b = BIOMES[biomeIdx] ?? BIOMES[0];
@@ -494,16 +612,15 @@ export function buildDungeonCanvas(
       const hasRight = isObs(x + 1, y);
 
       const isPillar = !hasAbove && !hasBelow && !hasLeft && !hasRight;
-      const isCrimson = style === "CRIMSON_CITADEL";
 
-      const wallBaseColor = isCrimson ? "#150407" : "#0c1017";
-      const wallBlockColor = isCrimson ? "#2a0911" : "#273546";
-      const wallBlockLight = isCrimson ? "#681628" : "#475a72";
-      const wallCrestColor = isCrimson ? "#4f111f" : "#475569";
-      const wallCrestHi = isCrimson ? "#9f1239" : "#94a3b8";
-      const wallMortar = isCrimson ? "#0d0204" : "#080c14";
-      const pillarShaft = isCrimson ? "#380c16" : "#334155";
-      const pillarBase = isCrimson ? "#22070c" : "#273546";
+      const wallBaseColor = b.slabBase;
+      const wallBlockColor = b.slabMid;
+      const wallBlockLight = b.slabLight;
+      const wallCrestColor = b.bevelHi;
+      const wallCrestHi = b.accent;
+      const wallMortar = b.mortar;
+      const pillarShaft = b.slabMid;
+      const pillarBase = b.slabBase;
 
       if (isPillar) {
         // --- PILAR MONOLÍTICO CARVADO COM GEMA DE MANA CENTRAL ---
@@ -526,7 +643,7 @@ export function buildDungeonCanvas(
         // Luz chanfrada esquerda e sombra chanfrada direita
         ctx.fillStyle = wallCrestHi;
         ctx.fillRect(px + 8, py + 8, 4, ts - 22);
-        ctx.fillStyle = isCrimson ? "#120306" : "#1a2634";
+        ctx.fillStyle = b.bevelShadow;
         ctx.fillRect(px + ts - 12, py + 8, 4, ts - 22);
 
         // Capitel (topo ornamentado do pilar)
@@ -565,7 +682,7 @@ export function buildDungeonCanvas(
           ctx.fillRect(px, py, ts, 2);
 
           // Chanfro inferior e sombra sob o beiral
-          ctx.fillStyle = isCrimson ? "#0a0103" : "#0a0f18";
+          ctx.fillStyle = b.bevelShadow;
           ctx.fillRect(px, py + 16, ts, 4);
 
           // Face de alvenaria abaixo do beiral

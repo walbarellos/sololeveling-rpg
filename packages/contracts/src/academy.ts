@@ -14,7 +14,7 @@ export const RankExamRequirementSchema = z.object({
 export type RankExamRequirement = z.infer<typeof RankExamRequirementSchema>;
 
 export function getNextHunterRank(currentRank: HunterRank): HunterRank | null {
-  const order: HunterRank[] = ["E", "D", "C", "B", "A", "S"];
+  const order: HunterRank[] = ["E", "D", "C", "B", "A", "S", "SS", "SSS", "SSS+"];
   const idx = order.indexOf(currentRank);
   if (idx >= 0 && idx < order.length - 1) {
     return order[idx + 1];
@@ -37,41 +37,71 @@ export const RANK_EXAM_REQUIREMENTS: Readonly<Partial<Record<HunterRank, RankExa
     targetRank: "C",
     minLevel: 15,
     minAllocatedStats: 30,
-    requiredTrophyItemId: "trophy_shadow_wolf_fang",
-    trophyName: "Presa da Matriarca das Sombras",
+    requiredTrophyItemId: "trophy_crimson_heart",
+    trophyName: "Coração da Cidadela Carmesim",
     rewardStatPoints: 15,
     unlockedLevelCap: 45,
-    description: "Incursão Avançada: Abata a Matriarca Lobo das Sombras no Covil das Feras para autorização de incursões Classe C."
+    description: "Incursão da Cidadela Carmesim: Derrote a Sentinela Carmesim no Gate D para autorização de incursões Classe C."
   },
   B: {
     targetRank: "B",
     minLevel: 25,
     minAllocatedStats: 50,
-    requiredTrophyItemId: "trophy_fire_gate_core",
-    trophyName: "Coração Ígneo do Portão Vermelho",
+    requiredTrophyItemId: "trophy_frost_queen_crystal",
+    trophyName: "Cristal do Coração da Rainha do Gelo",
     rewardStatPoints: 25,
     unlockedLevelCap: 65,
-    description: "Abolição de Ruptura: Destrua o Chefe Supremo do Portão de Fogo e contenha o perigo regional."
+    description: "Incursão Glacial: Destrua a Rainha do Gelo Frostbite no Gate C (Niflheim) e contenha o congelamento dimensional."
   },
   A: {
     targetRank: "A",
     minLevel: 45,
     minAllocatedStats: 75,
-    requiredTrophyItemId: "trophy_void_essence",
-    trophyName: "Essência do Lorde do Vácuo",
+    requiredTrophyItemId: "trophy_shadow_lich_skull",
+    trophyName: "Crânio do Arquilorde Necromante",
     rewardStatPoints: 35,
-    unlockedLevelCap: 85,
-    description: "Elite Nacional: Conquiste a matéria cósmica do Abismo Dimensional e lidere incursões de grande porte."
+    unlockedLevelCap: 90,
+    description: "Purificação da Necrópole: Destrua o Arquilorde Necromante no Gate B e lidere esquadrões de elite."
   },
   S: {
     targetRank: "S",
-    minLevel: 70,
+    minLevel: 65,
     minAllocatedStats: 100,
-    requiredTrophyItemId: "trophy_monarch_crown",
-    trophyName: "Coroa do Monarca Antigo",
+    requiredTrophyItemId: "trophy_dragon_heart",
+    trophyName: "Coração Vulcânico do Dragão Ignis",
     rewardStatPoints: 50,
-    unlockedLevelCap: 100,
-    description: "Consagração Máxima: Homologação no panteão dos caçadores de nível nacional pela Presidência da Associação."
+    unlockedLevelCap: 120,
+    description: "Abolição de Cataclismo: Abata o Dragão de Lava Ignis no Gate A para ascender ao Panteão Nacional de Rank S."
+  },
+  SS: {
+    targetRank: "SS",
+    minLevel: 95,
+    minAllocatedStats: 130,
+    requiredTrophyItemId: "trophy_god_statue_fragment",
+    trophyName: "Fragmento Sagrado da Estátua de Deus",
+    rewardStatPoints: 75,
+    unlockedLevelCap: 150,
+    description: "Desafio da Divindade Antiga: Sobreviva e destrua a Estátua de Deus no Gate S (Templo Duplo) para alcançar o Rank SS."
+  },
+  SSS: {
+    targetRank: "SSS",
+    minLevel: 125,
+    minAllocatedStats: 160,
+    requiredTrophyItemId: "trophy_cosmic_core",
+    trophyName: "Núcleo da Calamidade Cósmica",
+    rewardStatPoints: 100,
+    unlockedLevelCap: 180,
+    description: "Calamidade Cósmica: Aniquile o Avatar da Calamidade no Gate SS e atinja autoridade de Monarca Interdimensional."
+  },
+  "SSS+": {
+    targetRank: "SSS+",
+    minLevel: 155,
+    minAllocatedStats: 200,
+    requiredTrophyItemId: "trophy_shadow_sovereign_crown",
+    trophyName: "Coroa do Monarca das Sombras",
+    rewardStatPoints: 150,
+    unlockedLevelCap: 200,
+    description: "Ascensão ao Trono Supremo: Conquiste a Coroa do Monarca no Gate SSS e torne-se o Soberano Supremo das Sombras (Rank SSS+)."
   }
 };
 

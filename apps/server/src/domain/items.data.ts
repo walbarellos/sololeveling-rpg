@@ -81,17 +81,77 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
   trophy_crimson_heart: {
     id: "trophy_crimson_heart",
     name: "Coração da Cidadela Carmesim",
-    description: "Relíquia lendária do Chefe Sentinela Carmesim do Gate Rank D.",
+    description: "Relíquia lendária do Chefe Sentinela Carmesim do Gate Rank D. Exigida no Exame de Rank C.",
     type: "TROPHY",
     rarity: "EPIC",
     minLevel: 12,
     stats: { bonusHp: 70, bonusMp: 40, bonusPhysicalAtk: 6, bonusMagicalAtk: 6, bonusCritChance: 0.04, bonusDodgeChance: 0.02, bonusBlockChance: 0.03 },
     icon: "trophy_core"
   },
+  trophy_frost_queen_crystal: {
+    id: "trophy_frost_queen_crystal",
+    name: "Cristal do Coração da Rainha do Gelo",
+    description: "Fragmento de permafrost milenar da Rainha do Gelo Frostbite no Gate C. Exigido no Exame de Rank B.",
+    type: "TROPHY",
+    rarity: "EPIC",
+    minLevel: 20,
+    stats: { bonusHp: 90, bonusMp: 60, bonusPhysicalAtk: 10, bonusMagicalAtk: 12, bonusCritChance: 0.05, bonusDodgeChance: 0.03, bonusBlockChance: 0.03 },
+    icon: "trophy_core"
+  },
+  trophy_shadow_lich_skull: {
+    id: "trophy_shadow_lich_skull",
+    name: "Crânio do Arquilorde Necromante",
+    description: "Crânio runado transbordando de mana sombria do Gate B. Exigido no Exame de Rank A.",
+    type: "TROPHY",
+    rarity: "LEGENDARY",
+    minLevel: 35,
+    stats: { bonusHp: 130, bonusMp: 90, bonusPhysicalAtk: 18, bonusMagicalAtk: 22, bonusCritChance: 0.07, bonusDodgeChance: 0.05, bonusBlockChance: 0.04 },
+    icon: "trophy_core"
+  },
+  trophy_dragon_heart: {
+    id: "trophy_dragon_heart",
+    name: "Coração Vulcânico do Dragão Ignis",
+    description: "Coração em brasas vivas do Dragão Supremo Ignis no Gate A. Exigido no Exame de Rank S.",
+    type: "TROPHY",
+    rarity: "LEGENDARY",
+    minLevel: 55,
+    stats: { bonusHp: 200, bonusMp: 120, bonusPhysicalAtk: 30, bonusMagicalAtk: 30, bonusCritChance: 0.10, bonusDodgeChance: 0.06, bonusBlockChance: 0.06 },
+    icon: "trophy_core"
+  },
+  trophy_god_statue_fragment: {
+    id: "trophy_god_statue_fragment",
+    name: "Fragmento Sagrado da Estátua de Deus",
+    description: "Pedaço da pedra divina da Estátua do Templo Duplo no Gate S. Exigido no Exame de Rank SS.",
+    type: "TROPHY",
+    rarity: "IMMORTAL",
+    minLevel: 80,
+    stats: { bonusHp: 320, bonusMp: 180, bonusPhysicalAtk: 45, bonusMagicalAtk: 45, bonusCritChance: 0.12, bonusDodgeChance: 0.08, bonusBlockChance: 0.08 },
+    icon: "trophy_core"
+  },
+  trophy_cosmic_core: {
+    id: "trophy_cosmic_core",
+    name: "Núcleo da Calamidade Cósmica",
+    description: "Coração de uma estrela morta colapsada no Gate SS. Exigido no Exame de Rank SSS.",
+    type: "TROPHY",
+    rarity: "COSMIC",
+    minLevel: 110,
+    stats: { bonusHp: 480, bonusMp: 260, bonusPhysicalAtk: 65, bonusMagicalAtk: 65, bonusCritChance: 0.15, bonusDodgeChance: 0.10, bonusBlockChance: 0.10 },
+    icon: "trophy_core"
+  },
+  trophy_shadow_sovereign_crown: {
+    id: "trophy_shadow_sovereign_crown",
+    name: "Coroa do Monarca das Sombras",
+    description: "A coroa do governante da morte derrotado no Trono Supremo do Gate SSS. Consagra o caçador ao Rank SSS+.",
+    type: "TROPHY",
+    rarity: "DIVINE",
+    minLevel: 140,
+    stats: { bonusHp: 750, bonusMp: 400, bonusPhysicalAtk: 100, bonusMagicalAtk: 100, bonusCritChance: 0.20, bonusDodgeChance: 0.15, bonusBlockChance: 0.15 },
+    icon: "trophy_core"
+  },
   trophy_void_essence: {
     id: "trophy_void_essence",
     name: "Essência do Lorde do Vácuo",
-    description: "Matéria estelar recolhida após selar a fenda do abismo. Exigida no Exame de Rank A.",
+    description: "Matéria estelar recolhida após selar a fenda do abismo.",
     type: "TROPHY",
     rarity: "LEGENDARY",
     minLevel: 25,
@@ -101,7 +161,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
   trophy_monarch_crown: {
     id: "trophy_monarch_crown",
     name: "Coroa do Monarca Antigo",
-    description: "Relíquia lendária do Soberano que comanda as sombras. Exigida para a consagração em Rank S.",
+    description: "Relíquia lendária do Soberano que comanda as sombras.",
     type: "TROPHY",
     rarity: "IMMORTAL",
     minLevel: 35,

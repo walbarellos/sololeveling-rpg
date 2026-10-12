@@ -1,13 +1,14 @@
 import type {
   EnemySnapshot,
   GateClearAnnouncement,
+  HunterRank,
   WorldId
 } from "@rpg/contracts";
 
 export interface WorldBossState {
   id: string;
   name: string;
-  rank: "E" | "D" | "C";
+  rank: HunterRank;
   level: number;
   maxHp: number;
   currentHp: number;
@@ -73,8 +74,86 @@ export class BossService {
       maxHp: 980,
       currentHp: 980,
       alive: true,
-      position: { x: 28, y: 10 },
+      position: { x: 36, y: 13 },
       worldId: "GATE_D"
+    });
+
+    // 5. Rainha do Gelo Frostbite (Gate Rank C — Fenda Glacial de Niflheim)
+    this.bosses.set("boss_frost_queen", {
+      id: "boss_frost_queen",
+      name: "Rainha do Gelo Frostbite",
+      rank: "C",
+      level: 30,
+      maxHp: 1650,
+      currentHp: 1650,
+      alive: true,
+      position: { x: 40, y: 14 },
+      worldId: "GATE_C"
+    });
+
+    // 6. Arquilorde Necromante (Gate Rank B — Necrópole das Sombras)
+    this.bosses.set("boss_shadow_lich", {
+      id: "boss_shadow_lich",
+      name: "Arquilorde Necromante",
+      rank: "B",
+      level: 50,
+      maxHp: 2800,
+      currentHp: 2800,
+      alive: true,
+      position: { x: 44, y: 15 },
+      worldId: "GATE_B"
+    });
+
+    // 7. Dragão de Lava Ignis (Gate Rank A — Calamidade Vulcânica)
+    this.bosses.set("boss_dragon_ignis", {
+      id: "boss_dragon_ignis",
+      name: "Dragão de Lava Ignis",
+      rank: "A",
+      level: 75,
+      maxHp: 4800,
+      currentHp: 4800,
+      alive: true,
+      position: { x: 48, y: 16 },
+      worldId: "GATE_A"
+    });
+
+    // 8. Estátua de Deus Sorridente (Gate Rank S — Templo dos Deuses Antigos)
+    this.bosses.set("boss_god_statue", {
+      id: "boss_god_statue",
+      name: "Estátua de Deus Sorridente",
+      rank: "S",
+      level: 110,
+      maxHp: 8500,
+      currentHp: 8500,
+      alive: true,
+      position: { x: 52, y: 17 },
+      worldId: "GATE_S"
+    });
+
+    // 9. Avatar da Calamidade Cósmica (Gate Rank SS — Fenda Cósmica)
+    this.bosses.set("boss_cosmic_avatar", {
+      id: "boss_cosmic_avatar",
+      name: "Avatar da Calamidade Cósmica",
+      rank: "SS",
+      level: 140,
+      maxHp: 14000,
+      currentHp: 14000,
+      alive: true,
+      position: { x: 56, y: 18 },
+      worldId: "GATE_SS"
+    });
+
+    // 10. Monarca das Sombras Ashborn (Gate Rank SSS+ — Trono Supremo)
+    this.bosses.set("boss_shadow_monarch", {
+      id: "boss_shadow_monarch",
+      name: "Monarca das Sombras Ashborn",
+      rank: "SSS+",
+      level: 185,
+      maxHp: 24000,
+      currentHp: 24000,
+      alive: true,
+      position: { x: 60, y: 19 },
+      worldId: "GATE_SSS"
     });
   }
 
@@ -140,6 +219,18 @@ export class BossService {
         trophy = "Coração Ígneo do Portão Vermelho";
       } else if (boss.id === "boss_crimson_sentinel") {
         trophy = "Coração da Cidadela Carmesim";
+      } else if (boss.id === "boss_frost_queen") {
+        trophy = "Cristal do Coração da Rainha do Gelo";
+      } else if (boss.id === "boss_shadow_lich") {
+        trophy = "Crânio do Arquilorde Necromante";
+      } else if (boss.id === "boss_dragon_ignis") {
+        trophy = "Coração Vulcânico do Dragão Ignis";
+      } else if (boss.id === "boss_god_statue") {
+        trophy = "Fragmento Sagrado da Estátua de Deus";
+      } else if (boss.id === "boss_cosmic_avatar") {
+        trophy = "Núcleo da Calamidade Cósmica";
+      } else if (boss.id === "boss_shadow_monarch") {
+        trophy = "Coroa do Monarca das Sombras";
       }
 
       return {

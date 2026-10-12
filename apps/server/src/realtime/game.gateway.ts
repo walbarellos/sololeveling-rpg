@@ -494,6 +494,25 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.broadcastSnapshot();
   }
 
+  @SubscribeMessage(ClientEvents.ShrineInteractRequest)
+  handleShrineInteract(@ConnectedSocket() client: Socket) {
+    const result = this.game.interactWithShrine(this.pid(client));
+    if (!result.success) {
+      const messages: Record<string, string> = {
+        TOO_FAR: "Você precisa se aproximar do Altar para meditar e canalizar sua mana!",
+        ALREADY_IN_BATTLE: "Não é possível meditar em combate!"
+      };
+      return this.sendError(client, result.error ?? "INVALID_PAYLOAD", messages[result.error ?? ""] ?? "Falha na meditação.");
+    }
+    client.emit(ServerEvents.ShrineInteractResult, {
+      success: true,
+      message: result.message ?? "Vitalidade e mana restauradas!",
+      hpRestored: result.hpRestored ?? 0,
+      mpRestored: result.mpRestored ?? 0
+    });
+    this.broadcastSnapshot();
+  }
+
   private broadcastSnapshot() {
     if (this.server?.sockets?.sockets) {
       for (const [socketId, client] of this.server.sockets.sockets) {

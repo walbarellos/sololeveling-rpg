@@ -58,7 +58,7 @@ import { MissionsService } from "./missions.service";
 import { InventoryService } from "./inventory.service";
 import { MASTER_ITEMS } from "./items.data";
 import {
-  GATE_D_OBSTACLES,
+  ALL_GATE_WORLDS,
   GATE_D_SPAWN,
   GATE_D_WORLD
 } from "./worlds";
@@ -107,7 +107,36 @@ export const MOB_TEMPLATES: Record<string, MobTemplate> = {
   boss: { name: "Chefe Goblin do Gate", rank: "C", baseHp: 220, baseMp: 50, theme: "crypt" },
   ashguard: { name: "Guarda de Cinzas", rank: "D", baseHp: 120, baseMp: 24, theme: "crimson" },
   brasshound: { name: "Cão de Latão", rank: "D", baseHp: 140, baseMp: 18, theme: "brass" },
-  runeblade: { name: "Lâmina Rúnica", rank: "D", baseHp: 128, baseMp: 40, theme: "rune" }
+  runeblade: { name: "Lâmina Rúnica", rank: "D", baseHp: 128, baseMp: 40, theme: "rune" },
+
+  // GATE C — Fenda Glacial de Niflheim
+  frostwolf: { name: "Lobo Glacial", rank: "C", baseHp: 160, baseMp: 30, theme: "frost" },
+  frostgolem: { name: "Golem de Permafrost", rank: "C", baseHp: 220, baseMp: 20, theme: "frost" },
+  icespecter: { name: "Espectro da Nevasca", rank: "C", baseHp: 175, baseMp: 55, theme: "frost" },
+
+  // GATE B — Necrópole das Sombras
+  deathknight: { name: "Cavaleiro da Morte", rank: "B", baseHp: 280, baseMp: 40, theme: "crypt" },
+  ghoul_lord: { name: "Lorde Carniçal", rank: "B", baseHp: 320, baseMp: 30, theme: "swamp" },
+  shadowlich: { name: "Lich Sombrio", rank: "B", baseHp: 250, baseMp: 90, theme: "space" },
+
+  // GATE A — Calamidade Vulcânica
+  magma_drake: { name: "Draconiano de Magma", rank: "A", baseHp: 440, baseMp: 60, theme: "hell" },
+  fire_behemoth: { name: "Behemoth Vulcânico", rank: "A", baseHp: 520, baseMp: 45, theme: "hell" },
+  flame_serpent: { name: "Serpente das Cinzas", rank: "A", baseHp: 410, baseMp: 80, theme: "hell" },
+
+  // GATE S — Templo dos Deuses Antigos
+  temple_guardian: { name: "Guardião de Pedra do Templo", rank: "S", baseHp: 680, baseMp: 80, theme: "crypt" },
+  winged_executioner: { name: "Carrasco Alado", rank: "S", baseHp: 750, baseMp: 90, theme: "nature" },
+  ruin_priest: { name: "Alto Sacerdote da Ruína", rank: "S", baseHp: 620, baseMp: 150, theme: "space" },
+
+  // GATE SS — Fenda Cósmica
+  stareater: { name: "Devorador de Estrelas", rank: "SS", baseHp: 1050, baseMp: 120, theme: "space" },
+  void_abomination: { name: "Abominação do Vácuo", rank: "SS", baseHp: 1200, baseMp: 140, theme: "space" },
+
+  // GATE SSS — Trono do Monarca das Sombras
+  shadow_commander: { name: "Comandante das Sombras Igris", rank: "SSS", baseHp: 1600, baseMp: 200, theme: "crypt" },
+  shadow_beru: { name: "Lorde das Sombras Beru", rank: "SSS", baseHp: 1850, baseMp: 220, theme: "larva" },
+  shadow_bellion: { name: "General Supremo Bellion", rank: "SSS+", baseHp: 2200, baseMp: 250, theme: "crypt" }
 };
 
 export function createEnemyInstance(
@@ -227,7 +256,41 @@ export class GameService {
     ["ash-2", createEnemyInstance("ash-2", "ashguard", 13, { x: 16, y: 13 }, "GATE_D")],
     ["brass-1", createEnemyInstance("brass-1", "brasshound", 14, { x: 19, y: 8 }, "GATE_D")],
     ["rune-1", createEnemyInstance("rune-1", "runeblade", 14, { x: 25, y: 9 }, "GATE_D")],
-    ["rune-2", createEnemyInstance("rune-2", "runeblade", 15, { x: 27, y: 13 }, "GATE_D")]
+    ["rune-2", createEnemyInstance("rune-2", "runeblade", 15, { x: 27, y: 13 }, "GATE_D")],
+
+    // GATE C — Fenda Glacial de Niflheim (Rank C, Lv 20–26)
+    ["frostwolf-1", createEnemyInstance("frostwolf-1", "frostwolf", 20, { x: 18, y: 10 }, "GATE_C")],
+    ["frostwolf-2", createEnemyInstance("frostwolf-2", "frostwolf", 21, { x: 22, y: 14 }, "GATE_C")],
+    ["frostgolem-1", createEnemyInstance("frostgolem-1", "frostgolem", 24, { x: 28, y: 11 }, "GATE_C")],
+    ["icespecter-1", createEnemyInstance("icespecter-1", "icespecter", 26, { x: 35, y: 13 }, "GATE_C")],
+
+    // GATE B — Necrópole das Sombras (Rank B, Lv 34–45)
+    ["deathknight-1", createEnemyInstance("deathknight-1", "deathknight", 34, { x: 20, y: 12 }, "GATE_B")],
+    ["ghoul-1", createEnemyInstance("ghoul-1", "ghoul_lord", 38, { x: 25, y: 16 }, "GATE_B")],
+    ["deathknight-2", createEnemyInstance("deathknight-2", "deathknight", 40, { x: 31, y: 10 }, "GATE_B")],
+    ["shadowlich-1", createEnemyInstance("shadowlich-1", "shadowlich", 45, { x: 38, y: 14 }, "GATE_B")],
+
+    // GATE A — Calamidade Vulcânica (Rank A, Lv 54–70)
+    ["magma-1", createEnemyInstance("magma-1", "magma_drake", 54, { x: 22, y: 12 }, "GATE_A")],
+    ["behemoth-1", createEnemyInstance("behemoth-1", "fire_behemoth", 60, { x: 28, y: 17 }, "GATE_A")],
+    ["flame-1", createEnemyInstance("flame-1", "flame_serpent", 65, { x: 35, y: 11 }, "GATE_A")],
+    ["magma-2", createEnemyInstance("magma-2", "magma_drake", 70, { x: 42, y: 15 }, "GATE_A")],
+
+    // GATE S — Templo dos Deuses Antigos (Rank S, Lv 82–105)
+    ["guardian-1", createEnemyInstance("guardian-1", "temple_guardian", 82, { x: 24, y: 13 }, "GATE_S")],
+    ["winged-1", createEnemyInstance("winged-1", "winged_executioner", 90, { x: 31, y: 18 }, "GATE_S")],
+    ["ruin-1", createEnemyInstance("ruin-1", "ruin_priest", 100, { x: 39, y: 12 }, "GATE_S")],
+    ["guardian-2", createEnemyInstance("guardian-2", "temple_guardian", 105, { x: 46, y: 16 }, "GATE_S")],
+
+    // GATE SS — Fenda Cósmica (Rank SS, Lv 118–135)
+    ["stareater-1", createEnemyInstance("stareater-1", "stareater", 118, { x: 26, y: 14 }, "GATE_SS")],
+    ["void-abom-1", createEnemyInstance("void-abom-1", "void_abomination", 126, { x: 34, y: 20 }, "GATE_SS")],
+    ["stareater-2", createEnemyInstance("stareater-2", "stareater", 135, { x: 46, y: 13 }, "GATE_SS")],
+
+    // GATE SSS — Trono do Monarca das Sombras (Rank SSS/SSS+, Lv 150–175)
+    ["igris-1", createEnemyInstance("igris-1", "shadow_commander", 152, { x: 28, y: 15 }, "GATE_SSS")],
+    ["beru-1", createEnemyInstance("beru-1", "shadow_beru", 164, { x: 38, y: 21 }, "GATE_SSS")],
+    ["bellion-1", createEnemyInstance("bellion-1", "shadow_bellion", 175, { x: 50, y: 14 }, "GATE_SSS")]
   ]);
   private readonly activeBattles = new Map<string, BattleSession>();
   private readonly online = new Set<string>();
@@ -282,7 +345,13 @@ export class GameService {
     });
     this.worlds = {
       GATE_E: pack("GATE_E", "SANCTUARY", GRID_WIDTH, GRID_HEIGHT, { x: 2, y: 2 }, DEFAULT_OBSTACLES),
-      GATE_D: pack("GATE_D", GATE_D_WORLD.style, GATE_D_WORLD.width, GATE_D_WORLD.height, GATE_D_SPAWN, GATE_D_OBSTACLES)
+      GATE_D: pack("GATE_D", ALL_GATE_WORLDS.GATE_D.style, ALL_GATE_WORLDS.GATE_D.width, ALL_GATE_WORLDS.GATE_D.height, ALL_GATE_WORLDS.GATE_D.spawn, ALL_GATE_WORLDS.GATE_D.obstacles),
+      GATE_C: pack("GATE_C", ALL_GATE_WORLDS.GATE_C.style, ALL_GATE_WORLDS.GATE_C.width, ALL_GATE_WORLDS.GATE_C.height, ALL_GATE_WORLDS.GATE_C.spawn, ALL_GATE_WORLDS.GATE_C.obstacles),
+      GATE_B: pack("GATE_B", ALL_GATE_WORLDS.GATE_B.style, ALL_GATE_WORLDS.GATE_B.width, ALL_GATE_WORLDS.GATE_B.height, ALL_GATE_WORLDS.GATE_B.spawn, ALL_GATE_WORLDS.GATE_B.obstacles),
+      GATE_A: pack("GATE_A", ALL_GATE_WORLDS.GATE_A.style, ALL_GATE_WORLDS.GATE_A.width, ALL_GATE_WORLDS.GATE_A.height, ALL_GATE_WORLDS.GATE_A.spawn, ALL_GATE_WORLDS.GATE_A.obstacles),
+      GATE_S: pack("GATE_S", ALL_GATE_WORLDS.GATE_S.style, ALL_GATE_WORLDS.GATE_S.width, ALL_GATE_WORLDS.GATE_S.height, ALL_GATE_WORLDS.GATE_S.spawn, ALL_GATE_WORLDS.GATE_S.obstacles),
+      GATE_SS: pack("GATE_SS", ALL_GATE_WORLDS.GATE_SS.style, ALL_GATE_WORLDS.GATE_SS.width, ALL_GATE_WORLDS.GATE_SS.height, ALL_GATE_WORLDS.GATE_SS.spawn, ALL_GATE_WORLDS.GATE_SS.obstacles),
+      GATE_SSS: pack("GATE_SSS", ALL_GATE_WORLDS.GATE_SSS.style, ALL_GATE_WORLDS.GATE_SSS.width, ALL_GATE_WORLDS.GATE_SSS.height, ALL_GATE_WORLDS.GATE_SSS.spawn, ALL_GATE_WORLDS.GATE_SSS.obstacles)
     };
   }
 
@@ -1086,21 +1155,33 @@ export class GameService {
     if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
     if (player.inBattle) return { success: false, error: "ALREADY_IN_BATTLE" };
 
-    if (zoneId === "ENTER_GATE_D") {
-      if (!isRankAllowed(player.rank, "D")) {
-        return { success: false, error: "ZONE_LOCKED" };
-      }
-      player.worldId = "GATE_D";
-      player.position = { ...GATE_D_SPAWN };
+    if (zoneId === "RETURN_GATE_E") {
+      player.worldId = "GATE_E";
+      player.position = { x: 2, y: 2 };
       player.lastStepAt = this.clock.nowMs();
       player.sequence = ++this.sequence;
       this.playerRepository.save(player);
       return { success: true, player: this.toSnapshot(player) };
     }
 
-    if (zoneId === "RETURN_GATE_E") {
-      player.worldId = "GATE_E";
-      player.position = { x: 2, y: 2 };
+    const gateTargetMap: Partial<Record<ZoneTeleportRequest["zoneId"], { worldId: WorldId; minRank: HunterRank }>> = {
+      ENTER_GATE_D: { worldId: "GATE_D", minRank: "D" },
+      ENTER_GATE_C: { worldId: "GATE_C", minRank: "C" },
+      ENTER_GATE_B: { worldId: "GATE_B", minRank: "B" },
+      ENTER_GATE_A: { worldId: "GATE_A", minRank: "A" },
+      ENTER_GATE_S: { worldId: "GATE_S", minRank: "S" },
+      ENTER_GATE_SS: { worldId: "GATE_SS", minRank: "SS" },
+      ENTER_GATE_SSS: { worldId: "GATE_SSS", minRank: "SSS" }
+    };
+
+    const gateTarget = gateTargetMap[zoneId];
+    if (gateTarget) {
+      if (!isRankAllowed(player.rank, gateTarget.minRank)) {
+        return { success: false, error: "ZONE_LOCKED" };
+      }
+      const worldGeo = ALL_GATE_WORLDS[gateTarget.worldId];
+      player.worldId = gateTarget.worldId;
+      player.position = { ...(worldGeo?.spawn ?? { x: 3, y: 9 }) };
       player.lastStepAt = this.clock.nowMs();
       player.sequence = ++this.sequence;
       this.playerRepository.save(player);
@@ -1138,6 +1219,44 @@ export class GameService {
     this.playerRepository.save(player);
 
     return { success: true, player: this.toSnapshot(player) };
+  }
+
+  interactWithShrine(playerId: string): {
+    success: boolean;
+    message?: string;
+    hpRestored?: number;
+    mpRestored?: number;
+    player?: PlayerSnapshot;
+    error?: ServerErrorCode;
+  } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+    if (player.inBattle) return { success: false, error: "ALREADY_IN_BATTLE" };
+
+    const worldId = player.worldId ?? "GATE_E";
+    const shrines = ALL_GATE_WORLDS[worldId]?.shrines ?? [];
+    const nearby = shrines.find(
+      (s) => Math.max(Math.abs(player.position.x - s.x), Math.abs(player.position.y - s.y)) <= 2
+    );
+
+    if (!nearby) {
+      return { success: false, error: "TOO_FAR" };
+    }
+
+    const hpRestored = player.maxHp - player.hp;
+    const mpRestored = player.maxMp - player.mp;
+    player.hp = player.maxHp;
+    player.mp = player.maxMp;
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+
+    return {
+      success: true,
+      message: `✨ Você meditou no [${nearby.name}]. Vitalidade e mana completamente restauradas!`,
+      hpRestored,
+      mpRestored,
+      player: this.toSnapshot(player)
+    };
   }
 
   resetGate(

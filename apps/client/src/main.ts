@@ -36,13 +36,19 @@ const getWorldScene = (): WorldScene | null => {
 function updateWorldTitleTag(worldId: WorldId) {
   const tagEl = document.querySelector<HTMLSpanElement>(".gate-dungeon-tag");
   if (!tagEl) return;
-  if (worldId === "GATE_D") {
-    tagEl.textContent = "Gate Rank D · Cidadela Carmesim";
-    tagEl.style.color = "#fb7185";
-  } else {
-    tagEl.textContent = "Gate Rank E · Masmorra das Sombras";
-    tagEl.style.color = "";
-  }
+  const titles: Record<WorldId, { title: string; color: string }> = {
+    GATE_E: { title: "Gate Rank E · Masmorra das Sombras", color: "#38bdf8" },
+    GATE_D: { title: "Gate Rank D · Cidadela Carmesim", color: "#fb7185" },
+    GATE_C: { title: "Gate Rank C · Fenda Glacial de Niflheim", color: "#67e8f9" },
+    GATE_B: { title: "Gate Rank B · Necrópole das Sombras", color: "#c084fc" },
+    GATE_A: { title: "Gate Rank A · Calamidade Vulcânica", color: "#fb923c" },
+    GATE_S: { title: "Gate Rank S · Templo dos Deuses Antigos", color: "#facc15" },
+    GATE_SS: { title: "Gate Rank SS · Calamidade Cósmica", color: "#e879f9" },
+    GATE_SSS: { title: "Gate Rank SSS+ · Trono do Monarca das Sombras", color: "#38bdf8" }
+  };
+  const info = titles[worldId] ?? titles.GATE_E;
+  tagEl.textContent = info.title;
+  tagEl.style.color = info.color;
 }
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -178,6 +184,11 @@ socket.on(ServerEvents.GateResetAnnouncement, (data: { message?: string }) => {
   const msg = data?.message ?? "A fenda dimensional foi reiniciada pelo Operador Jin!";
   hudController.setStatus(msg);
   triggerGateClearBanner("FENDA REINICIADA", "Operador Jin");
+});
+
+socket.on(ServerEvents.ShrineInteractResult, (data: { message?: string }) => {
+  const msg = data?.message ?? "✨ Vitalidade e mana restauradas no Altar Ancestral!";
+  hudController.setStatus(msg);
 });
 
 socket.on(ServerEvents.MissionsState, (raw: unknown) => {

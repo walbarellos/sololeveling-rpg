@@ -79,7 +79,7 @@ export class NpcController {
   }
 
   private rankAtLeast(min: string): boolean {
-    const order = ["E", "D", "C", "B", "A", "S"];
+    const order = ["E", "D", "C", "B", "A", "S", "SS", "SSS", "SSS+"];
     const cur = order.indexOf(this.playerRank());
     const need = order.indexOf(min);
     return cur >= 0 && need >= 0 && cur >= need;
@@ -168,73 +168,68 @@ export class NpcController {
 
     if (npc.role === "GATEKEEPER") {
       const rank = this.playerRank();
-      const hasD = this.rankAtLeast("D");
-      return [
+      const gates: Array<{ id: string; name: string; rankNeed: string; zone: any; levels: string }> = [
+        { id: "D", name: "Cidadela Carmesim", rankNeed: "D", zone: "ENTER_GATE_D", levels: "Nv. 12–16" },
+        { id: "C", name: "Fenda Glacial de Niflheim", rankNeed: "C", zone: "ENTER_GATE_C", levels: "Nv. 20–30" },
+        { id: "B", name: "Necrópole das Sombras", rankNeed: "B", zone: "ENTER_GATE_B", levels: "Nv. 34–50" },
+        { id: "A", name: "Calamidade Vulcânica", rankNeed: "A", zone: "ENTER_GATE_A", levels: "Nv. 54–75" },
+        { id: "S", name: "Templo dos Deuses Antigos (Double Dungeon)", rankNeed: "S", zone: "ENTER_GATE_S", levels: "Nv. 82–110" },
+        { id: "SS", name: "Fenda da Calamidade Cósmica", rankNeed: "SS", zone: "ENTER_GATE_SS", levels: "Nv. 118–140" },
+        { id: "SSS", name: "Trono do Monarca das Sombras", rankNeed: "SSS", zone: "ENTER_GATE_SSS", levels: "Nv. 150–185+" }
+      ];
+
+      const gateActions: NpcActionDef[] = [
         {
           label: "Reiniciar instância do Gate",
-          meta: "Revive todos os chefes · nova expedição",
+          meta: "Revive todos os monstros e chefes · nova expedição",
           variant: "danger",
           onClick: () => {
             socket.emit(ClientEvents.ResetGateRequest, {});
             this.close();
           }
-        },
-        {
-          label: hasD ? "Cidadela Carmesim (Gate Rank D)" : "Cidadela Carmesim (bloqueada)",
-          meta: hasD
-            ? "Teleporte dimensional para o mapa da Cidadela Carmesim (Rank D)"
-            : `Requer Rank D (você: Rank ${rank}) · complete a prova de ascensão`,
-          variant: hasD ? "gold" : "default",
+        }
+      ];
+
+      for (const g of gates) {
+        const hasRank = this.rankAtLeast(g.rankNeed);
+        gateActions.push({
+          label: hasRank ? `${g.name} (Gate Rank ${g.id})` : `${g.name} (Bloqueado)`,
+          meta: hasRank
+            ? `Teleporte · ${g.levels} · Requer Rank ${g.id}`
+            : `Requer Rank ${g.id} (Você: Rank ${rank}) · preste o exame com Baek`,
+          variant: hasRank ? "gold" : "default",
           onClick: () => {
-            if (!hasD) {
+            if (!hasRank) {
               this.setDialogue(
-                `A passagem para a Cidadela Carmesim só sintoniza caçadores Rank D ou superior. Seu rank atual é ${rank}. Fale com o Inspetor Baek após cumprir os requisitos da prova.`
+                `A passagem para ${g.name} requer Rank ${g.rankNeed} ou superior. Seu rank atual é ${rank}. Fale com o Inspetor Baek após cumprir os requisitos da prova.`
               );
               return;
             }
-            this.teleport("ENTER_GATE_D");
+            this.teleport(g.zone);
           }
-        },
+        });
+      }
+
+      gateActions.push(
         {
-          label: "Catacumbas esquecidas",
-          meta: "Teleporte · Rank E/D · Nv. 3–5",
+          label: "Catacumbas esquecidas (Gate E)",
+          meta: "Teleporte · Setor 2 · Nv. 3–5",
           onClick: () => this.teleport("CATACUMBAS")
         },
         {
-          label: "Covil vulcânico",
-          meta: "Teleporte · Rank D · Nv. 5–8",
-          onClick: () => {
-            if (!hasD) {
-              this.setDialogue("Zona Rank D. Complete a ascensão com o Inspetor Baek primeiro.");
-              return;
-            }
-            this.teleport("COVIL");
-          }
+          label: "Covil das feras (Gate E)",
+          meta: "Teleporte · Setor 3 · Nv. 5–8",
+          onClick: () => this.teleport("COVIL")
         },
         {
-          label: "Abismo dimensional cósmico",
-          meta: "Teleporte · Rank D/C · Nv. 8–10",
-          onClick: () => {
-            if (!hasD) {
-              this.setDialogue("Zona Rank D+. Complete a ascensão com o Inspetor Baek primeiro.");
-              return;
-            }
-            this.teleport("ABISMO");
-          }
-        },
-        {
-          label: "Câmara do Trono do Portão de Fogo",
-          meta: "Teleporte · Rank C+ · Nv. 10+",
-          variant: "gold",
-          onClick: () => this.teleport("CHAMBER")
-        },
-        {
-          label: "Retornar ao Santuário seguro",
+          label: "Retornar ao Santuário seguro (Gate E)",
           meta: "Zona segura · sem combate",
           variant: "safe",
-          onClick: () => this.teleport("SANTUARIO")
+          onClick: () => this.teleport("RETURN_GATE_E")
         }
-      ];
+      );
+
+      return gateActions;
     }
 
     return [];

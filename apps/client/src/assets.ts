@@ -56,25 +56,43 @@ export const TEX = {
   mote: "mote",
   vignette: "vignette",
   portal: "portal",
+  shrine: "shrine",
   token: (key: PortraitKey) => `token_${key}`
 } as const;
 
 export function enemyTextureKey(name: string): string {
   const n = name.toLowerCase();
-  if (n.includes("chefe") || n.includes("boss") || n.includes("sentinela")) return TEX.boss;
-  if (n.includes("cinzas") || n.includes("ash")) return TEX.ember;
-  if (n.includes("latão") || n.includes("brass") || n.includes("cão")) return TEX.hellhound;
-  if (n.includes("rúnica") || n.includes("blade") || n.includes("lâmina")) return TEX.voidling;
+  if (
+    n.includes("chefe") ||
+    n.includes("boss") ||
+    n.includes("sentinela") ||
+    n.includes("rainha") ||
+    n.includes("frostbite") ||
+    n.includes("arquilorde") ||
+    n.includes("ignis") ||
+    n.includes("dragão") ||
+    n.includes("estátua") ||
+    n.includes("avatar") ||
+    n.includes("monarca") ||
+    n.includes("ashborn") ||
+    n.includes("igris") ||
+    n.includes("beru") ||
+    n.includes("bellion")
+  ) {
+    return TEX.boss;
+  }
+  if (n.includes("cinzas") || n.includes("ash") || n.includes("magma") || n.includes("behemoth") || n.includes("serpente")) return TEX.ember;
+  if (n.includes("latão") || n.includes("brass") || n.includes("cão") || n.includes("hell") || n.includes("hound")) return TEX.hellhound;
+  if (n.includes("rúnica") || n.includes("blade") || n.includes("lâmina") || n.includes("espectro") || n.includes("lich")) return TEX.voidling;
+  if (n.includes("gelo") || n.includes("frost") || n.includes("golem") || n.includes("permafrost") || n.includes("bat")) return TEX.frostbat;
+  if (n.includes("morte") || n.includes("knight") || n.includes("carniçal") || n.includes("wolf") || n.includes("lobo")) return TEX.wolf;
+  if (n.includes("guardião") || n.includes("carrasco") || n.includes("sacerdote") || n.includes("goblin")) return TEX.goblin;
+  if (n.includes("estrela") || n.includes("stareater") || n.includes("vácuo") || n.includes("abominação") || n.includes("star") || n.includes("spawn")) return TEX.starspawn;
   if (n.includes("slime")) return TEX.slime;
-  if (n.includes("goblin")) return TEX.goblin;
   if (n.includes("larva")) return TEX.larva;
   if (n.includes("sprout") || n.includes("thorn")) return TEX.sprout;
   if (n.includes("ember") || n.includes("imp")) return TEX.ember;
   if (n.includes("void")) return TEX.voidling;
-  if (n.includes("frost") || n.includes("bat")) return TEX.frostbat;
-  if (n.includes("hell") || n.includes("hound")) return TEX.hellhound;
-  if (n.includes("star") || n.includes("spawn")) return TEX.starspawn;
-  if (n.includes("wolf")) return TEX.wolf;
   return TEX.slime;
 }
 
@@ -555,6 +573,22 @@ export function buildTextures(scene: Phaser.Scene, tile: number) {
   g.fillStyle(0x38bdf8, 0.85).fillCircle(T / 2, T / 2, T * 0.16);
   g.fillStyle(0xffffff, 1).fillCircle(T / 2, T / 2, T * 0.08);
   g.generateTexture(TEX.portal, T, T);
+
+  // ---- Altar de Restauração / Fonte de Mana (Shrine) ----
+  g.clear();
+  g.fillStyle(0x020617, 0.6).fillEllipse(T / 2, T - 6, T * 0.75, 12);
+  // Base do altar em pedra entalhada
+  g.fillStyle(0x1e293b, 1).fillRoundedRect(T * 0.2, T * 0.55, T * 0.6, T * 0.35, 3);
+  g.lineStyle(1.5, 0x0ea5e9, 0.8).strokeRoundedRect(T * 0.2, T * 0.55, T * 0.6, T * 0.35, 3);
+  // Bacia sagrada com água de mana
+  g.fillStyle(0x0284c7, 0.85).fillEllipse(T / 2, T * 0.58, T * 0.45, 10);
+  g.fillStyle(0x38bdf8, 0.9).fillCircle(T / 2, T * 0.58, 4);
+  // Cristal sagrado flutuante lapidado
+  g.fillStyle(0x38bdf8, 0.95).fillTriangle(T / 2, T * 0.16, T * 0.3, T * 0.38, T * 0.7, T * 0.38);
+  g.fillStyle(0x7dd3fc, 0.95).fillTriangle(T / 2, T * 0.48, T * 0.3, T * 0.38, T * 0.7, T * 0.38);
+  g.fillStyle(0xffffff, 1).fillCircle(T / 2, T * 0.35, 2.5);
+  g.lineStyle(1, 0xbae6fd, 0.9).strokeCircle(T / 2, T * 0.35, 6);
+  g.generateTexture(TEX.shrine, T, T);
 
   g.destroy();
 }

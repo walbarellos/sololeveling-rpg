@@ -4,16 +4,19 @@
  */
 import type { HunterRank } from "./base";
 
-export const MAX_LEVEL = 100;
+export const MAX_LEVEL = 200;
 
 /** Nível máximo por rank. O EXP fica retido no cap até a prova de rank ser concluída. */
 export const RANK_CAP: Readonly<Record<HunterRank, number>> = {
   E: 12,
   D: 25,
-  C: 40,
-  B: 60,
-  A: 80,
-  S: 100
+  C: 45,
+  B: 65,
+  A: 90,
+  S: 120,
+  SS: 150,
+  SSS: 180,
+  "SSS+": 200
 };
 
 /** EXP necessário para sair do nível `level` para o seguinte. */

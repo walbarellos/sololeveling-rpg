@@ -216,7 +216,7 @@ describe("progressão e eventos de combate", () => {
     expect(killsPerLevel(10)).toBeGreaterThan(11);
     expect(killsPerLevel(50)).toBeLessThan(26);
     expect(statMult(1)).toBe(1);
-    expect(MAX_LEVEL).toBe(RANK_CAP.S);
+    expect(MAX_LEVEL).toBe(RANK_CAP["SSS+"]);
   });
 
   it("applyExp sobe vários níveis de uma vez e carrega o resto", () => {
@@ -236,7 +236,7 @@ describe("progressão e eventos de combate", () => {
 
   it("applyExp ignora ganho negativo e respeita o nível máximo", () => {
     expect(applyExp({ level: 5, exp: 10, rank: "E" }, -50)).toEqual({ level: 5, exp: 10, capped: false });
-    expect(applyExp({ level: 100, exp: 0, rank: "S" }, 1e9).level).toBe(100);
+    expect(applyExp({ level: 200, exp: 0, rank: "SSS+" }, 1e9).level).toBe(200);
   });
 });
 
@@ -254,6 +254,10 @@ describe("missões estilo Naruto Game (contratos)", () => {
     expect(isRankAllowed("D", "E")).toBe(true);
     expect(isRankAllowed("S", "A")).toBe(true);
     expect(isRankAllowed("A", "S")).toBe(false);
+    expect(isRankAllowed("SS", "S")).toBe(true);
+    expect(isRankAllowed("SSS", "SS")).toBe(true);
+    expect(isRankAllowed("SSS+", "SSS")).toBe(true);
+    expect(isRankAllowed("SS", "SSS+")).toBe(false);
   });
 
   it("valida payload de execução e estado de missões", () => {

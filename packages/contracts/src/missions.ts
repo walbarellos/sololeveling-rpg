@@ -7,7 +7,10 @@ export const RANK_ORDER: Readonly<Record<HunterRank, number>> = {
   C: 2,
   B: 3,
   A: 4,
-  S: 5
+  S: 5,
+  SS: 6,
+  SSS: 7,
+  "SSS+": 8
 };
 
 export function isRankAllowed(playerRank: HunterRank, minRank: HunterRank): boolean {

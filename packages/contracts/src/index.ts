@@ -13,10 +13,28 @@ export const TileCoordSchema = z.object({
 });
 export type TileCoord = z.infer<typeof TileCoordSchema>;
 
-export const WorldIdSchema = z.enum(["GATE_E", "GATE_D"]);
+export const WorldIdSchema = z.enum([
+  "GATE_E",
+  "GATE_D",
+  "GATE_C",
+  "GATE_B",
+  "GATE_A",
+  "GATE_S",
+  "GATE_SS",
+  "GATE_SSS"
+]);
 export type WorldId = z.infer<typeof WorldIdSchema>;
 
-export const WorldStyleSchema = z.enum(["SANCTUARY", "CRIMSON_CITADEL"]);
+export const WorldStyleSchema = z.enum([
+  "SANCTUARY",
+  "CRIMSON_CITADEL",
+  "FROZEN_ABYSS",
+  "SHADOW_NECROPOLIS",
+  "DRAGON_VOLCANO",
+  "MONARCH_SANCTUM",
+  "COSMIC_VOID",
+  "SHADOW_THRONE"
+]);
 export type WorldStyle = z.infer<typeof WorldStyleSchema>;
 
 export const DirectionSchema = z.enum(["UP", "DOWN", "LEFT", "RIGHT"]);
@@ -301,10 +319,29 @@ export const ZoneTeleportRequestSchema = z.object({
     "ABISMO",
     "CHAMBER",
     "ENTER_GATE_D",
+    "ENTER_GATE_C",
+    "ENTER_GATE_B",
+    "ENTER_GATE_A",
+    "ENTER_GATE_S",
+    "ENTER_GATE_SS",
+    "ENTER_GATE_SSS",
     "RETURN_GATE_E"
   ])
 });
 export type ZoneTeleportRequest = z.infer<typeof ZoneTeleportRequestSchema>;
+
+export const ShrineInteractRequestSchema = z.object({
+  shrineId: z.string().optional()
+}).default({});
+export type ShrineInteractRequest = z.infer<typeof ShrineInteractRequestSchema>;
+
+export const ShrineInteractResultSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  hpRestored: z.number().int().nonnegative(),
+  mpRestored: z.number().int().nonnegative()
+});
+export type ShrineInteractResult = z.infer<typeof ShrineInteractResultSchema>;
 
 export const MerchantBuyRequestSchema = z.object({
   itemId: z.string().min(1),
@@ -345,7 +382,8 @@ export const ClientEvents = {
   ZoneTeleportRequest: "game:zone:teleport",
   ResetGateRequest: "game:gate:reset",
   MerchantBuyRequest: "game:merchant:buy",
-  ClaimLostTrophyRequest: "game:academy:claim-trophy"
+  ClaimLostTrophyRequest: "game:academy:claim-trophy",
+  ShrineInteractRequest: "game:shrine:interact"
 } as const;
 
 export const ServerEvents = {
@@ -361,7 +399,8 @@ export const ServerEvents = {
   InventoryState: "game:inventory:state",
   RankPromotionResult: "game:academy:promote-result",
   GateClearAnnouncement: "game:gate:clear",
-  GateResetAnnouncement: "game:gate:reset-announcement"
+  GateResetAnnouncement: "game:gate:reset-announcement",
+  ShrineInteractResult: "game:shrine:interact-result"
 } as const;
 
 /**

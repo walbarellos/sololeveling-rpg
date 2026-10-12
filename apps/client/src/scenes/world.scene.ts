@@ -2,9 +2,12 @@ import Phaser from "phaser";
 import {
   ClientEvents,
   WORLD_NPCS,
+  isRankAllowed,
   type Direction,
+  type HunterRank,
   type NpcDefinition,
-  type TileCoord
+  type TileCoord,
+  type ZoneTeleportRequest
 } from "@rpg/contracts";
 import {
   TEX,
@@ -31,16 +34,24 @@ export interface WorldPortal {
   x: number;
   y: number;
   label: string;
-  zoneId: "ENTER_GATE_D" | "RETURN_GATE_E";
-  minRank?: "E" | "D" | "C" | "B" | "A" | "S";
+  zoneId: ZoneTeleportRequest["zoneId"];
+  minRank?: HunterRank;
   color: string;
   tint?: number;
+}
+
+export interface WorldShrineDef {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
 }
 
 type Goal =
   | { type: "enemy"; id: string }
   | { type: "tile"; x: number; y: number }
-  | { type: "portal"; portal: WorldPortal };
+  | { type: "portal"; portal: WorldPortal }
+  | { type: "shrine"; shrine: WorldShrineDef };
 
 const DIR_VECTORS: ReadonlyArray<{ dir: Direction; dx: number; dy: number }> = [
   { dir: "UP", dx: 0, dy: -1 },
@@ -72,6 +83,9 @@ export class WorldScene extends Phaser.Scene {
   private npcObjects: Phaser.GameObjects.Container[] = [];
   private currentPortals: WorldPortal[] = [];
   private lastPortalStepAt = 0;
+  private shrineObjects: Phaser.GameObjects.GameObject[] = [];
+  private currentShrines: WorldShrineDef[] = [];
+  private lastShrineInteractAt = 0;
 
   constructor() {
     super("world");
@@ -205,18 +219,84 @@ export class WorldScene extends Phaser.Scene {
     this.portalObjects = [];
     for (const cont of this.npcObjects) cont.destroy();
     this.npcObjects = [];
+    for (const obj of this.shrineObjects) obj.destroy();
+    this.shrineObjects = [];
 
     const ts = gameState.tileSize || 48;
-    if (gameState.worldId === "GATE_D") {
+    const wId = gameState.worldId;
+
+    if (wId === "GATE_D") {
       this.currentPortals = [
         { x: 3, y: 4, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
-        { x: 29, y: 10, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#fb7185", tint: 0xf43f5e }
+        { x: 41, y: 6, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#fb7185", tint: 0xf43f5e }
+      ];
+      this.currentShrines = [
+        { id: "shrine_d1", name: "Altar de Rubi do Átrio", x: 3, y: 15 },
+        { id: "shrine_d2", name: "Fonte de Mana de Latão", x: 22, y: 5 }
+      ];
+    } else if (wId === "GATE_C") {
+      this.currentPortals = [
+        { x: 3, y: 4, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
+        { x: 45, y: 6, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#38bdf8", tint: 0x38bdf8 }
+      ];
+      this.currentShrines = [
+        { id: "shrine_c1", name: "Monólito de Permafrost", x: 4, y: 18 },
+        { id: "shrine_c2", name: "Fonte Glacial de Niflheim", x: 28, y: 6 }
+      ];
+    } else if (wId === "GATE_B") {
+      this.currentPortals = [
+        { x: 4, y: 4, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
+        { x: 49, y: 7, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#a855f7", tint: 0xa855f7 }
+      ];
+      this.currentShrines = [
+        { id: "shrine_b1", name: "Obelisco das Almas", x: 5, y: 20 },
+        { id: "shrine_b2", name: "Cripta de Mana Espectral", x: 32, y: 7 }
+      ];
+    } else if (wId === "GATE_A") {
+      this.currentPortals = [
+        { x: 4, y: 5, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
+        { x: 53, y: 8, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#f97316", tint: 0xf97316 }
+      ];
+      this.currentShrines = [
+        { id: "shrine_a1", name: "Fonte de Fogo Vivo", x: 5, y: 22 },
+        { id: "shrine_a2", name: "Altar Vulcânico de Obsidiana", x: 34, y: 8 }
+      ];
+    } else if (wId === "GATE_S") {
+      this.currentPortals = [
+        { x: 5, y: 5, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
+        { x: 57, y: 9, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#facc15", tint: 0xfacc15 }
+      ];
+      this.currentShrines = [
+        { id: "shrine_s1", name: "Altar Sagrado da Aurora", x: 6, y: 24 },
+        { id: "shrine_s2", name: "Pilar dos Mandamentos Divinos", x: 38, y: 9 }
+      ];
+    } else if (wId === "GATE_SS") {
+      this.currentPortals = [
+        { x: 5, y: 5, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
+        { x: 61, y: 9, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#ec4899", tint: 0xec4899 }
+      ];
+      this.currentShrines = [
+        { id: "shrine_ss1", name: "Fóton Cósmico de Cura", x: 6, y: 26 },
+        { id: "shrine_ss2", name: "Nebulosa Astral de Mana", x: 42, y: 10 }
+      ];
+    } else if (wId === "GATE_SSS") {
+      this.currentPortals = [
+        { x: 6, y: 5, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
+        { x: 65, y: 10, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#8b5cf6", tint: 0x8b5cf6 }
+      ];
+      this.currentShrines = [
+        { id: "shrine_sss1", name: "Chama Eterna do Soberano", x: 7, y: 28 },
+        { id: "shrine_sss2", name: "Altar da Morte Suprema", x: 46, y: 11 }
       ];
     } else {
       this.currentPortals = [
         { x: 2, y: 2, label: "GATE E", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
         { x: 5, y: 2, label: "GATE D", zoneId: "ENTER_GATE_D", minRank: "D", color: "#c4b5fd", tint: 0xa78bfa },
-        { x: 42, y: 12, label: "RETORNO SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" }
+        { x: 46, y: 7, label: "RETORNO SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" }
+      ];
+      this.currentShrines = [
+        { id: "shrine_e1", name: "Fonte de Mana do Santuário", x: 2, y: 4 },
+        { id: "shrine_e2", name: "Altar das Sombras", x: 38, y: 15 }
       ];
 
       // Spawn dos NPCs no Santuário Seguro do Gate E
@@ -290,12 +370,53 @@ export class WorldScene extends Phaser.Scene {
         });
       }
     }
+
+    // Criação dos Altares de Restauração visuais
+    for (const shrine of this.currentShrines) {
+      const px = shrine.x * ts + ts / 2;
+      const py = shrine.y * ts + ts / 2;
+      const spr = this.add
+        .image(px, py, TEX.shrine)
+        .setDepth(2)
+        .setDisplaySize(ts, ts);
+
+      const label = this.add
+        .text(px, py - ts * 0.55, shrine.name, {
+          fontSize: "8.5px",
+          fontFamily: "'Rajdhani', sans-serif",
+          fontStyle: "bold",
+          color: "#38bdf8",
+          backgroundColor: "#030712cc",
+          padding: { x: 4, y: 1 }
+        })
+        .setOrigin(0.5)
+        .setDepth(2);
+
+      this.shrineObjects.push(spr, label);
+
+      if (!PREFERS_REDUCED_MOTION) {
+        this.tweens.add({
+          targets: spr,
+          y: { from: py - 1, to: py + 1 },
+          duration: 1600,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut"
+        });
+      }
+    }
   }
 
   public adjacentPortals(): WorldPortal[] {
     const me = getMyPlayer();
     if (!me) return [];
     return this.currentPortals.filter((p) => chebyshev(me.position, p) <= 1);
+  }
+
+  public adjacentShrines(): WorldShrineDef[] {
+    const me = getMyPlayer();
+    if (!me) return [];
+    return this.currentShrines.filter((s) => chebyshev(me.position, s) <= 1);
   }
 
   public activatePortal(portal: WorldPortal) {
@@ -306,42 +427,97 @@ export class WorldScene extends Phaser.Scene {
     this.lastPortalStepAt = now;
     this.cancelPursuit();
 
-    if (portal.minRank && portal.minRank === "D" && me.rank === "E") {
-      hudController.setStatus("Acesso negado: Requer Rank D ou superior! Complete o exame com o Inspetor Baek.");
+    if (portal.minRank && !isRankAllowed(me.rank, portal.minRank)) {
+      hudController.setStatus(`Acesso negado: Requer Rank ${portal.minRank} ou superior! Realize seu exame com o Inspetor Baek.`);
       return;
     }
     hudController.setStatus(`Sintonizando portal dimensional [${portal.label}]…`);
     socket.emit(ClientEvents.ZoneTeleportRequest, { zoneId: portal.zoneId });
   }
 
-  private checkPlayerOnPortal() {
+  public activateShrine(shrine: WorldShrineDef) {
     const me = getMyPlayer();
-    if (me && !me.inBattle && !gameState.currentBattle) {
-      const standingPortal = this.currentPortals.find(
-        (p) => p.x === me.position.x && p.y === me.position.y
-      );
-      if (standingPortal && Date.now() - this.lastPortalStepAt > 2000) {
-        this.activatePortal(standingPortal);
-      }
-    }
+    if (!me || me.inBattle || gameState.currentBattle) return;
+    const now = Date.now();
+    if (now - this.lastShrineInteractAt < 1000) return;
+    this.lastShrineInteractAt = now;
+    this.cancelPursuit();
+    hudController.setStatus(`Canalizando energia sagrada no [${shrine.name}]…`);
+    socket.emit(ClientEvents.ShrineInteractRequest);
   }
 
   private updateZoneDisplay(x: number, y: number) {
     if (!this.zoneBanner) return;
-    if (gameState.worldId === "GATE_D") {
-      const zoneName = x <= 10 ? "Átrio Carmesim" : x <= 22 ? "Galeria de Latão" : "Salão do Trono Carmesim";
+    const wId = gameState.worldId;
+    if (wId === "GATE_D") {
+      const zoneName = x <= 12 ? "Átrio Carmesim" : x <= 26 ? "Galeria de Latão" : "Salão do Trono Carmesim";
       if (this.currentZone !== zoneName) {
         this.currentZone = zoneName;
-        this.zoneBanner.setText(`${zoneName.toUpperCase()} · GATE RANK D`);
+        this.zoneBanner.setText(`${zoneName.toUpperCase()} · RANK D`);
         this.zoneBanner.setColor("#f43f5e");
       }
       return;
     }
+    if (wId === "GATE_C") {
+      const zoneName = x <= 14 ? "Entrada Glacial" : x <= 30 ? "Fissura de Permafrost" : "Trono da Rainha do Gelo";
+      if (this.currentZone !== zoneName) {
+        this.currentZone = zoneName;
+        this.zoneBanner.setText(`${zoneName.toUpperCase()} · RANK C`);
+        this.zoneBanner.setColor("#38bdf8");
+      }
+      return;
+    }
+    if (wId === "GATE_B") {
+      const zoneName = x <= 16 ? "Cripta das Sombras" : x <= 33 ? "Mausoléu Espectral" : "Santuário do Arquilorde";
+      if (this.currentZone !== zoneName) {
+        this.currentZone = zoneName;
+        this.zoneBanner.setText(`${zoneName.toUpperCase()} · RANK B`);
+        this.zoneBanner.setColor("#a855f7");
+      }
+      return;
+    }
+    if (wId === "GATE_A") {
+      const zoneName = x <= 18 ? "Garganta de Enxofre" : x <= 36 ? "Rift de Magma Primordial" : "Cratera do Dragão Ignis";
+      if (this.currentZone !== zoneName) {
+        this.currentZone = zoneName;
+        this.zoneBanner.setText(`${zoneName.toUpperCase()} · RANK A`);
+        this.zoneBanner.setColor("#f97316");
+      }
+      return;
+    }
+    if (wId === "GATE_S") {
+      const zoneName = x <= 20 ? "Vestíbulo Sagrado" : x <= 40 ? "Grande Nave dos Mandamentos" : "Altar da Estátua Divina";
+      if (this.currentZone !== zoneName) {
+        this.currentZone = zoneName;
+        this.zoneBanner.setText(`${zoneName.toUpperCase()} · RANK S`);
+        this.zoneBanner.setColor("#facc15");
+      }
+      return;
+    }
+    if (wId === "GATE_SS") {
+      const zoneName = x <= 22 ? "Horizonte de Eventos" : x <= 44 ? "Vácuo Cósmico Infinito" : "Singularidade do Devorador";
+      if (this.currentZone !== zoneName) {
+        this.currentZone = zoneName;
+        this.zoneBanner.setText(`${zoneName.toUpperCase()} · RANK SS`);
+        this.zoneBanner.setColor("#ec4899");
+      }
+      return;
+    }
+    if (wId === "GATE_SSS") {
+      const zoneName = x <= 24 ? "Portão do Abismo Eterno" : x <= 48 ? "Bastilha do Exército das Sombras" : "Trono do Monarca Ashborn";
+      if (this.currentZone !== zoneName) {
+        this.currentZone = zoneName;
+        this.zoneBanner.setText(`${zoneName.toUpperCase()} · RANK SSS+`);
+        this.zoneBanner.setColor("#8b5cf6");
+      }
+      return;
+    }
+
     const biomeIdx = biomeAt(x, y);
-    const zoneName = BIOME_NAMES[biomeIdx] ?? "Masmorra";
+    const zoneName = BIOME_NAMES[biomeIdx] ?? "Santuário";
     if (this.currentZone !== zoneName) {
       this.currentZone = zoneName;
-      this.zoneBanner.setText(zoneName.toUpperCase());
+      this.zoneBanner.setText(`${zoneName.toUpperCase()} · RANK E`);
       const accent = BIOME_ACCENT[biomeIdx] ?? "#38bdf8";
       this.zoneBanner.setColor(accent);
     }
@@ -560,6 +736,9 @@ export class WorldScene extends Phaser.Scene {
       } else if (this.goal.type === "portal") {
         gx = this.goal.portal.x;
         gy = this.goal.portal.y;
+      } else if (this.goal.type === "shrine") {
+        gx = this.goal.shrine.x;
+        gy = this.goal.shrine.y;
       } else {
         const enemy = gameState.world.enemies.find((e) => e.id === (this.goal as any).id);
         gx = enemy?.position.x;
@@ -568,6 +747,33 @@ export class WorldScene extends Phaser.Scene {
       if (gx !== undefined && gy !== undefined) {
         this.overlay.fillRect(gx * ts, gy * ts, ts, ts);
       }
+    }
+
+    // Destaque de monstros adjacentes (PRIORIDADE 1: combate nunca é ofuscado por portal ou npc)
+    const adjacent = me && !me.inBattle && !gameState.currentBattle ? this.adjacentEnemies() : [];
+    if (adjacent.length) {
+      const pulseAlpha = 0.4 + 0.3 * Math.sin(time / 140);
+      this.overlay.lineStyle(2, 0xfacc15, pulseAlpha);
+      for (const e of adjacent) {
+        this.overlay.strokeRect(
+          e.position.x * ts + 2,
+          e.position.y * ts + 2,
+          ts - 4,
+          ts - 4
+        );
+      }
+      const target = adjacent[0];
+      const hintText = `[E] ${target.name}`;
+      if (this.hint.text !== hintText) {
+        this.hint.setText(hintText);
+      }
+      this.hint
+        .setPosition(
+          target.position.x * ts + ts / 2,
+          target.position.y * ts - 4
+        )
+        .setVisible(true);
+      return;
     }
 
     // Destaque de NPCs adjacentes
@@ -604,33 +810,24 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    // Destaque de monstros adjacentes
-    const adjacent = me && !me.inBattle && !gameState.currentBattle ? this.adjacentEnemies() : [];
-    if (adjacent.length) {
-      const pulseAlpha = 0.4 + 0.3 * Math.sin(time / 140);
-      this.overlay.lineStyle(2, 0xfacc15, pulseAlpha);
-      for (const e of adjacent) {
-        this.overlay.strokeRect(
-          e.position.x * ts + 2,
-          e.position.y * ts + 2,
-          ts - 4,
-          ts - 4
-        );
-      }
-      const target = adjacent[0];
-      const hintText = `[E] ${target.name}`;
+    // Destaque de Altares de Restauração adjacentes
+    const shrines = me && !me.inBattle && !gameState.currentBattle ? this.adjacentShrines() : [];
+    if (shrines.length) {
+      const shrine = shrines[0];
+      const hintText = `[E] Meditar em ${shrine.name}`;
       if (this.hint.text !== hintText) {
         this.hint.setText(hintText);
       }
       this.hint
         .setPosition(
-          target.position.x * ts + ts / 2,
-          target.position.y * ts - 4
+          shrine.x * ts + ts / 2,
+          shrine.y * ts - 4
         )
         .setVisible(true);
-    } else {
-      this.hint.setVisible(false);
+      return;
     }
+
+    this.hint.setVisible(false);
   }
 
   public handleKey(k: string) {
@@ -715,23 +912,35 @@ export class WorldScene extends Phaser.Scene {
     const me = getMyPlayer();
     if (!me || me.inBattle) return;
 
+    // 1. Monstros adjacentes têm PRIORIDADE ABSOLUTA em combate (evita sair do mapa por acidente)
+    const adjacent = this.adjacentEnemies();
+    if (adjacent.length) {
+      this.startBattleWith(adjacent[0]);
+      return;
+    }
+
+    // 2. NPCs de diálogo
     const npcs = this.adjacentNpcs();
     if (npcs.length) {
       npcController.openNpc(npcs[0]);
       return;
     }
 
+    // 3. Portais dimensionais
     const portals = this.adjacentPortals();
     if (portals.length) {
       this.activatePortal(portals[0]);
       return;
     }
 
-    const adjacent = this.adjacentEnemies();
-    if (adjacent.length) {
-      this.startBattleWith(adjacent[0]);
+    // 4. Altares de Restauração
+    const shrines = this.adjacentShrines();
+    if (shrines.length) {
+      this.activateShrine(shrines[0]);
       return;
     }
+
+    // 5. Se nada adjacente, caminha até o monstro vivo mais próximo
     const nearest = gameState.world.enemies
       .filter((e) => e.alive)
       .sort((a, b) => manhattan(me.position, a.position) - manhattan(me.position, b.position))[0];
@@ -751,6 +960,19 @@ export class WorldScene extends Phaser.Scene {
     const me = getMyPlayer();
     if (!me || me.inBattle) return;
 
+    // 1. Inimigos têm prioridade máxima no clique (evita missclick em portais ou altares)
+    const clickedEnemy = gameState.world.enemies.find((e) => e.alive && e.position.x === tileX && e.position.y === tileY);
+    if (clickedEnemy) {
+      if (chebyshev(me.position, clickedEnemy.position) <= 1) {
+        this.startBattleWith(clickedEnemy);
+      } else {
+        this.goal = { type: "enemy", id: clickedEnemy.id };
+        hudController.setStatus(`Indo até [${clickedEnemy.rank}] ${clickedEnemy.name}… (Esc cancela)`);
+      }
+      return;
+    }
+
+    // 2. NPCs de diálogo
     const clickedNpc = gameState.worldId === "GATE_E" ? WORLD_NPCS.find((n) => n.position.x === tileX && n.position.y === tileY) : null;
     if (clickedNpc) {
       if (chebyshev(me.position, clickedNpc.position) <= 1) {
@@ -762,6 +984,7 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    // 3. Portais dimensionais
     const clickedPortal = this.currentPortals.find((p) => p.x === tileX && p.y === tileY);
     if (clickedPortal) {
       if (chebyshev(me.position, clickedPortal) <= 1) {
@@ -773,16 +996,18 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    const clicked = gameState.world.enemies.find((e) => e.alive && e.position.x === tileX && e.position.y === tileY);
-    if (clicked) {
-      if (chebyshev(me.position, clicked.position) <= 1) {
-        this.startBattleWith(clicked);
+    // 4. Altares de Restauração
+    const clickedShrine = this.currentShrines.find((s) => s.x === tileX && s.y === tileY);
+    if (clickedShrine) {
+      if (chebyshev(me.position, clickedShrine) <= 1) {
+        this.activateShrine(clickedShrine);
       } else {
-        this.goal = { type: "enemy", id: clicked.id };
-        hudController.setStatus(`Indo até [${clicked.rank}] ${clicked.name}… (Esc cancela)`);
+        this.goal = { type: "shrine", shrine: clickedShrine };
+        hudController.setStatus(`Caminhando até o [${clickedShrine.name}]… (Esc cancela)`);
       }
       return;
     }
+
     if (tileX === me.position.x && tileY === me.position.y) return;
     this.goal = { type: "tile", x: tileX, y: tileY };
   }
@@ -846,6 +1071,20 @@ export class WorldScene extends Phaser.Scene {
         return this.cancelPursuit();
       }
       this.sendStep(dir);
+    } else if (this.goal.type === "shrine") {
+      const shrine = this.goal.shrine;
+      if (chebyshev(me.position, shrine) <= 1) {
+        this.cancelPursuit();
+        this.activateShrine(shrine);
+        return;
+      }
+      if (this.awaiting || Date.now() - this.lastInputTime < STEP_INTERVAL_MS) return;
+      const dir = this.nextStepToward(me.position, (x, y) => chebyshev({ x, y }, shrine) <= 1, blocked);
+      if (!dir) {
+        hudController.setStatus("Sem caminho livre até o altar.");
+        return this.cancelPursuit();
+      }
+      this.sendStep(dir);
     } else {
       const { x: gx, y: gy } = this.goal;
       const targetNpc = WORLD_NPCS.find((n) => n.position.x === gx && n.position.y === gy);
@@ -868,7 +1107,6 @@ export class WorldScene extends Phaser.Scene {
 
   update(time: number) {
     this.rebuildTerrain();
-    this.checkPlayerOnPortal();
     this.runGoal(time);
     this.syncPlayers();
     this.syncEnemies();

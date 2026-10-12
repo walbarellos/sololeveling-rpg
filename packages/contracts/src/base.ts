@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ItemDefinitionSchema } from "./items";
 
-export const HunterRankSchema = z.enum(["E", "D", "C", "B", "A", "S"]);
+export const HunterRankSchema = z.enum(["E", "D", "C", "B", "A", "S", "SS", "SSS", "SSS+"]);
 export type HunterRank = z.infer<typeof HunterRankSchema>;
 
 export const BattleRewardsSchema = z.object({

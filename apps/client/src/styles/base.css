@@ -217,6 +217,9 @@ body {
 .rank-b { background: #7c2d12; color: #fed7aa; border: 1px solid #ea580c; }
 .rank-a { background: #831843; color: #fbcfe8; border: 1px solid #db2777; }
 .rank-s { background: #713f12; color: #fef08a; border: 1px solid #eab308; box-shadow: 0 0 8px rgba(234, 179, 8, 0.4); }
+.rank-ss { background: #4c0519; color: #fecdd3; border: 1px solid #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
+.rank-sss { background: #2e0854; color: #e0e7ff; border: 1px solid #a855f7; box-shadow: 0 0 12px rgba(168, 85, 247, 0.6); }
+.rank-sss\+, .rank-sss-plus { background: #022c22; color: #67e8f9; border: 1px solid #06b6d4; box-shadow: 0 0 14px rgba(6, 182, 212, 0.7); text-shadow: 0 0 6px #22d3ee; }
 
 /* RODAPÉ CLÁSSICO */
 .rpg-footer {
