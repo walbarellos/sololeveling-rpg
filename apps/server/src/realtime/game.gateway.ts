@@ -70,7 +70,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const player = this.game.connect(playerId);
     client.emit(ServerEvents.Welcome, {
       playerId: player.id,
-      ...this.game.dimensions
+      ...this.game.dimensionsFor(player.worldId ?? "GATE_E")
     });
     client.emit(ServerEvents.MissionsState, this.game.getMissionsState(player.id));
     client.emit(ServerEvents.InventoryState, this.game.getInventoryState(player.id));
@@ -217,7 +217,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage(ClientEvents.SnapshotRequest)
   handleSnapshotRequest(@ConnectedSocket() client: Socket) {
     const playerId = this.pid(client);
-    client.emit(ServerEvents.Snapshot, this.game.snapshot());
+    const worldId = this.game.getPlayerWorldId(playerId);
+    client.emit(ServerEvents.Snapshot, this.game.snapshot(worldId));
     const inv = this.game.getInventoryState(playerId);
     if (inv) {
       client.emit(ServerEvents.InventoryState, inv);
@@ -494,7 +495,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private broadcastSnapshot() {
-    this.server.emit(ServerEvents.Snapshot, this.game.snapshot());
+    if (this.server?.sockets?.sockets) {
+      for (const [socketId, client] of this.server.sockets.sockets) {
+        const playerId = this.playerBySocket.get(socketId);
+        const worldId = playerId ? this.game.getPlayerWorldId(playerId) : "GATE_E";
+        client.emit(ServerEvents.Snapshot, this.game.snapshot(worldId));
+      }
+    } else {
+      this.server?.emit?.(ServerEvents.Snapshot, this.game.snapshot("GATE_E"));
+    }
   }
 
   private sendError(client: Socket, code: ServerErrorCode, message: string) {

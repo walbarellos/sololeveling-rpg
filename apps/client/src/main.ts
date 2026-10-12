@@ -9,7 +9,8 @@ import {
   RankPromotionResultSchema,
   ServerEvents,
   WelcomeSchema,
-  WorldSnapshotSchema
+  WorldSnapshotSchema,
+  type WorldId
 } from "@rpg/contracts";
 import { battleController } from "./battle/battle.controller";
 import { socket } from "./network/game-socket";
@@ -31,6 +32,18 @@ const getWorldScene = (): WorldScene | null => {
   }
   return worldScene;
 };
+
+function updateWorldTitleTag(worldId: WorldId) {
+  const tagEl = document.querySelector<HTMLSpanElement>(".gate-dungeon-tag");
+  if (!tagEl) return;
+  if (worldId === "GATE_D") {
+    tagEl.textContent = "Gate Rank D · Cidadela Carmesim";
+    tagEl.style.color = "#fb7185";
+  } else {
+    tagEl.textContent = "Gate Rank E · Masmorra das Sombras";
+    tagEl.style.color = "";
+  }
+}
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -94,7 +107,10 @@ socket.on(ServerEvents.Welcome, (raw: unknown) => {
   gameState.gridHeight = parsed.data.gridHeight;
   gameState.tileSize = parsed.data.tileSize;
   gameState.obstacles = parsed.data.obstacles;
+  if (parsed.data.worldId) gameState.worldId = parsed.data.worldId;
+  if (parsed.data.style) gameState.style = parsed.data.style;
 
+  updateWorldTitleTag(gameState.worldId);
   getWorldScene()?.updateWorldBounds(gameState.gridWidth, gameState.gridHeight, gameState.tileSize);
   socket.emit(ClientEvents.SnapshotRequest);
   socket.emit(ClientEvents.InventoryRequest);
@@ -104,8 +120,18 @@ socket.on(ServerEvents.Welcome, (raw: unknown) => {
 socket.on(ServerEvents.Snapshot, (raw: unknown) => {
   const parsed = WorldSnapshotSchema.safeParse(raw);
   if (!parsed.success) return;
+  const prevWorldId = gameState.worldId;
   gameState.world = parsed.data;
   gameState.obstacles = parsed.data.obstacles;
+  if (parsed.data.worldId) gameState.worldId = parsed.data.worldId;
+  if (parsed.data.style) gameState.style = parsed.data.style;
+  if (parsed.data.gridWidth) gameState.gridWidth = parsed.data.gridWidth;
+  if (parsed.data.gridHeight) gameState.gridHeight = parsed.data.gridHeight;
+
+  if (prevWorldId !== gameState.worldId) {
+    updateWorldTitleTag(gameState.worldId);
+    getWorldScene()?.updateWorldBounds(gameState.gridWidth, gameState.gridHeight, gameState.tileSize);
+  }
 
   const me = gameState.world.players.find((p) => p.id === gameState.myPlayerId);
   if (me) {

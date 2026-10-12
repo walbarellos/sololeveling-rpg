@@ -1,6 +1,7 @@
 import type {
   EnemySnapshot,
-  GateClearAnnouncement
+  GateClearAnnouncement,
+  WorldId
 } from "@rpg/contracts";
 
 export interface WorldBossState {
@@ -12,6 +13,7 @@ export interface WorldBossState {
   currentHp: number;
   alive: boolean;
   position: { x: number; y: number };
+  worldId: WorldId;
   lastDefeatedAt?: number;
 }
 
@@ -32,7 +34,8 @@ export class BossService {
       maxHp: 280,
       currentHp: 280,
       alive: true,
-      position: { x: 12, y: 10 }
+      position: { x: 12, y: 10 },
+      worldId: "GATE_E"
     });
 
     // 2. Matriarca Lobo das Sombras (Field Boss - Covil das Feras)
@@ -44,7 +47,8 @@ export class BossService {
       maxHp: 520,
       currentHp: 520,
       alive: true,
-      position: { x: 26, y: 6 }
+      position: { x: 26, y: 6 },
+      worldId: "GATE_E"
     });
 
     // 3. Chefe Goblin do Gate de Fogo (Apex Gate Boss - Câmara Final)
@@ -56,7 +60,21 @@ export class BossService {
       maxHp: 850,
       currentHp: 850,
       alive: true,
-      position: { x: 42, y: 13 }
+      position: { x: 42, y: 13 },
+      worldId: "GATE_E"
+    });
+
+    // 4. Chefe Sentinela Carmesim (Apex Boss do Gate Rank D — Cidadela Carmesim)
+    this.bosses.set("boss_crimson_sentinel", {
+      id: "boss_crimson_sentinel",
+      name: "Chefe Sentinela Carmesim",
+      rank: "D",
+      level: 16,
+      maxHp: 980,
+      currentHp: 980,
+      alive: true,
+      position: { x: 28, y: 10 },
+      worldId: "GATE_D"
     });
   }
 
@@ -120,6 +138,8 @@ export class BossService {
         trophy = "Presa da Matriarca das Sombras";
       } else if (boss.id === "boss-1") {
         trophy = "Coração Ígneo do Portão Vermelho";
+      } else if (boss.id === "boss_crimson_sentinel") {
+        trophy = "Coração da Cidadela Carmesim";
       }
 
       return {
@@ -153,7 +173,8 @@ export class BossService {
         maxHp: b.maxHp,
         mp: 100,
         maxMp: 100,
-        alive: b.alive
+        alive: b.alive,
+        worldId: b.worldId
       });
     }
     return snapshots;

@@ -61,7 +61,10 @@ export const TEX = {
 
 export function enemyTextureKey(name: string): string {
   const n = name.toLowerCase();
-  if (n.includes("chefe") || n.includes("boss")) return TEX.boss;
+  if (n.includes("chefe") || n.includes("boss") || n.includes("sentinela")) return TEX.boss;
+  if (n.includes("cinzas") || n.includes("ash")) return TEX.ember;
+  if (n.includes("latão") || n.includes("brass") || n.includes("cão")) return TEX.hellhound;
+  if (n.includes("rúnica") || n.includes("blade") || n.includes("lâmina")) return TEX.voidling;
   if (n.includes("slime")) return TEX.slime;
   if (n.includes("goblin")) return TEX.goblin;
   if (n.includes("larva")) return TEX.larva;

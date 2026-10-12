@@ -180,19 +180,19 @@ export class NpcController {
           }
         },
         {
-          label: hasD ? "Fenda da Aurora (Gate Rank D)" : "Fenda da Aurora (bloqueada)",
+          label: hasD ? "Cidadela Carmesim (Gate Rank D)" : "Cidadela Carmesim (bloqueada)",
           meta: hasD
-            ? "Teleporte · Rank D · zonas avançadas desbloqueadas"
+            ? "Teleporte dimensional para o mapa da Cidadela Carmesim (Rank D)"
             : `Requer Rank D (você: Rank ${rank}) · complete a prova de ascensão`,
           variant: hasD ? "gold" : "default",
           onClick: () => {
             if (!hasD) {
               this.setDialogue(
-                `O portal da Fenda da Aurora só sintoniza caçadores Rank D ou superior. Seu rank atual é ${rank}. Fale com o Inspetor Baek após cumprir os requisitos da prova.`
+                `A passagem para a Cidadela Carmesim só sintoniza caçadores Rank D ou superior. Seu rank atual é ${rank}. Fale com o Inspetor Baek após cumprir os requisitos da prova.`
               );
               return;
             }
-            this.teleport("COVIL");
+            this.teleport("ENTER_GATE_D");
           }
         },
         {

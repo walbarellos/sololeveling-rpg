@@ -13,6 +13,12 @@ export const TileCoordSchema = z.object({
 });
 export type TileCoord = z.infer<typeof TileCoordSchema>;
 
+export const WorldIdSchema = z.enum(["GATE_E", "GATE_D"]);
+export type WorldId = z.infer<typeof WorldIdSchema>;
+
+export const WorldStyleSchema = z.enum(["SANCTUARY", "CRIMSON_CITADEL"]);
+export type WorldStyle = z.infer<typeof WorldStyleSchema>;
+
 export const DirectionSchema = z.enum(["UP", "DOWN", "LEFT", "RIGHT"]);
 export type Direction = z.infer<typeof DirectionSchema>;
 
@@ -55,7 +61,8 @@ export const PlayerSnapshotSchema = z.object({
   gold: z.number().int().nonnegative().default(0),
   inBattle: z.boolean(),
   activeBattleId: z.string().optional(),
-  sequence: z.number().int().nonnegative()
+  sequence: z.number().int().nonnegative(),
+  worldId: WorldIdSchema.optional()
 });
 export type PlayerSnapshot = z.infer<typeof PlayerSnapshotSchema>;
 
@@ -69,7 +76,8 @@ export const EnemySnapshotSchema = z.object({
   maxHp: z.number().int().positive(),
   mp: z.number().int().nonnegative(),
   maxMp: z.number().int().nonnegative(),
-  alive: z.boolean()
+  alive: z.boolean(),
+  worldId: WorldIdSchema.optional()
 });
 export type EnemySnapshot = z.infer<typeof EnemySnapshotSchema>;
 
@@ -77,7 +85,11 @@ export const WorldSnapshotSchema = z.object({
   players: z.array(PlayerSnapshotSchema),
   enemies: z.array(EnemySnapshotSchema),
   obstacles: z.array(TileCoordSchema),
-  serverTime: z.number().int().nonnegative()
+  serverTime: z.number().int().nonnegative(),
+  worldId: WorldIdSchema.optional(),
+  style: WorldStyleSchema.optional(),
+  gridWidth: z.number().int().positive().optional(),
+  gridHeight: z.number().int().positive().optional()
 });
 export type WorldSnapshot = z.infer<typeof WorldSnapshotSchema>;
 
@@ -277,12 +289,20 @@ export const WORLD_NPCS: readonly NpcDefinition[] = [
     role: "GATEKEEPER",
     portrait: "warrior",
     position: { x: 3, y: 1 },
-    dialogue: "Gerencio as coordenadas dimensionais dos Gates. Posso sintonizar o teleporte para qualquer setor da masmorra ou reiniciar a fenda inteira para despertar os chefes."
+    dialogue: "Gerencio as coordenadas dimensionais dos Gates. O Gate E possui 5 setores até a Câmara do Chefe. A Fenda da Aurora leva à Cidadela Carmesim (Gate Rank D) para caçadores promovidos."
   }
 ];
 
 export const ZoneTeleportRequestSchema = z.object({
-  zoneId: z.enum(["SANTUARIO", "CATACUMBAS", "COVIL", "ABISMO", "CHAMBER"])
+  zoneId: z.enum([
+    "SANTUARIO",
+    "CATACUMBAS",
+    "COVIL",
+    "ABISMO",
+    "CHAMBER",
+    "ENTER_GATE_D",
+    "RETURN_GATE_E"
+  ])
 });
 export type ZoneTeleportRequest = z.infer<typeof ZoneTeleportRequestSchema>;
 
@@ -357,7 +377,9 @@ export const WelcomeSchema = z.object({
   gridWidth: z.number().int().positive(),
   gridHeight: z.number().int().positive(),
   tileSize: z.number().int().positive(),
-  obstacles: z.array(TileCoordSchema)
+  obstacles: z.array(TileCoordSchema),
+  worldId: WorldIdSchema.optional(),
+  style: WorldStyleSchema.optional()
 });
 export type Welcome = z.infer<typeof WelcomeSchema>;
 

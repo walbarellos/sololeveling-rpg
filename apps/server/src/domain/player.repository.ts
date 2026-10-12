@@ -8,7 +8,8 @@ import {
   type MissionRun,
   type PlayerAttributes,
   type PlayerEquipment,
-  type TileCoord
+  type TileCoord,
+  type WorldId
 } from "@rpg/contracts";
 
 export const DEFAULT_CAREER_STATS: HunterCareerStats = {
@@ -39,6 +40,7 @@ export interface PlayerEntity {
   /** EXP acumulado dentro do nível atual (0 .. expToNext(level) - 1). */
   exp: number;
   position: TileCoord;
+  worldId?: WorldId;
   hp: number;
   maxHp: number;
   mp: number;

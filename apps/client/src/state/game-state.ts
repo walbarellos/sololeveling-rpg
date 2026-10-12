@@ -8,11 +8,15 @@ import type {
   PlayerEquipment,
   PlayerSnapshot,
   TileCoord,
-  WorldSnapshot
+  WorldId,
+  WorldSnapshot,
+  WorldStyle
 } from "@rpg/contracts";
 
 export interface GameState {
   world: WorldSnapshot;
+  worldId: WorldId;
+  style: WorldStyle;
   myPlayerId: string;
   lastMe: PlayerSnapshot | null;
   gridWidth: number;
@@ -29,7 +33,9 @@ export interface GameState {
 }
 
 export const gameState: GameState = {
-  world: { players: [], enemies: [], obstacles: [], serverTime: 0 },
+  world: { players: [], enemies: [], obstacles: [], serverTime: 0, worldId: "GATE_E", style: "SANCTUARY" },
+  worldId: "GATE_E",
+  style: "SANCTUARY",
   myPlayerId: "",
   lastMe: null,
   gridWidth: 48,

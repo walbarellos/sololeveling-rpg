@@ -78,6 +78,16 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     stats: { bonusHp: 60, bonusMp: 40, bonusPhysicalAtk: 8, bonusMagicalAtk: 8, bonusCritChance: 0.05, bonusDodgeChance: 0.03, bonusBlockChance: 0.02 },
     icon: "trophy_core"
   },
+  trophy_crimson_heart: {
+    id: "trophy_crimson_heart",
+    name: "Coração da Cidadela Carmesim",
+    description: "Relíquia lendária do Chefe Sentinela Carmesim do Gate Rank D.",
+    type: "TROPHY",
+    rarity: "EPIC",
+    minLevel: 12,
+    stats: { bonusHp: 70, bonusMp: 40, bonusPhysicalAtk: 6, bonusMagicalAtk: 6, bonusCritChance: 0.04, bonusDodgeChance: 0.02, bonusBlockChance: 0.03 },
+    icon: "trophy_core"
+  },
   trophy_void_essence: {
     id: "trophy_void_essence",
     name: "Essência do Lorde do Vácuo",

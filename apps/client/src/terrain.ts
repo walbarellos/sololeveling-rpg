@@ -1,11 +1,12 @@
-import type { TileCoord } from "@rpg/contracts";
+import type { TileCoord, WorldStyle } from "@rpg/contracts";
 import { biomeAt } from "./assets";
 
 /**
  * HUNTER RPG — GERADOR ARTÍSTICO DO MAPA DA MASMORRA
  * Solo Leveling Dark Fantasy Aesthetic:
  *  - Lajes de pedra talhada em formato 2x2 com chanfros de iluminação e profundidade 3D.
- *  - 6 Biomas temáticos com paletas ricas, runas, musgo orgânico, magma e éter cósmico.
+ *  - Biomas temáticos com paletas ricas, runas, musgo orgânico, magma e éter cósmico.
+ *  - Estilo dedicado para a Cidadela Carmesim (Gate Rank D) com flagstones de obsidiana e rubi.
  *  - Muralhas de cantaria com beiral iluminado, cursos de alvenaria e rodapé maciço.
  *  - Sombras de oclusão ambiente (Ambient Occlusion) projetadas sobre o piso.
  *  - Pilares monumentais com gemas de mana lapidadas.
@@ -24,6 +25,48 @@ interface BiomeTheme {
   glow: string;
   gem: string;
 }
+
+export const CRIMSON_CITADEL_THEMES: Record<number, BiomeTheme> = {
+  // Setor 0: Átrio Carmesim (Entrada) - Obsidiana com veios de sangue e cinzas
+  0: {
+    name: "Átrio Carmesim",
+    mortar: "#180509",
+    slabBase: "#2b0a12",
+    slabMid: "#3a0e19",
+    slabLight: "#4e1423",
+    bevelHi: "#7f2339",
+    bevelShadow: "#140306",
+    accent: "#f43f5e",
+    glow: "#fda4af",
+    gem: "#f43f5e"
+  },
+  // Setor 1: Galeria de Latão e Brasas (Centro) - Basalto negro e latão incandescente
+  1: {
+    name: "Galeria de Latão",
+    mortar: "#1c0b05",
+    slabBase: "#33180c",
+    slabMid: "#452212",
+    slabLight: "#5a2d18",
+    bevelHi: "#924822",
+    bevelShadow: "#170904",
+    accent: "#f97316",
+    glow: "#fde047",
+    gem: "#fbbf24"
+  },
+  // Setor 2: Salão do Trono Carmesim (Apex) - Rubi imperial e chamas escarlates
+  2: {
+    name: "Salão do Trono Carmesim",
+    mortar: "#1a040b",
+    slabBase: "#360817",
+    slabMid: "#4d0e22",
+    slabLight: "#681430",
+    bevelHi: "#9f1239",
+    bevelShadow: "#1a030b",
+    accent: "#e11d48",
+    glow: "#f43f5e",
+    gem: "#e11d48"
+  }
+};
 
 const BIOMES: Record<number, BiomeTheme> = {
   // 0: Santuário do Gate — Templo arcano de ardósia esmeralda com canais de mana
@@ -117,7 +160,8 @@ export function buildDungeonCanvas(
   gw: number,
   gh: number,
   ts: number,
-  obstacles: readonly TileCoord[]
+  obstacles: readonly TileCoord[],
+  style: WorldStyle = "SANCTUARY"
 ): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = gw * ts;
@@ -138,8 +182,15 @@ export function buildDungeonCanvas(
     for (let x = 0; x < gw; x++) {
       const px = x * ts;
       const py = y * ts;
-      const biomeIdx = biomeAt(x, y);
-      const b = BIOMES[biomeIdx] ?? BIOMES[0];
+      let b: BiomeTheme;
+      let biomeIdx = 0;
+      if (style === "CRIMSON_CITADEL") {
+        biomeIdx = x <= 10 ? 0 : x <= 22 ? 1 : 2;
+        b = CRIMSON_CITADEL_THEMES[biomeIdx];
+      } else {
+        biomeIdx = biomeAt(x, y);
+        b = BIOMES[biomeIdx] ?? BIOMES[0];
+      }
 
       // Fundo escuro do rejunte de argamassa
       ctx.fillStyle = b.mortar;
@@ -374,8 +425,19 @@ export function buildDungeonCanvas(
     ctx.restore();
   };
 
-  drawArcaneDais(2 * ts + ts / 2, 2 * ts + ts / 2, "rgba(56, 189, 248, 0.3)", "#38bdf8");
-  drawArcaneDais(5 * ts + ts / 2, 2 * ts + ts / 2, "rgba(168, 85, 247, 0.3)", "#c084fc");
+  if (style === "CRIMSON_CITADEL") {
+    // Portal de Retorno ao Santuário dos NPCs em (3, 4)
+    drawArcaneDais(3 * ts + ts / 2, 4 * ts + ts / 2, "rgba(56, 189, 248, 0.4)", "#38bdf8");
+    // Portal do Trono da Sentinela Carmesim em (29, 10)
+    drawArcaneDais(29 * ts + ts / 2, 10 * ts + ts / 2, "rgba(244, 63, 94, 0.5)", "#f43f5e");
+  } else {
+    // Portal de Respawn do Gate E em (2, 2)
+    drawArcaneDais(2 * ts + ts / 2, 2 * ts + ts / 2, "rgba(56, 189, 248, 0.35)", "#38bdf8");
+    // Portal Fenda da Aurora (Gate D) em (5, 2)
+    drawArcaneDais(5 * ts + ts / 2, 2 * ts + ts / 2, "rgba(168, 85, 247, 0.4)", "#c084fc");
+    // Portal de Retorno do Chefe do Gate E em (42, 12)
+    drawArcaneDais(42 * ts + ts / 2, 12 * ts + ts / 2, "rgba(56, 189, 248, 0.35)", "#38bdf8");
+  }
 
   // =========================================================================
   // CAMADA 3: SOMBRAS 3D DE OCLUSÃO AMBIENTE (Ambient Occlusion sobre o chão)
@@ -416,8 +478,15 @@ export function buildDungeonCanvas(
 
       const px = x * ts;
       const py = y * ts;
-      const biomeIdx = biomeAt(x, y);
-      const b = BIOMES[biomeIdx] ?? BIOMES[0];
+
+      let b: BiomeTheme;
+      if (style === "CRIMSON_CITADEL") {
+        const sector = x <= 10 ? 0 : x <= 22 ? 1 : 2;
+        b = CRIMSON_CITADEL_THEMES[sector];
+      } else {
+        const biomeIdx = biomeAt(x, y);
+        b = BIOMES[biomeIdx] ?? BIOMES[0];
+      }
 
       const hasAbove = isObs(x, y - 1);
       const hasBelow = isObs(x, y + 1);
@@ -425,6 +494,16 @@ export function buildDungeonCanvas(
       const hasRight = isObs(x + 1, y);
 
       const isPillar = !hasAbove && !hasBelow && !hasLeft && !hasRight;
+      const isCrimson = style === "CRIMSON_CITADEL";
+
+      const wallBaseColor = isCrimson ? "#150407" : "#0c1017";
+      const wallBlockColor = isCrimson ? "#2a0911" : "#273546";
+      const wallBlockLight = isCrimson ? "#681628" : "#475a72";
+      const wallCrestColor = isCrimson ? "#4f111f" : "#475569";
+      const wallCrestHi = isCrimson ? "#9f1239" : "#94a3b8";
+      const wallMortar = isCrimson ? "#0d0204" : "#080c14";
+      const pillarShaft = isCrimson ? "#380c16" : "#334155";
+      const pillarBase = isCrimson ? "#22070c" : "#273546";
 
       if (isPillar) {
         // --- PILAR MONOLÍTICO CARVADO COM GEMA DE MANA CENTRAL ---
@@ -435,25 +514,25 @@ export function buildDungeonCanvas(
         ctx.fill();
 
         // Plinto / Base quadrada chanfrada
-        ctx.fillStyle = "#273546";
+        ctx.fillStyle = pillarBase;
         ctx.fillRect(px + 4, py + ts - 16, ts - 8, 14);
-        ctx.fillStyle = "#475569";
+        ctx.fillStyle = wallBlockLight;
         ctx.fillRect(px + 4, py + ts - 16, ts - 8, 2);
 
         // Fuste do pilar (coluna central de pedra polida)
-        ctx.fillStyle = "#334155";
+        ctx.fillStyle = pillarShaft;
         ctx.fillRect(px + 8, py + 8, ts - 16, ts - 22);
 
         // Luz chanfrada esquerda e sombra chanfrada direita
-        ctx.fillStyle = "#64748b";
+        ctx.fillStyle = wallCrestHi;
         ctx.fillRect(px + 8, py + 8, 4, ts - 22);
-        ctx.fillStyle = "#1a2634";
+        ctx.fillStyle = isCrimson ? "#120306" : "#1a2634";
         ctx.fillRect(px + ts - 12, py + 8, 4, ts - 22);
 
         // Capitel (topo ornamentado do pilar)
-        ctx.fillStyle = "#475569";
+        ctx.fillStyle = wallCrestColor;
         ctx.fillRect(px + 5, py + 2, ts - 10, 8);
-        ctx.fillStyle = "#94a3b8";
+        ctx.fillStyle = wallCrestHi;
         ctx.fillRect(px + 5, py + 2, ts - 10, 2);
 
         // Gema de Mana Arcano Central engastada em aro de ouro
@@ -473,32 +552,32 @@ export function buildDungeonCanvas(
         ctx.fill();
       } else {
         // --- SEÇÃO DE MURALHA DE CANTARIA DE PEDRA MACIÇA ---
-        ctx.fillStyle = "#0c1017";
+        ctx.fillStyle = wallBaseColor;
         ctx.fillRect(px, py, ts, ts);
 
         if (!hasAbove) {
           // BEIRAL / TOPO DA MURALHA (Crest / Capstone com iluminação superior)
-          ctx.fillStyle = "#475569";
+          ctx.fillStyle = wallCrestColor;
           ctx.fillRect(px, py, ts, 16);
 
           // Borda de luz zenital superior
-          ctx.fillStyle = "#94a3b8";
+          ctx.fillStyle = wallCrestHi;
           ctx.fillRect(px, py, ts, 2);
 
           // Chanfro inferior e sombra sob o beiral
-          ctx.fillStyle = "#0a0f18";
+          ctx.fillStyle = isCrimson ? "#0a0103" : "#0a0f18";
           ctx.fillRect(px, py + 16, ts, 4);
 
           // Face de alvenaria abaixo do beiral
-          ctx.fillStyle = "#273546";
+          ctx.fillStyle = wallBlockColor;
           ctx.fillRect(px + 1, py + 20, ts - 2, ts - 20);
 
           // Linhas de assentamento vertical de tijolos
-          ctx.fillStyle = "#0f172a";
+          ctx.fillStyle = wallMortar;
           ctx.fillRect(px + Math.floor(ts / 2) - 1, py + 20, 2, ts - 20);
 
           // Destaque de luz no topo de cada bloco
-          ctx.fillStyle = "#475a72";
+          ctx.fillStyle = wallBlockLight;
           ctx.fillRect(px + 1, py + 20, Math.floor(ts / 2) - 2, 1);
           ctx.fillRect(px + Math.floor(ts / 2) + 1, py + 20, Math.floor(ts / 2) - 2, 1);
         } else if (hasAbove && hasBelow) {
@@ -506,38 +585,38 @@ export function buildDungeonCanvas(
           const rowH = Math.floor(ts / 2) - 2;
 
           // Curso Superior
-          ctx.fillStyle = "#273546";
+          ctx.fillStyle = wallBlockColor;
           ctx.fillRect(px + 1, py + 1, ts - 2, rowH);
-          ctx.fillStyle = "#475a72";
+          ctx.fillStyle = wallBlockLight;
           ctx.fillRect(px + 1, py + 1, ts - 2, 1);
-          ctx.fillStyle = "#0f172a";
+          ctx.fillStyle = wallMortar;
           ctx.fillRect(px + 12, py + 1, 2, rowH);
           ctx.fillRect(px + 36, py + 1, 2, rowH);
 
           // Argamassa horizontal divisória
-          ctx.fillStyle = "#080c14";
+          ctx.fillStyle = wallMortar;
           ctx.fillRect(px, py + Math.floor(ts / 2) - 1, ts, 2);
 
           // Curso Inferior (deslocado)
-          ctx.fillStyle = "#243242";
+          ctx.fillStyle = wallBlockColor;
           ctx.fillRect(px + 1, py + Math.floor(ts / 2) + 1, ts - 2, rowH);
-          ctx.fillStyle = "#475a72";
+          ctx.fillStyle = wallBlockLight;
           ctx.fillRect(px + 1, py + Math.floor(ts / 2) + 1, ts - 2, 1);
-          ctx.fillStyle = "#0f172a";
+          ctx.fillStyle = wallMortar;
           ctx.fillRect(px + Math.floor(ts / 2) - 1, py + Math.floor(ts / 2) + 1, 2, rowH);
         } else {
           // BASE DA MURALHA (Fundação reforçada com rodapé chanfrado saliente)
-          ctx.fillStyle = "#243242";
+          ctx.fillStyle = wallBlockColor;
           ctx.fillRect(px + 1, py, ts - 2, ts - 10);
-          ctx.fillStyle = "#0f172a";
+          ctx.fillStyle = wallMortar;
           ctx.fillRect(px + Math.floor(ts / 2) - 1, py, 2, ts - 10);
 
           // Rodapé chanfrado saliente
-          ctx.fillStyle = "#334155";
+          ctx.fillStyle = wallCrestColor;
           ctx.fillRect(px, py + ts - 10, ts, 8);
-          ctx.fillStyle = "#64748b";
+          ctx.fillStyle = wallCrestHi;
           ctx.fillRect(px, py + ts - 10, ts, 1);
-          ctx.fillStyle = "#0b111a";
+          ctx.fillStyle = wallMortar;
           ctx.fillRect(px, py + ts - 2, ts, 2);
         }
 

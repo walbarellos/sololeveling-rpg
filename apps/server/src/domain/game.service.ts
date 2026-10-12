@@ -25,7 +25,10 @@ import {
   type RankPromotionResult,
   type ServerErrorCode,
   type TileCoord,
+  type WorldId,
   type WorldSnapshot,
+  type WorldStyle,
+  type ZoneTeleportRequest,
   type ItemDefinition,
   type ItemRarity,
   type GateClearAnnouncement,
@@ -54,6 +57,11 @@ import { BossService } from "./boss.service";
 import { MissionsService } from "./missions.service";
 import { InventoryService } from "./inventory.service";
 import { MASTER_ITEMS } from "./items.data";
+import {
+  GATE_D_OBSTACLES,
+  GATE_D_SPAWN,
+  GATE_D_WORLD
+} from "./worlds";
 
 export const GRID_WIDTH = 48;
 export const GRID_HEIGHT = 28;
@@ -96,14 +104,18 @@ export const MOB_TEMPLATES: Record<string, MobTemplate> = {
   frostbat: { name: "Frost Bat", rank: "D", baseHp: 70, baseMp: 22, theme: "frost" },
   hellhound: { name: "Hell Hound", rank: "C", baseHp: 115, baseMp: 28, theme: "hell" },
   starspawn: { name: "Starspawn", rank: "C", baseHp: 105, baseMp: 42, theme: "space" },
-  boss: { name: "Chefe Goblin do Gate", rank: "C", baseHp: 220, baseMp: 50, theme: "crypt" }
+  boss: { name: "Chefe Goblin do Gate", rank: "C", baseHp: 220, baseMp: 50, theme: "crypt" },
+  ashguard: { name: "Guarda de Cinzas", rank: "D", baseHp: 120, baseMp: 24, theme: "crimson" },
+  brasshound: { name: "Cão de Latão", rank: "D", baseHp: 140, baseMp: 18, theme: "brass" },
+  runeblade: { name: "Lâmina Rúnica", rank: "D", baseHp: 128, baseMp: 40, theme: "rune" }
 };
 
 export function createEnemyInstance(
   id: string,
   templateKey: keyof typeof MOB_TEMPLATES,
   level: number,
-  position: TileCoord
+  position: TileCoord,
+  worldId: WorldId = "GATE_E"
 ): EnemySnapshot {
   const template = MOB_TEMPLATES[templateKey];
   const mult = statMult(level);
@@ -119,7 +131,8 @@ export function createEnemyInstance(
     maxHp: hp,
     mp,
     maxMp: mp,
-    alive: true
+    alive: true,
+    worldId
   };
 }
 
@@ -207,7 +220,14 @@ export class GameService {
 
     // SALA 5: A Sala Final / Câmara do Chefe do Gate (Rank C, Lv 10 Boss gerenciado pelo BossService)
     ["hellhound-2", createEnemyInstance("hellhound-2", "hellhound", 8, { x: 38, y: 11 })],
-    ["starspawn-2", createEnemyInstance("starspawn-2", "starspawn", 9, { x: 38, y: 16 })]
+    ["starspawn-2", createEnemyInstance("starspawn-2", "starspawn", 9, { x: 38, y: 16 })],
+
+    // GATE D — Cidadela Carmesim (mapa próprio, níveis 12–15, superior ao chefe lv 10 do Gate E)
+    ["ash-1", createEnemyInstance("ash-1", "ashguard", 12, { x: 15, y: 9 }, "GATE_D")],
+    ["ash-2", createEnemyInstance("ash-2", "ashguard", 13, { x: 16, y: 13 }, "GATE_D")],
+    ["brass-1", createEnemyInstance("brass-1", "brasshound", 14, { x: 19, y: 8 }, "GATE_D")],
+    ["rune-1", createEnemyInstance("rune-1", "runeblade", 14, { x: 25, y: 9 }, "GATE_D")],
+    ["rune-2", createEnemyInstance("rune-2", "runeblade", 15, { x: 27, y: 13 }, "GATE_D")]
   ]);
   private readonly activeBattles = new Map<string, BattleSession>();
   private readonly online = new Set<string>();
@@ -220,6 +240,18 @@ export class GameService {
   public readonly bossService = new BossService();
   private readonly missionsService: MissionsService;
   private readonly inventoryService: InventoryService;
+  private readonly worlds: Record<
+    WorldId,
+    {
+      id: WorldId;
+      style: WorldStyle;
+      width: number;
+      height: number;
+      spawn: TileCoord;
+      obstacles: readonly TileCoord[];
+      obstacleSet: Set<string>;
+    }
+  >;
 
   constructor(
     @Optional() @Inject(CLOCK) private readonly clock: Clock = new SystemClock(),
@@ -232,14 +264,41 @@ export class GameService {
     for (const obs of DEFAULT_OBSTACLES) {
       this.obstacleSet.add(`${obs.x},${obs.y}`);
     }
+    const pack = (
+      id: WorldId,
+      style: WorldStyle,
+      width: number,
+      height: number,
+      spawn: TileCoord,
+      obstacles: readonly TileCoord[]
+    ) => ({
+      id,
+      style,
+      width,
+      height,
+      spawn,
+      obstacles,
+      obstacleSet: new Set(obstacles.map((o) => `${o.x},${o.y}`))
+    });
+    this.worlds = {
+      GATE_E: pack("GATE_E", "SANCTUARY", GRID_WIDTH, GRID_HEIGHT, { x: 2, y: 2 }, DEFAULT_OBSTACLES),
+      GATE_D: pack("GATE_D", GATE_D_WORLD.style, GATE_D_WORLD.width, GATE_D_WORLD.height, GATE_D_SPAWN, GATE_D_OBSTACLES)
+    };
   }
 
   get dimensions() {
+    return this.dimensionsFor("GATE_E");
+  }
+
+  dimensionsFor(worldId: WorldId = "GATE_E") {
+    const world = this.worlds[worldId] ?? this.worlds.GATE_E;
     return {
-      gridWidth: GRID_WIDTH,
-      gridHeight: GRID_HEIGHT,
+      gridWidth: world.width,
+      gridHeight: world.height,
       tileSize: TILE_SIZE,
-      obstacles: [...DEFAULT_OBSTACLES]
+      obstacles: [...world.obstacles],
+      worldId: world.id,
+      style: world.style
     };
   }
 
@@ -275,6 +334,9 @@ export class GameService {
       }
       if (!existing.unclaimedTrophies) {
         existing.unclaimedTrophies = [];
+      }
+      if (!existing.worldId) {
+        existing.worldId = "GATE_E";
       }
 
       // Em ambiente interativo (fora de testes unitários), popula para teste do jogador
@@ -324,6 +386,7 @@ export class GameService {
       level: initialLevel,
       exp: initialExp,
       position: { x: 2, y: 2 },
+      worldId: "GATE_E",
       hp: initialHp,
       maxHp: initialHp,
       mp: initialMp,
@@ -405,17 +468,19 @@ export class GameService {
     const delta = this.getDirectionDelta(direction);
     const targetX = player.position.x + delta.dx;
     const targetY = player.position.y + delta.dy;
+    const worldId = player.worldId ?? "GATE_E";
 
-    if (!this.isInBounds(targetX, targetY)) {
+    if (!this.isInBounds(worldId, targetX, targetY)) {
       return { success: false, error: "OUT_OF_BOUNDS" };
     }
 
-    if (this.isObstacle(targetX, targetY)) {
+    if (this.isObstacle(worldId, targetX, targetY)) {
       return { success: false, error: "OBSTACLE" };
     }
 
-    // Check if an alive enemy blocks this tile
+    // Check if an alive enemy in the same world blocks this tile
     for (const enemy of this.enemies.values()) {
+      if ((enemy.worldId ?? "GATE_E") !== worldId) continue;
       if (enemy.alive && enemy.position.x === targetX && enemy.position.y === targetY) {
         return { success: false, error: "OBSTACLE" };
       }
@@ -458,12 +523,17 @@ export class GameService {
           maxHp: boss.maxHp,
           mp: 100,
           maxMp: 100,
-          alive: boss.alive
+          alive: boss.alive,
+          worldId: boss.worldId
         };
       }
     }
 
     if (!player || !enemy || !enemy.alive) {
+      return { success: false, error: "TARGET_UNAVAILABLE" };
+    }
+
+    if ((enemy.worldId ?? "GATE_E") !== (player.worldId ?? "GATE_E")) {
       return { success: false, error: "TARGET_UNAVAILABLE" };
     }
 
@@ -627,6 +697,8 @@ export class GameService {
             bossTrophy = MASTER_ITEMS.trophy_shadow_wolf_fang;
           } else if (session.enemy.id === "boss-1") {
             bossTrophy = MASTER_ITEMS.trophy_fire_gate_core;
+          } else if (session.enemy.id === "boss_crimson_sentinel") {
+            bossTrophy = MASTER_ITEMS.trophy_crimson_heart;
           }
 
           if (this.lootService.addItemToInventory(player.inventory, bossTrophy)) {
@@ -662,7 +734,7 @@ export class GameService {
       if (this.bossService.isBoss(session.enemy.id)) {
         this.bossService.updateBossHp(session.enemy.id, session.enemy.hp);
       }
-      player.position = { x: 2, y: 2 };
+      player.position = { ...this.spawnOf(player) };
       player.hp = player.maxHp;
       player.mp = player.maxMp;
     } else if (session.result === "DRAW") {
@@ -681,7 +753,7 @@ export class GameService {
         } else {
           kill();
         }
-        player.position = { x: 2, y: 2 };
+        player.position = { ...this.spawnOf(player) };
         player.hp = Math.floor(player.maxHp * 0.5);
         player.mp = Math.floor(player.maxMp * 0.5);
       }
@@ -774,7 +846,10 @@ export class GameService {
       const died = this.diedAt.get(enemy.id);
       if (died === undefined || now - died < ENEMY_RESPAWN_MS) continue;
       const occupied = players.some(
-        (p) => p.position.x === enemy.position.x && p.position.y === enemy.position.y
+        (p) =>
+          (p.worldId ?? "GATE_E") === (enemy.worldId ?? "GATE_E") &&
+          p.position.x === enemy.position.x &&
+          p.position.y === enemy.position.y
       );
       if (occupied) continue; // espera o tile ficar livre
       enemy.alive = true;
@@ -790,6 +865,9 @@ export class GameService {
     const enemy = this.enemies.get(targetId);
 
     if (!player || !enemy || !enemy.alive) {
+      return { success: false, error: "TARGET_UNAVAILABLE" };
+    }
+    if ((enemy.worldId ?? "GATE_E") !== (player.worldId ?? "GATE_E")) {
       return { success: false, error: "TARGET_UNAVAILABLE" };
     }
 
@@ -814,7 +892,7 @@ export class GameService {
       counterDamage = enemy.rank === "D" ? 15 : 10;
       player.hp = Math.max(0, player.hp - counterDamage);
       if (player.hp === 0) {
-        player.position = { x: 2, y: 2 };
+        player.position = { ...this.spawnOf(player) };
         player.hp = player.maxHp;
       }
     }
@@ -1002,12 +1080,34 @@ export class GameService {
 
   teleportPlayerToZone(
     playerId: string,
-    zoneId: "SANTUARIO" | "CATACUMBAS" | "COVIL" | "ABISMO" | "CHAMBER"
+    zoneId: ZoneTeleportRequest["zoneId"]
   ): { success: boolean; player?: PlayerSnapshot; error?: ServerErrorCode } {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
     if (player.inBattle) return { success: false, error: "ALREADY_IN_BATTLE" };
 
+    if (zoneId === "ENTER_GATE_D") {
+      if (!isRankAllowed(player.rank, "D")) {
+        return { success: false, error: "ZONE_LOCKED" };
+      }
+      player.worldId = "GATE_D";
+      player.position = { ...GATE_D_SPAWN };
+      player.lastStepAt = this.clock.nowMs();
+      player.sequence = ++this.sequence;
+      this.playerRepository.save(player);
+      return { success: true, player: this.toSnapshot(player) };
+    }
+
+    if (zoneId === "RETURN_GATE_E") {
+      player.worldId = "GATE_E";
+      player.position = { x: 2, y: 2 };
+      player.lastStepAt = this.clock.nowMs();
+      player.sequence = ++this.sequence;
+      this.playerRepository.save(player);
+      return { success: true, player: this.toSnapshot(player) };
+    }
+
+    player.worldId = "GATE_E";
     const zoneMinRank: Record<string, HunterRank> = {
       SANTUARIO: "E",
       CATACUMBAS: "E",
@@ -1201,23 +1301,41 @@ export class GameService {
     return { success: true, player: this.toSnapshot(player) };
   }
 
-  snapshot(): WorldSnapshot {
+  getPlayerWorldId(playerId: string): WorldId {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    return (player?.worldId as WorldId) ?? "GATE_E";
+  }
+
+  private spawnOf(player: PlayerEntity): TileCoord {
+    const world = this.worlds[player.worldId ?? "GATE_E"] ?? this.worlds.GATE_E;
+    return world.spawn;
+  }
+
+  snapshot(worldId: WorldId = "GATE_E"): WorldSnapshot {
     this.reviveEnemies();
-    // Só jogadores online aparecem no mundo; o estado persistente continua no repositório.
+    const world = this.worlds[worldId] ?? this.worlds.GATE_E;
+    // Só jogadores online no mundo especificado
     const allPlayers = (this.playerRepository.findAll() as PlayerEntity[])
-      .filter((p) => this.online.has(p.id))
+      .filter((p) => this.online.has(p.id) && (p.worldId ?? "GATE_E") === worldId)
       .map((p) => this.toSnapshot(p));
+
+    const enemiesInWorld = [
+      ...Array.from(this.enemies.values()).filter((e) => (e.worldId ?? "GATE_E") === worldId),
+      ...this.bossService.toEnemySnapshots().filter((b) => (b.worldId ?? "GATE_E") === worldId)
+    ].map((e) => ({
+      ...e,
+      position: { ...e.position }
+    }));
+
     return {
       players: allPlayers,
-      enemies: [
-        ...this.enemies.values(),
-        ...this.bossService.toEnemySnapshots()
-      ].map((e) => ({
-        ...e,
-        position: { ...e.position }
-      })),
-      obstacles: [...DEFAULT_OBSTACLES],
-      serverTime: this.clock.nowMs()
+      enemies: enemiesInWorld,
+      obstacles: [...world.obstacles],
+      serverTime: this.clock.nowMs(),
+      worldId: world.id,
+      style: world.style,
+      gridWidth: world.width,
+      gridHeight: world.height
     };
   }
 
@@ -1244,16 +1362,19 @@ export class GameService {
       gold: p.gold ?? 0,
       inBattle: p.inBattle,
       activeBattleId: p.activeBattleId,
-      sequence: p.sequence
+      sequence: p.sequence,
+      worldId: p.worldId ?? "GATE_E"
     };
   }
 
-  private isInBounds(x: number, y: number): boolean {
-    return x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT;
+  private isInBounds(worldId: WorldId, x: number, y: number): boolean {
+    const world = this.worlds[worldId] ?? this.worlds.GATE_E;
+    return x >= 0 && x < world.width && y >= 0 && y < world.height;
   }
 
-  private isObstacle(x: number, y: number): boolean {
-    return this.obstacleSet.has(`${x},${y}`);
+  private isObstacle(worldId: WorldId, x: number, y: number): boolean {
+    const world = this.worlds[worldId] ?? this.worlds.GATE_E;
+    return world.obstacleSet.has(`${x},${y}`);
   }
 
   private getDirectionDelta(dir: Direction): { dx: number; dy: number } {
