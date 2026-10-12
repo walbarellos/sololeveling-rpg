@@ -77,7 +77,14 @@ export function enemyTextureKey(name: string): string {
     n.includes("ashborn") ||
     n.includes("igris") ||
     n.includes("beru") ||
-    n.includes("bellion")
+    n.includes("bellion") ||
+    n.includes("kamish") ||
+    n.includes("gárgula") ||
+    n.includes("gargoyle") ||
+    n.includes("warlord") ||
+    n.includes("lorde") ||
+    n.includes("gigante") ||
+    n.includes("giant")
   ) {
     return TEX.boss;
   }

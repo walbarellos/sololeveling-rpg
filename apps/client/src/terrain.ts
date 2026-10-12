@@ -147,54 +147,54 @@ export const SHADOW_THRONE_THEME: BiomeTheme = {
 };
 
 const BIOMES: Record<number, BiomeTheme> = {
-  // 0: Santuário do Gate — Templo arcano de ardósia esmeralda com canais de mana
+  // 0: Santuário do Gate — Templo arcano de ardósia com veios verde-água e canais de mana
   0: {
     name: "Santuário do Gate",
-    mortar: "#0b1712",
-    slabBase: "#182e24",
-    slabMid: "#223f32",
-    slabLight: "#2c5140",
-    bevelHi: "#457a62",
-    bevelShadow: "#10211a",
+    mortar: "#0a1712",
+    slabBase: "#1c382b",
+    slabMid: "#264f3c",
+    slabLight: "#336950",
+    bevelHi: "#52a37f",
+    bevelShadow: "#0c1f17",
     accent: "#34d399",
-    glow: "#38bdf8",
+    glow: "#6ee7b7",
     gem: "#38bdf8"
   },
   // 1: Ruínas Esquecidas — Lajes ancestrais com tufos de musgo vivo e trepadeiras
   1: {
     name: "Ruínas Esquecidas",
-    mortar: "#0f190f",
-    slabBase: "#223522",
-    slabMid: "#2c452c",
-    slabLight: "#385638",
-    bevelHi: "#527b52",
-    bevelShadow: "#172617",
+    mortar: "#0c1c0c",
+    slabBase: "#223d22",
+    slabMid: "#2e542e",
+    slabLight: "#3c6e3c",
+    bevelHi: "#60a860",
+    bevelShadow: "#122412",
     accent: "#4ade80",
-    glow: "#86efac",
+    glow: "#a7f3d0",
     gem: "#22c55e"
   },
-  // 2: Catacumbas Antigas — Granito gótico frio e ardósia cinzenta com névoa mística
+  // 2: Catacumbas Antigas — Granito gótico com ardósia cinzenta e névoa azul
   2: {
     name: "Catacumbas Antigas",
-    mortar: "#0e1520",
-    slabBase: "#1f2d3d",
-    slabMid: "#2a3c52",
-    slabLight: "#354c66",
-    bevelHi: "#506f94",
-    bevelShadow: "#15202c",
+    mortar: "#0c1524",
+    slabBase: "#1e334a",
+    slabMid: "#284666",
+    slabLight: "#365c85",
+    bevelHi: "#588ec4",
+    bevelShadow: "#101c2b",
     accent: "#60a5fa",
-    glow: "#93c5fd",
-    gem: "#93c5fd"
+    glow: "#bfdbfe",
+    gem: "#3b82f6"
   },
-  // 3: Covil Vulcânico — Basalto negro aquecido com veios de lava incandescente e brasas
+  // 3: Covil Vulcânico — Basalto aquecido com veios de lava incandescente e brasas
   3: {
     name: "Covil Vulcânico",
-    mortar: "#150909",
-    slabBase: "#301818",
-    slabMid: "#422222",
-    slabLight: "#552c2c",
-    bevelHi: "#783f3f",
-    bevelShadow: "#220f0f",
+    mortar: "#1f0808",
+    slabBase: "#3d1c1c",
+    slabMid: "#542525",
+    slabLight: "#6e3030",
+    bevelHi: "#a84c4c",
+    bevelShadow: "#240e0e",
     accent: "#f97316",
     glow: "#fde047",
     gem: "#ef4444"
@@ -202,12 +202,12 @@ const BIOMES: Record<number, BiomeTheme> = {
   // 4: Abismo Dimensional — Obsidiana cósmica com fendas de energia do Void violeta
   4: {
     name: "Abismo Dimensional",
-    mortar: "#10091c",
-    slabBase: "#241838",
-    slabMid: "#33224f",
-    slabLight: "#422c66",
-    bevelHi: "#604291",
-    bevelShadow: "#190f28",
+    mortar: "#160824",
+    slabBase: "#2d1847",
+    slabMid: "#3f2163",
+    slabLight: "#542b85",
+    bevelHi: "#8347cc",
+    bevelShadow: "#1c0d2e",
     accent: "#a855f7",
     glow: "#e9d5ff",
     gem: "#c084fc"
@@ -215,15 +215,15 @@ const BIOMES: Record<number, BiomeTheme> = {
   // 5: Câmara de Gelo — Permafrost glacial com fendas de gelo cristalino translúcido
   5: {
     name: "Câmara de Gelo",
-    mortar: "#0b1824",
-    slabBase: "#1d3447",
-    slabMid: "#27465e",
-    slabLight: "#335978",
-    bevelHi: "#4d7ea6",
-    bevelShadow: "#132533",
-    accent: "#7dd3fc",
-    glow: "#e0f2fe",
-    gem: "#38bdf8"
+    mortar: "#081a29",
+    slabBase: "#1c3a52",
+    slabMid: "#254f6e",
+    slabLight: "#336891",
+    bevelHi: "#559ecc",
+    bevelShadow: "#102436",
+    accent: "#38bdf8",
+    glow: "#bae6fd",
+    gem: "#0284c7"
   }
 };
 
@@ -234,20 +234,14 @@ function tileRng(x: number, y: number, salt = 0): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-export function buildDungeonCanvas(
+export function renderDungeonTerrain(
+  ctx: CanvasRenderingContext2D,
   gw: number,
   gh: number,
   ts: number,
   obstacles: readonly TileCoord[],
   style: WorldStyle = "SANCTUARY"
-): HTMLCanvasElement {
-  const canvas = document.createElement("canvas");
-  canvas.width = gw * ts;
-  canvas.height = gh * ts;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return canvas;
-
+): void {
   ctx.imageSmoothingEnabled = false;
 
   const obsSet = new Set(obstacles.map((o) => `${o.x},${o.y}`));
@@ -327,137 +321,221 @@ export function buildDungeonCanvas(
       // ---------------------------------------------------------------------
       const rFeat = tileRng(x, y, 99);
 
-      if (biomeIdx === 0) {
-        // Santuário: Canais de mana e glifos arcanos seletivos (em ~20% das lajes)
-        if (rFeat > 0.78) {
-          ctx.strokeStyle = b.accent;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(px + ts / 2, py + ts / 2, Math.floor(ts * 0.28), 0, Math.PI * 2);
-          ctx.stroke();
-
-          ctx.fillStyle = b.glow;
-          ctx.beginPath();
-          ctx.arc(px + ts / 2, py + ts / 2, 2.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Canais de energia saindo do glifo
-          ctx.beginPath();
-          ctx.moveTo(px + ts / 2 - 8, py + ts / 2);
-          ctx.lineTo(px + ts / 2 + 8, py + ts / 2);
-          ctx.moveTo(px + ts / 2, py + ts / 2 - 8);
-          ctx.lineTo(px + ts / 2, py + ts / 2 + 8);
-          ctx.stroke();
-        } else if (rFeat < 0.15) {
-          // Trilha de mana que cruza o rejunte
-          ctx.strokeStyle = b.accent;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(px + 4, py + splitY);
-          ctx.lineTo(px + ts - 4, py + splitY);
-          ctx.stroke();
-        }
-      } else if (biomeIdx === 1) {
-        // Ruínas: Tufos de musgo vivo e brotos nas fendas de argamassa
-        if (rFeat > 0.35) {
-          const numPatches = Math.floor(1 + tileRng(x, y, 50) * 3);
-          for (let p = 0; p < numPatches; p++) {
-            const mx = px + 4 + Math.floor(tileRng(x, y, 60 + p) * (ts - 8));
-            const my = py + 4 + Math.floor(tileRng(x, y, 70 + p) * (ts - 8));
-            ctx.fillStyle = b.accent;
+      if (style === "SANCTUARY") {
+        if (biomeIdx === 0) {
+          // Santuário: Canais de mana e glifos arcanos seletivos (em ~20% das lajes)
+          if (rFeat > 0.78) {
+            ctx.strokeStyle = b.accent;
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.ellipse(mx, my, 2.5, 1.8, tileRng(x, y, 80 + p) * Math.PI, 0, Math.PI * 2);
+            ctx.arc(px + ts / 2, py + ts / 2, Math.floor(ts * 0.28), 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = b.glow;
+            ctx.beginPath();
+            ctx.arc(px + ts / 2, py + ts / 2, 2.5, 0, Math.PI * 2);
             ctx.fill();
 
-            // Ponto central de folha mais clara
+            // Canais de energia saindo do glifo
+            ctx.beginPath();
+            ctx.moveTo(px + ts / 2 - 8, py + ts / 2);
+            ctx.lineTo(px + ts / 2 + 8, py + ts / 2);
+            ctx.moveTo(px + ts / 2, py + ts / 2 - 8);
+            ctx.lineTo(px + ts / 2, py + ts / 2 + 8);
+            ctx.stroke();
+          } else if (rFeat < 0.15) {
+            // Trilha de mana que cruza o rejunte
+            ctx.strokeStyle = b.accent;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(px + 4, py + splitY);
+            ctx.lineTo(px + ts - 4, py + splitY);
+            ctx.stroke();
+          }
+        } else if (biomeIdx === 1) {
+          // Ruínas: Tufos de musgo vivo e brotos nas fendas de argamassa
+          if (rFeat > 0.35) {
+            const numPatches = Math.floor(1 + tileRng(x, y, 50) * 3);
+            for (let p = 0; p < numPatches; p++) {
+              const mx = px + 4 + Math.floor(tileRng(x, y, 60 + p) * (ts - 8));
+              const my = py + 4 + Math.floor(tileRng(x, y, 70 + p) * (ts - 8));
+              ctx.fillStyle = b.accent;
+              ctx.beginPath();
+              ctx.ellipse(mx, my, 2.5, 1.8, tileRng(x, y, 80 + p) * Math.PI, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Ponto central de folha mais clara
+              ctx.fillStyle = b.glow;
+              ctx.fillRect(mx, my, 1, 1);
+            }
+          }
+        } else if (biomeIdx === 2) {
+          // Catacumbas: Rachaduras com reflexo gélido
+          if (rFeat > 0.65) {
+            const startX = px + 6 + Math.floor(tileRng(x, y, 12) * 12);
+            const startY = py + 6 + Math.floor(tileRng(x, y, 13) * 12);
+            ctx.strokeStyle = b.accent;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(startX + 14, startY + 12);
+            ctx.lineTo(startX + 10, startY + 22);
+            ctx.lineTo(startX + 22, startY + 30);
+            ctx.stroke();
+
             ctx.fillStyle = b.glow;
-            ctx.fillRect(mx, my, 1, 1);
+            ctx.fillRect(startX + 14, startY + 12, 2, 2);
+          }
+        } else if (biomeIdx === 3) {
+          // Covil Vulcânico: Fissura de lava viva e brasas incandescentes
+          if (rFeat > 0.45) {
+            ctx.strokeStyle = "#991b1b";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(px + 4, py + 10);
+            ctx.lineTo(px + 18, py + 22);
+            ctx.lineTo(px + 30, py + 18);
+            ctx.lineTo(px + 42, py + 38);
+            ctx.stroke();
+
+            // Núcleo brilhante de lava amarela
+            ctx.strokeStyle = b.accent;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(px + 4, py + 10);
+            ctx.lineTo(px + 18, py + 22);
+            ctx.lineTo(px + 30, py + 18);
+            ctx.lineTo(px + 42, py + 38);
+            ctx.stroke();
+
+            ctx.fillStyle = b.glow;
+            ctx.beginPath();
+            ctx.arc(px + 18, py + 22, 2, 0, Math.PI * 2);
+            ctx.arc(px + 30, py + 18, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Brasa solta
+            ctx.fillStyle = "#ef4444";
+            ctx.fillRect(px + 10, py + 34, 1.5, 1.5);
+          }
+        } else if (biomeIdx === 4) {
+          // Abismo Dimensional: Fenda cósmica do Void e poeira astral
+          if (rFeat > 0.5) {
+            ctx.strokeStyle = b.accent;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(px + 6, py + 38);
+            ctx.lineTo(px + 22, py + 20);
+            ctx.lineTo(px + 28, py + 24);
+            ctx.lineTo(px + 40, py + 6);
+            ctx.stroke();
+
+            ctx.fillStyle = b.glow;
+            ctx.fillRect(px + 22, py + 20, 2, 2);
+          }
+          // Microestrelas no abismo
+          if (rFeat < 0.3) {
+            ctx.fillStyle = "#f5f3ff";
+            ctx.fillRect(px + 12, py + 10, 1.5, 1.5);
+            ctx.fillRect(px + 34, py + 36, 1, 1);
+          }
+        } else if (biomeIdx === 5) {
+          // Câmara de Gelo: Fendas glaciais translúcidas
+          if (rFeat > 0.5) {
+            ctx.strokeStyle = b.glow;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(px + 8, py + 8);
+            ctx.lineTo(px + 22, py + 24);
+            ctx.lineTo(px + 26, py + 18);
+            ctx.lineTo(px + 40, py + 40);
+            ctx.stroke();
+
+            ctx.fillStyle = b.accent;
+            ctx.fillRect(px + 14, py + 28, 6, 2);
           }
         }
-      } else if (biomeIdx === 2) {
-        // Catacumbas: Rachaduras com reflexo gélido
-        if (rFeat > 0.65) {
-          const startX = px + 6 + Math.floor(tileRng(x, y, 12) * 12);
-          const startY = py + 6 + Math.floor(tileRng(x, y, 13) * 12);
+      } else if (style === "CRIMSON_CITADEL") {
+        if (rFeat > 0.6) {
+          ctx.strokeStyle = b.accent;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(px + 4, py + 8);
+          ctx.lineTo(px + 16, py + 18);
+          ctx.lineTo(px + 28, py + 12);
+          ctx.stroke();
+          ctx.fillStyle = b.glow;
+          ctx.fillRect(px + 16, py + 18, 2, 2);
+        }
+      } else if (style === "FROZEN_ABYSS") {
+        if (rFeat > 0.6) {
+          ctx.strokeStyle = b.glow;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(px + 6, py + 6);
+          ctx.lineTo(px + 20, py + 22);
+          ctx.lineTo(px + 36, py + 34);
+          ctx.stroke();
+          ctx.fillStyle = b.accent;
+          ctx.fillRect(px + 20, py + 22, 2, 2);
+        }
+      } else if (style === "SHADOW_NECROPOLIS") {
+        if (rFeat > 0.6) {
           ctx.strokeStyle = b.accent;
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.moveTo(startX, startY);
-          ctx.lineTo(startX + 14, startY + 12);
-          ctx.lineTo(startX + 10, startY + 22);
-          ctx.lineTo(startX + 22, startY + 30);
+          ctx.moveTo(px + 8, py + 32);
+          ctx.lineTo(px + 22, py + 16);
+          ctx.lineTo(px + 32, py + 24);
           ctx.stroke();
-
           ctx.fillStyle = b.glow;
-          ctx.fillRect(startX + 14, startY + 12, 2, 2);
+          ctx.fillRect(px + 22, py + 16, 2, 2);
         }
-      } else if (biomeIdx === 3) {
-        // Covil Vulcânico: Fissura de lava viva e brasas incandescentes
-        if (rFeat > 0.45) {
-          ctx.strokeStyle = "#991b1b";
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(px + 4, py + 10);
-          ctx.lineTo(px + 18, py + 22);
-          ctx.lineTo(px + 30, py + 18);
-          ctx.lineTo(px + 42, py + 38);
-          ctx.stroke();
-
-          // Núcleo brilhante de lava amarela
-          ctx.strokeStyle = b.accent;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(px + 4, py + 10);
-          ctx.lineTo(px + 18, py + 22);
-          ctx.lineTo(px + 30, py + 18);
-          ctx.lineTo(px + 42, py + 38);
-          ctx.stroke();
-
-          ctx.fillStyle = b.glow;
-          ctx.beginPath();
-          ctx.arc(px + 18, py + 22, 2, 0, Math.PI * 2);
-          ctx.arc(px + 30, py + 18, 1.8, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Brasa solta
-          ctx.fillStyle = "#ef4444";
-          ctx.fillRect(px + 10, py + 34, 1.5, 1.5);
-        }
-      } else if (biomeIdx === 4) {
-        // Abismo Dimensional: Fenda cósmica do Void e poeira astral
+      } else if (style === "DRAGON_VOLCANO") {
         if (rFeat > 0.5) {
           ctx.strokeStyle = b.accent;
           ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.moveTo(px + 6, py + 38);
-          ctx.lineTo(px + 22, py + 20);
-          ctx.lineTo(px + 28, py + 24);
-          ctx.lineTo(px + 40, py + 6);
+          ctx.moveTo(px + 6, py + 12);
+          ctx.lineTo(px + 20, py + 24);
+          ctx.lineTo(px + 36, py + 36);
           ctx.stroke();
-
           ctx.fillStyle = b.glow;
-          ctx.fillRect(px + 22, py + 20, 2, 2);
+          ctx.fillRect(px + 20, py + 24, 2, 2);
         }
-        // Microestrelas no abismo
-        if (rFeat < 0.3) {
-          ctx.fillStyle = "#f5f3ff";
-          ctx.fillRect(px + 12, py + 10, 1.5, 1.5);
-          ctx.fillRect(px + 34, py + 36, 1, 1);
-        }
-      } else if (biomeIdx === 5) {
-        // Câmara de Gelo: Fendas glaciais translúcidas
-        if (rFeat > 0.5) {
-          ctx.strokeStyle = b.glow;
-          ctx.lineWidth = 1.5;
+      } else if (style === "MONARCH_SANCTUM") {
+        if (rFeat > 0.7) {
+          ctx.strokeStyle = b.accent;
+          ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.moveTo(px + 8, py + 8);
-          ctx.lineTo(px + 22, py + 24);
-          ctx.lineTo(px + 26, py + 18);
-          ctx.lineTo(px + 40, py + 40);
+          ctx.arc(px + ts / 2, py + ts / 2, Math.floor(ts * 0.25), 0, Math.PI * 2);
           ctx.stroke();
-
-          ctx.fillStyle = b.accent;
-          ctx.fillRect(px + 14, py + 28, 6, 2);
+          ctx.fillStyle = b.glow;
+          ctx.fillRect(px + ts / 2 - 1, py + ts / 2 - 1, 2, 2);
+        }
+      } else if (style === "COSMIC_VOID") {
+        if (rFeat > 0.5) {
+          ctx.strokeStyle = b.accent;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(px + 6, py + 36);
+          ctx.lineTo(px + 24, py + 18);
+          ctx.lineTo(px + 38, py + 8);
+          ctx.stroke();
+          ctx.fillStyle = b.glow;
+          ctx.fillRect(px + 24, py + 18, 2, 2);
+        }
+      } else if (style === "SHADOW_THRONE") {
+        if (rFeat > 0.6) {
+          ctx.strokeStyle = b.accent;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(px + 10, py + 10);
+          ctx.lineTo(px + 24, py + 24);
+          ctx.lineTo(px + 38, py + 14);
+          ctx.stroke();
+          ctx.fillStyle = b.glow;
+          ctx.fillRect(px + 24, py + 24, 2, 2);
         }
       }
 
@@ -744,6 +822,22 @@ export function buildDungeonCanvas(
       }
     }
   }
+}
 
+export function buildDungeonCanvas(
+  gw: number,
+  gh: number,
+  ts: number,
+  obstacles: readonly TileCoord[],
+  style: WorldStyle = "SANCTUARY"
+): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = gw * ts;
+  canvas.height = gh * ts;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.imageSmoothingEnabled = false;
+    renderDungeonTerrain(ctx, gw, gh, ts, obstacles, style);
+  }
   return canvas;
 }

@@ -25,7 +25,7 @@ import { socket } from "../network/game-socket";
 import { gameState, getMyPlayer } from "../state/game-state";
 import { hudController } from "../ui/hud.controller";
 import { npcController } from "../ui/npc.controller";
-import { buildDungeonCanvas } from "../terrain";
+import { renderDungeonTerrain } from "../terrain";
 
 const STEP_INTERVAL_MS = 215; // > STEP_COOLDOWN_MS do servidor (200) para não tomar TOO_FAST
 const PREFERS_REDUCED_MOTION = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -189,29 +189,38 @@ export class WorldScene extends Phaser.Scene {
 
   public rebuildTerrain() {
     const ts = gameState.tileSize || 48;
-    const key = `${gameState.worldId}:${gameState.gridWidth}x${gameState.gridHeight}:${gameState.obstacles.length}:${ts}`;
-    if (this.terrainKey === key) return;
+    const key = `${gameState.worldId}:${gameState.style}:${gameState.gridWidth}x${gameState.gridHeight}:${gameState.obstacles.length}:${ts}`;
+    if (this.terrainKey === key && this.terrainImage) return;
     this.terrainKey = key;
 
-    const texKey = `dungeon_terrain_${gameState.worldId}`;
-    const canvas = buildDungeonCanvas(
-      gameState.gridWidth,
-      gameState.gridHeight,
-      ts,
-      gameState.obstacles,
-      gameState.style
-    );
+    const texKey = `dungeon_terrain_${gameState.worldId}_${Date.now()}`;
+    const worldW = gameState.gridWidth * ts;
+    const worldH = gameState.gridHeight * ts;
 
-    if (this.textures.exists(texKey)) {
-      this.textures.remove(texKey);
+    const tex = this.textures.createCanvas(texKey, worldW, worldH);
+    if (tex) {
+      const ctx = tex.getContext();
+      ctx.imageSmoothingEnabled = false;
+      renderDungeonTerrain(
+        ctx,
+        gameState.gridWidth,
+        gameState.gridHeight,
+        ts,
+        gameState.obstacles,
+        gameState.style
+      );
+      tex.refresh();
     }
-    this.textures.addCanvas(texKey, canvas);
 
-    if (!this.terrainImage) {
-      this.terrainImage = this.add.image(0, 0, texKey).setOrigin(0, 0).setDepth(0);
-    } else {
-      this.terrainImage.setTexture(texKey);
+    if (this.terrainImage) {
+      const oldKey = this.terrainImage.texture?.key;
+      this.terrainImage.destroy();
+      this.terrainImage = null;
+      if (oldKey && oldKey.startsWith("dungeon_terrain_") && this.textures.exists(oldKey)) {
+        this.textures.remove(oldKey);
+      }
     }
+    this.terrainImage = this.add.image(0, 0, texKey).setOrigin(0, 0).setDepth(0);
   }
 
   public rebuildWorldObjects() {

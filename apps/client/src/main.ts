@@ -127,6 +127,7 @@ socket.on(ServerEvents.Snapshot, (raw: unknown) => {
   const parsed = WorldSnapshotSchema.safeParse(raw);
   if (!parsed.success) return;
   const prevWorldId = gameState.worldId;
+  const prevStyle = gameState.style;
   gameState.world = parsed.data;
   gameState.obstacles = parsed.data.obstacles;
   if (parsed.data.worldId) gameState.worldId = parsed.data.worldId;
@@ -134,7 +135,7 @@ socket.on(ServerEvents.Snapshot, (raw: unknown) => {
   if (parsed.data.gridWidth) gameState.gridWidth = parsed.data.gridWidth;
   if (parsed.data.gridHeight) gameState.gridHeight = parsed.data.gridHeight;
 
-  if (prevWorldId !== gameState.worldId) {
+  if (prevWorldId !== gameState.worldId || prevStyle !== gameState.style) {
     updateWorldTitleTag(gameState.worldId);
     getWorldScene()?.updateWorldBounds(gameState.gridWidth, gameState.gridHeight, gameState.tileSize);
   }

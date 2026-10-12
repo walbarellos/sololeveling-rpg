@@ -405,6 +405,432 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     minLevel: 8,
     stats: { bonusHp: 70, bonusMp: 50, bonusPhysicalAtk: 16, bonusMagicalAtk: 14, bonusCritChance: 0.10, bonusDodgeChance: 0.05, bonusBlockChance: 0.03 },
     icon: "ring_gold"
+  },
+
+  // =========================================================================
+  // CONSUMÍVEIS DE ALTO NÍVEL (Ranks C a SSS+)
+  // =========================================================================
+  potion_hp_elixir: {
+    id: "potion_hp_elixir",
+    name: "Elixir Vital de Alta Pureza",
+    description: "Poção alquímica refinada de seiva do Gate. Restaura 500 pontos de vida.",
+    type: "CONSUMABLE",
+    rarity: "RARE",
+    minLevel: 25,
+    stats: { bonusHp: 0, bonusMp: 0, bonusPhysicalAtk: 0, bonusMagicalAtk: 0, bonusCritChance: 0, bonusDodgeChance: 0, bonusBlockChance: 0 },
+    healAmount: 500,
+    icon: "potion_red_big"
+  },
+  potion_mp_elixir: {
+    id: "potion_mp_elixir",
+    name: "Elixir Sagrado de Mana",
+    description: "Concentrado líquido de essência mágica. Restaura 350 pontos de mana.",
+    type: "CONSUMABLE",
+    rarity: "RARE",
+    minLevel: 25,
+    stats: { bonusHp: 0, bonusMp: 0, bonusPhysicalAtk: 0, bonusMagicalAtk: 0, bonusCritChance: 0, bonusDodgeChance: 0, bonusBlockChance: 0 },
+    manaAmount: 350,
+    icon: "potion_blue_big"
+  },
+  potion_hp_supreme: {
+    id: "potion_hp_supreme",
+    name: "Elixir da Ressurreição das Sombras",
+    description: "Bênção suprema infundida com vitalidade de dragão. Restaura 1.800 pontos de vida.",
+    type: "CONSUMABLE",
+    rarity: "LEGENDARY",
+    minLevel: 70,
+    stats: { bonusHp: 0, bonusMp: 0, bonusPhysicalAtk: 0, bonusMagicalAtk: 0, bonusCritChance: 0, bonusDodgeChance: 0, bonusBlockChance: 0 },
+    healAmount: 1800,
+    icon: "potion_red_big"
+  },
+  potion_mp_supreme: {
+    id: "potion_mp_supreme",
+    name: "Orbe de Mana Cósmico",
+    description: "Essência condensada do Vácuo Astral. Restaura 1.200 pontos de mana.",
+    type: "CONSUMABLE",
+    rarity: "LEGENDARY",
+    minLevel: 70,
+    stats: { bonusHp: 0, bonusMp: 0, bonusPhysicalAtk: 0, bonusMagicalAtk: 0, bonusCritChance: 0, bonusDodgeChance: 0, bonusBlockChance: 0 },
+    manaAmount: 1200,
+    icon: "potion_blue_big"
+  },
+  potion_divine_nectar: {
+    id: "potion_divine_nectar",
+    name: "Néctar da Imortalidade dos Monarcas",
+    description: "Lágrima sagrada de Ashborn e das Sombras. Restaura 5.000 de HP e 3.000 de MP.",
+    type: "CONSUMABLE",
+    rarity: "DIVINE",
+    minLevel: 130,
+    stats: { bonusHp: 0, bonusMp: 0, bonusPhysicalAtk: 0, bonusMagicalAtk: 0, bonusCritChance: 0, bonusDodgeChance: 0, bonusBlockChance: 0 },
+    healAmount: 5000,
+    manaAmount: 3000,
+    icon: "potion_red_big"
+  },
+
+  // =========================================================================
+  // ARMAS EXPANDIDAS DE ALTO NÍVEL (Lv 30 a 200)
+  // =========================================================================
+  weapon_frost_dagger: {
+    id: "weapon_frost_dagger",
+    name: "Adaga Glacial de Niflheim",
+    description: "Forjada do permafrost eterno do Gate C. Congela os pontos vitais do alvo.",
+    type: "WEAPON",
+    rarity: "RARE",
+    minLevel: 30,
+    stats: { bonusHp: 60, bonusMp: 40, bonusPhysicalAtk: 45, bonusMagicalAtk: 30, bonusCritChance: 0.08, bonusDodgeChance: 0.04, bonusBlockChance: 0 },
+    icon: "blade_cosmic"
+  },
+  weapon_glacial_scythe: {
+    id: "weapon_glacial_scythe",
+    name: "Foice da Rainha do Gelo",
+    description: "Arma lendária da Rainha Frostbite. Cada corte liberta lâminas gélidas cortantes.",
+    type: "WEAPON",
+    rarity: "EPIC",
+    minLevel: 45,
+    stats: { bonusHp: 110, bonusMp: 80, bonusPhysicalAtk: 75, bonusMagicalAtk: 65, bonusCritChance: 0.12, bonusDodgeChance: 0.05, bonusBlockChance: 0.02 },
+    icon: "sword_goblin"
+  },
+  weapon_shadow_reaper_daggers: {
+    id: "weapon_shadow_reaper_daggers",
+    name: "Adagas Gêmeas do Ceifador Sombrio",
+    description: "Par de punhais necróticos extraídos do Arquilorde do Gate B.",
+    type: "WEAPON",
+    rarity: "EPIC",
+    minLevel: 70,
+    stats: { bonusHp: 160, bonusMp: 100, bonusPhysicalAtk: 120, bonusMagicalAtk: 80, bonusCritChance: 0.16, bonusDodgeChance: 0.08, bonusBlockChance: 0 },
+    icon: "blade_dark"
+  },
+  weapon_dragon_slayer_greatsword: {
+    id: "weapon_dragon_slayer_greatsword",
+    name: "Montante Matadora de Dragões",
+    description: "Lâmina titânica forjada em obsidiana vulcânica, banhada no sangue de Ignis.",
+    type: "WEAPON",
+    rarity: "LEGENDARY",
+    minLevel: 100,
+    stats: { bonusHp: 280, bonusMp: 120, bonusPhysicalAtk: 210, bonusMagicalAtk: 90, bonusCritChance: 0.15, bonusDodgeChance: 0, bonusBlockChance: 0.12 },
+    icon: "sword_immortal"
+  },
+  weapon_kamish_wrath_daggers: {
+    id: "weapon_kamish_wrath_daggers",
+    name: "Ira de Kamish (Presas do Dragão)",
+    description: "As famosas dagas forjadas a partir da presa mais afiada da Calamidade Kamish.",
+    type: "WEAPON",
+    rarity: "IMMORTAL",
+    minLevel: 135,
+    stats: { bonusHp: 450, bonusMp: 250, bonusPhysicalAtk: 340, bonusMagicalAtk: 180, bonusCritChance: 0.24, bonusDodgeChance: 0.12, bonusBlockChance: 0.05 },
+    icon: "blade_cosmic"
+  },
+  weapon_cosmic_annihilator_staff: {
+    id: "weapon_cosmic_annihilator_staff",
+    name: "Cajado da Singularidade Cósmica",
+    description: "Catalisador do tecido espacial do Gate SS que dobra a gravidade e o éter estelar.",
+    type: "WEAPON",
+    rarity: "COSMIC",
+    minLevel: 170,
+    stats: { bonusHp: 650, bonusMp: 600, bonusPhysicalAtk: 240, bonusMagicalAtk: 460, bonusCritChance: 0.26, bonusDodgeChance: 0.10, bonusBlockChance: 0.06 },
+    icon: "blade_cosmic"
+  },
+  weapon_shadow_sovereign_blade: {
+    id: "weapon_shadow_sovereign_blade",
+    name: "Lâmina da Morte do Monarca das Sombras",
+    description: "A espada suprema do Monarca Ashborn. Drena as almas de qualquer ser vivente no impacto.",
+    type: "WEAPON",
+    rarity: "DIVINE",
+    minLevel: 200,
+    stats: { bonusHp: 1200, bonusMp: 800, bonusPhysicalAtk: 620, bonusMagicalAtk: 620, bonusCritChance: 0.32, bonusDodgeChance: 0.15, bonusBlockChance: 0.14 },
+    icon: "blade_dark"
+  },
+
+  // =========================================================================
+  // ARMADURAS EXPANDIDAS DE ALTO NÍVEL (Lv 30 a 200)
+  // =========================================================================
+  armor_frost_mail: {
+    id: "armor_frost_mail",
+    name: "Cota de Malha Glacial",
+    description: "Armadura acolchoada com peles de yeti e escamas gélidas de Niflheim.",
+    type: "ARMOR",
+    rarity: "RARE",
+    minLevel: 30,
+    stats: { bonusHp: 180, bonusMp: 60, bonusPhysicalAtk: 10, bonusMagicalAtk: 10, bonusCritChance: 0.02, bonusDodgeChance: 0.03, bonusBlockChance: 0.06 },
+    icon: "cuirass_blood"
+  },
+  armor_niflheim_cuirass: {
+    id: "armor_niflheim_cuirass",
+    name: "Couraça de Gelo Eterno",
+    description: "Armadura maciça de permafrost que dissipa impactos físicos com estilhaços congelantes.",
+    type: "ARMOR",
+    rarity: "EPIC",
+    minLevel: 45,
+    stats: { bonusHp: 320, bonusMp: 100, bonusPhysicalAtk: 15, bonusMagicalAtk: 20, bonusCritChance: 0.03, bonusDodgeChance: 0.04, bonusBlockChance: 0.10 },
+    icon: "cuirass_blood"
+  },
+  armor_shadow_chitin_plate: {
+    id: "armor_shadow_chitin_plate",
+    name: "Armadura de Quitina das Sombras",
+    description: "Carapaça negra ultrarresistente dos monstros superiores da Necrópole.",
+    type: "ARMOR",
+    rarity: "EPIC",
+    minLevel: 70,
+    stats: { bonusHp: 580, bonusMp: 180, bonusPhysicalAtk: 25, bonusMagicalAtk: 30, bonusCritChance: 0.04, bonusDodgeChance: 0.08, bonusBlockChance: 0.12 },
+    icon: "robe_cosmic"
+  },
+  armor_dragon_scale_armor: {
+    id: "armor_dragon_scale_armor",
+    name: "Peitoral de Escamas do Dragão Ignis",
+    description: "Escamas de dragão vermelho impermeáveis ao fogo e capazes de deflectir ataques maciços.",
+    type: "ARMOR",
+    rarity: "LEGENDARY",
+    minLevel: 100,
+    stats: { bonusHp: 950, bonusMp: 280, bonusPhysicalAtk: 40, bonusMagicalAtk: 40, bonusCritChance: 0.06, bonusDodgeChance: 0.06, bonusBlockChance: 0.18 },
+    icon: "cuirass_blood"
+  },
+  armor_monarch_sanctum_cuirass: {
+    id: "armor_monarch_sanctum_cuirass",
+    name: "Couraça Sacra dos Mandamentos Divinos",
+    description: "Placas douradas esculpidas com as tábuas da Lei do Templo dos Deuses.",
+    type: "ARMOR",
+    rarity: "IMMORTAL",
+    minLevel: 135,
+    stats: { bonusHp: 1600, bonusMp: 480, bonusPhysicalAtk: 65, bonusMagicalAtk: 75, bonusCritChance: 0.08, bonusDodgeChance: 0.10, bonusBlockChance: 0.22 },
+    icon: "cuirass_blood"
+  },
+  armor_celestial_void_plate: {
+    id: "armor_celestial_void_plate",
+    name: "Armadura Astral da Singularidade",
+    description: "Matéria condensada de estrelas em colapso. Concede invulnerabilidade temporária a golpes críticos.",
+    type: "ARMOR",
+    rarity: "COSMIC",
+    minLevel: 170,
+    stats: { bonusHp: 2700, bonusMp: 800, bonusPhysicalAtk: 90, bonusMagicalAtk: 120, bonusCritChance: 0.10, bonusDodgeChance: 0.14, bonusBlockChance: 0.26 },
+    icon: "robe_cosmic"
+  },
+  armor_shadow_monarch_regalia: {
+    id: "armor_shadow_monarch_regalia",
+    name: "Manto do Soberano das Sombras Ashborn",
+    description: "A vestimenta de guerra imperial do governante supremo da Morte.",
+    type: "ARMOR",
+    rarity: "DIVINE",
+    minLevel: 200,
+    stats: { bonusHp: 4500, bonusMp: 1500, bonusPhysicalAtk: 160, bonusMagicalAtk: 160, bonusCritChance: 0.15, bonusDodgeChance: 0.20, bonusBlockChance: 0.30 },
+    icon: "robe_cosmic"
+  },
+
+  // =========================================================================
+  // AMULETOS E ANÉIS EXPANDIDOS DE ALTO NÍVEL (Lv 30 a 200)
+  // =========================================================================
+  amulet_frost_crystal: {
+    id: "amulet_frost_crystal",
+    name: "Pingente da Geada Eterna",
+    description: "Canaliza o frio extremo estabilizando a regeneração de mana e mente.",
+    type: "AMULET",
+    rarity: "EPIC",
+    minLevel: 45,
+    stats: { bonusHp: 150, bonusMp: 120, bonusPhysicalAtk: 18, bonusMagicalAtk: 28, bonusCritChance: 0.05, bonusDodgeChance: 0.04, bonusBlockChance: 0.02 },
+    icon: "amulet_copper"
+  },
+  ring_glacial_frost: {
+    id: "ring_glacial_frost",
+    name: "Aliança do Coração de Gelo",
+    description: "Garante frieza letal e mira precisa em combates prolongados.",
+    type: "RING",
+    rarity: "EPIC",
+    minLevel: 45,
+    stats: { bonusHp: 120, bonusMp: 80, bonusPhysicalAtk: 22, bonusMagicalAtk: 18, bonusCritChance: 0.08, bonusDodgeChance: 0.05, bonusBlockChance: 0.02 },
+    icon: "ring_silver"
+  },
+  amulet_archlich_eye: {
+    id: "amulet_archlich_eye",
+    name: "Olho Espectral do Arquilorde",
+    description: "Visão necromântica que antecipa ataques e perfura barreiras arcanas.",
+    type: "AMULET",
+    rarity: "LEGENDARY",
+    minLevel: 70,
+    stats: { bonusHp: 260, bonusMp: 220, bonusPhysicalAtk: 35, bonusMagicalAtk: 55, bonusCritChance: 0.08, bonusDodgeChance: 0.06, bonusBlockChance: 0.04 },
+    icon: "amulet_green"
+  },
+  ring_shadow_dominance: {
+    id: "ring_shadow_dominance",
+    name: "Anel da Dominância das Sombras",
+    description: "Transborda energia escura, amplificando o dano de acertos críticos.",
+    type: "RING",
+    rarity: "LEGENDARY",
+    minLevel: 70,
+    stats: { bonusHp: 220, bonusMp: 160, bonusPhysicalAtk: 45, bonusMagicalAtk: 35, bonusCritChance: 0.12, bonusDodgeChance: 0.06, bonusBlockChance: 0.03 },
+    icon: "ring_shadow"
+  },
+  amulet_dragon_heart_gem: {
+    id: "amulet_dragon_heart_gem",
+    name: "Gema de Sangue de Ignis",
+    description: "Pedra vulcânica ardente que pulsa no ritmo de um coração de dragão vivo.",
+    type: "AMULET",
+    rarity: "IMMORTAL",
+    minLevel: 100,
+    stats: { bonusHp: 480, bonusMp: 340, bonusPhysicalAtk: 70, bonusMagicalAtk: 70, bonusCritChance: 0.10, bonusDodgeChance: 0.08, bonusBlockChance: 0.06 },
+    icon: "amulet_gold"
+  },
+  ring_ignis_fury: {
+    id: "ring_ignis_fury",
+    name: "Anel da Fúria do Dragão",
+    description: "Cada golpe do portador incinera a defesa do oponente.",
+    type: "RING",
+    rarity: "IMMORTAL",
+    minLevel: 100,
+    stats: { bonusHp: 380, bonusMp: 240, bonusPhysicalAtk: 85, bonusMagicalAtk: 50, bonusCritChance: 0.15, bonusDodgeChance: 0.08, bonusBlockChance: 0.05 },
+    icon: "ring_gold"
+  },
+  amulet_god_fragment: {
+    id: "amulet_god_fragment",
+    name: "Coração de Pedra dos Deuses",
+    description: "Fragmento do monolito central do Templo Secreto. Concede vigor semi-divino.",
+    type: "AMULET",
+    rarity: "IMMORTAL",
+    minLevel: 135,
+    stats: { bonusHp: 800, bonusMp: 550, bonusPhysicalAtk: 110, bonusMagicalAtk: 130, bonusCritChance: 0.12, bonusDodgeChance: 0.10, bonusBlockChance: 0.08 },
+    icon: "amulet_gold"
+  },
+  ring_divine_authority: {
+    id: "ring_divine_authority",
+    name: "Aliança do Mandamento Divino",
+    description: "Símbolo dos mandamentos que punem quem ousa desafiar o soberano.",
+    type: "RING",
+    rarity: "IMMORTAL",
+    minLevel: 135,
+    stats: { bonusHp: 650, bonusMp: 420, bonusPhysicalAtk: 135, bonusMagicalAtk: 90, bonusCritChance: 0.18, bonusDodgeChance: 0.10, bonusBlockChance: 0.07 },
+    icon: "ring_gold"
+  },
+  amulet_stareater_void: {
+    id: "amulet_stareater_void",
+    name: "Pingente da Singularidade Cósmica",
+    description: "Condensado de pura gravidade estelar do Devorador de Mundos.",
+    type: "AMULET",
+    rarity: "COSMIC",
+    minLevel: 170,
+    stats: { bonusHp: 1350, bonusMp: 900, bonusPhysicalAtk: 180, bonusMagicalAtk: 220, bonusCritChance: 0.16, bonusDodgeChance: 0.14, bonusBlockChance: 0.10 },
+    icon: "amulet_gold"
+  },
+  ring_astral_collapse: {
+    id: "ring_astral_collapse",
+    name: "Anel do Horizonte de Eventos",
+    description: "Cria micro-distorções de espaço acelerando o dano de ataque a níveis astronômicos.",
+    type: "RING",
+    rarity: "COSMIC",
+    minLevel: 170,
+    stats: { bonusHp: 1100, bonusMp: 700, bonusPhysicalAtk: 220, bonusMagicalAtk: 160, bonusCritChance: 0.24, bonusDodgeChance: 0.14, bonusBlockChance: 0.08 },
+    icon: "ring_shadow"
+  },
+  amulet_shadow_monarch_crown: {
+    id: "amulet_shadow_monarch_crown",
+    name: "Coração Sombrio do Soberano Supremo",
+    description: "A essência ancestral do Monarca das Sombras. Vitalidade e intelecto infinitos.",
+    type: "AMULET",
+    rarity: "DIVINE",
+    minLevel: 200,
+    stats: { bonusHp: 2400, bonusMp: 1600, bonusPhysicalAtk: 320, bonusMagicalAtk: 320, bonusCritChance: 0.22, bonusDodgeChance: 0.18, bonusBlockChance: 0.15 },
+    icon: "amulet_gold"
+  },
+  ring_death_sovereignty: {
+    id: "ring_death_sovereignty",
+    name: "Aliança da Soberania da Morte",
+    description: "A autoridade absoluta sobre o exército das sombras e as almas do submundo.",
+    type: "RING",
+    rarity: "DIVINE",
+    minLevel: 200,
+    stats: { bonusHp: 2000, bonusMp: 1300, bonusPhysicalAtk: 360, bonusMagicalAtk: 300, bonusCritChance: 0.30, bonusDodgeChance: 0.18, bonusBlockChance: 0.12 },
+    icon: "ring_shadow"
+  },
+
+  // =========================================================================
+  // TROFÉUS DE ESTÁGIO E DO WORLD BOSS SUPREMO
+  // =========================================================================
+  trophy_kamish_wrath: {
+    id: "trophy_kamish_wrath",
+    name: "Troféu Presa da Calamidade de Kamish",
+    description: "A presa da maior calamidade que a humanidade já enfrentou: o lendário Dragão Kamish.",
+    type: "TROPHY",
+    rarity: "DIVINE",
+    minLevel: 200,
+    stats: { bonusHp: 1500, bonusMp: 1000, bonusPhysicalAtk: 250, bonusMagicalAtk: 250, bonusCritChance: 0.25, bonusDodgeChance: 0.12, bonusBlockChance: 0.15 },
+    icon: "trophy_fang"
+  },
+  trophy_igris_blade: {
+    id: "trophy_igris_blade",
+    name: "Troféu Lâmina Carmesim de Igris",
+    description: "Espada lendária do Cavaleiro Vermelho Igris, comandante do Exército das Sombras.",
+    type: "TROPHY",
+    rarity: "COSMIC",
+    minLevel: 185,
+    stats: { bonusHp: 800, bonusMp: 500, bonusPhysicalAtk: 180, bonusMagicalAtk: 100, bonusCritChance: 0.18, bonusDodgeChance: 0.10, bonusBlockChance: 0.10 },
+    icon: "trophy_core"
+  },
+  trophy_orc_warlord: {
+    id: "trophy_orc_warlord",
+    name: "Troféu Machado do Lorde Orc",
+    description: "Troféu do Lorde Orc do Abismo, guardião de estágio do Santuário.",
+    type: "TROPHY",
+    rarity: "RARE",
+    minLevel: 7,
+    stats: { bonusHp: 40, bonusMp: 20, bonusPhysicalAtk: 8, bonusMagicalAtk: 0, bonusCritChance: 0.04, bonusDodgeChance: 0, bonusBlockChance: 0.03 },
+    icon: "trophy_core"
+  },
+  trophy_brass_gargoyle: {
+    id: "trophy_brass_gargoyle",
+    name: "Troféu Chifre da Gárgula de Latão",
+    description: "Chifre metálico incandescente da Gárgula de Latão da Cidadela Carmesim.",
+    type: "TROPHY",
+    rarity: "EPIC",
+    minLevel: 14,
+    stats: { bonusHp: 65, bonusMp: 35, bonusPhysicalAtk: 12, bonusMagicalAtk: 10, bonusCritChance: 0.05, bonusDodgeChance: 0.02, bonusBlockChance: 0.04 },
+    icon: "trophy_core"
+  },
+  trophy_frost_giant: {
+    id: "trophy_frost_giant",
+    name: "Troféu Coração Glacial do Gigante",
+    description: "Coração de gelo perpétuo esculpido do Gigante Glacial de Niflheim.",
+    type: "TROPHY",
+    rarity: "EPIC",
+    minLevel: 26,
+    stats: { bonusHp: 120, bonusMp: 60, bonusPhysicalAtk: 25, bonusMagicalAtk: 15, bonusCritChance: 0.06, bonusDodgeChance: 0.03, bonusBlockChance: 0.05 },
+    icon: "trophy_core"
+  },
+  trophy_death_knight: {
+    id: "trophy_death_knight",
+    name: "Troféu Espada do Cavaleiro da Morte",
+    description: "Lâmina gélida espectral retirada do comandante dos túmulos na Necrópole.",
+    type: "TROPHY",
+    rarity: "LEGENDARY",
+    minLevel: 42,
+    stats: { bonusHp: 200, bonusMp: 100, bonusPhysicalAtk: 45, bonusMagicalAtk: 20, bonusCritChance: 0.08, bonusDodgeChance: 0.04, bonusBlockChance: 0.06 },
+    icon: "trophy_core"
+  },
+  trophy_volcanic_behemoth: {
+    id: "trophy_volcanic_behemoth",
+    name: "Troféu Chifre do Behemoth",
+    description: "Chifre incandescente esculpido no leito de magma da Calamidade Vulcânica.",
+    type: "TROPHY",
+    rarity: "LEGENDARY",
+    minLevel: 65,
+    stats: { bonusHp: 350, bonusMp: 180, bonusPhysicalAtk: 70, bonusMagicalAtk: 35, bonusCritChance: 0.10, bonusDodgeChance: 0.05, bonusBlockChance: 0.08 },
+    icon: "trophy_core"
+  },
+  trophy_god_statue_high_priest: {
+    id: "trophy_god_statue_high_priest",
+    name: "Troféu Tomo das Asas Negras",
+    description: "Escrituras sacrílegas do Sumo-Sacerdote no Templo dos Deuses Antigos.",
+    type: "TROPHY",
+    rarity: "IMMORTAL",
+    minLevel: 95,
+    stats: { bonusHp: 550, bonusMp: 300, bonusPhysicalAtk: 95, bonusMagicalAtk: 80, bonusCritChance: 0.12, bonusDodgeChance: 0.06, bonusBlockChance: 0.09 },
+    icon: "trophy_core"
+  },
+  trophy_astral_herald: {
+    id: "trophy_astral_herald",
+    name: "Troféu Fragmento do Vácuo Infinito",
+    description: "Poeira de quasar condensada deixada pelo Arauto Astral da Fenda Cósmica.",
+    type: "TROPHY",
+    rarity: "IMMORTAL",
+    minLevel: 125,
+    stats: { bonusHp: 750, bonusMp: 450, bonusPhysicalAtk: 130, bonusMagicalAtk: 110, bonusCritChance: 0.15, bonusDodgeChance: 0.08, bonusBlockChance: 0.10 },
+    icon: "trophy_core"
   }
 };
 

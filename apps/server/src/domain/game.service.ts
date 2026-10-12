@@ -762,12 +762,42 @@ export class GameService {
 
         if (player.inventory) {
           let bossTrophy = MASTER_ITEMS.trophy_goblin_boss_core;
-          if (session.enemy.id === "boss_shadow_wolf") {
+          if (session.enemy.id === "boss_goblin_warlord") {
+            bossTrophy = MASTER_ITEMS.trophy_orc_warlord;
+          } else if (session.enemy.id === "boss_shadow_wolf") {
             bossTrophy = MASTER_ITEMS.trophy_shadow_wolf_fang;
           } else if (session.enemy.id === "boss-1") {
             bossTrophy = MASTER_ITEMS.trophy_fire_gate_core;
+          } else if (session.enemy.id === "boss_brass_gargoyle") {
+            bossTrophy = MASTER_ITEMS.trophy_brass_gargoyle;
           } else if (session.enemy.id === "boss_crimson_sentinel") {
             bossTrophy = MASTER_ITEMS.trophy_crimson_heart;
+          } else if (session.enemy.id === "boss_frost_giant") {
+            bossTrophy = MASTER_ITEMS.trophy_frost_giant;
+          } else if (session.enemy.id === "boss_frost_queen") {
+            bossTrophy = MASTER_ITEMS.trophy_frost_queen_crystal;
+          } else if (session.enemy.id === "boss_death_knight") {
+            bossTrophy = MASTER_ITEMS.trophy_death_knight;
+          } else if (session.enemy.id === "boss_shadow_lich") {
+            bossTrophy = MASTER_ITEMS.trophy_shadow_lich_skull;
+          } else if (session.enemy.id === "boss_volcanic_behemoth") {
+            bossTrophy = MASTER_ITEMS.trophy_volcanic_behemoth;
+          } else if (session.enemy.id === "boss_dragon_ignis") {
+            bossTrophy = MASTER_ITEMS.trophy_dragon_heart;
+          } else if (session.enemy.id === "boss_god_statue_high_priest") {
+            bossTrophy = MASTER_ITEMS.trophy_god_statue_high_priest;
+          } else if (session.enemy.id === "boss_god_statue") {
+            bossTrophy = MASTER_ITEMS.trophy_god_statue_fragment;
+          } else if (session.enemy.id === "boss_astral_herald") {
+            bossTrophy = MASTER_ITEMS.trophy_astral_herald;
+          } else if (session.enemy.id === "boss_cosmic_avatar") {
+            bossTrophy = MASTER_ITEMS.trophy_cosmic_core;
+          } else if (session.enemy.id === "boss_igris_red_knight") {
+            bossTrophy = MASTER_ITEMS.trophy_igris_blade;
+          } else if (session.enemy.id === "boss_shadow_monarch") {
+            bossTrophy = MASTER_ITEMS.trophy_shadow_sovereign_crown;
+          } else if (session.enemy.id === "worldboss_kamish") {
+            bossTrophy = MASTER_ITEMS.trophy_kamish_wrath;
           }
 
           if (this.lootService.addItemToInventory(player.inventory, bossTrophy)) {
