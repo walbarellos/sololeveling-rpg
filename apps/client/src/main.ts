@@ -33,13 +33,12 @@ const config: Phaser.Types.Core.GameConfig = {
   height: 576,
   backgroundColor: "#030712",
   pixelArt: true,
+  // FIT: o canvas inteiro (20x12 tiles) cabe no palco, proporção travada.
+  // ENVELOP cortava e só sobrava o canto (LV no escuro).
+  // Não usar CSS width/height 100% no canvas — isso estica o personagem.
   scale: {
-    // ENVELOP preenche o palco inteiro, mantém proporção (sem esticar sprite)
-    // e o mapeamento do mouse continua correto.
-    mode: Phaser.Scale.ENVELOP,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 960,
-    height: 576
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH
   },
   scene: [WorldScene]
 };
@@ -47,15 +46,18 @@ const config: Phaser.Types.Core.GameConfig = {
 const game = new Phaser.Game(config);
 game.events.once("ready", () => {
   worldScene = game.scene.getScene("world") as WorldScene;
-  game.scale.refresh();
 });
 
 const refreshScale = () => {
-  if (game.scale) game.scale.refresh();
+  const el = document.getElementById("game");
+  if (!el || el.clientWidth < 80 || el.clientHeight < 80) return;
+  game.scale.refresh();
 };
 window.addEventListener("resize", refreshScale);
-requestAnimationFrame(refreshScale);
-setTimeout(refreshScale, 300);
+window.addEventListener("load", () => {
+  refreshScale();
+  setTimeout(refreshScale, 200);
+});
 
 const gateClearBanner = document.querySelector<HTMLDivElement>("#gate-clear-banner");
 const gateClearMsg = document.querySelector<HTMLSpanElement>("#gate-clear-message");
@@ -93,6 +95,7 @@ socket.on(ServerEvents.Welcome, (raw: unknown) => {
   gameState.obstacles = parsed.data.obstacles;
 
   worldScene?.updateWorldBounds(gameState.gridWidth, gameState.gridHeight, gameState.tileSize);
+  refreshScale();
   socket.emit(ClientEvents.SnapshotRequest);
   socket.emit(ClientEvents.InventoryRequest);
   socket.emit(ClientEvents.MissionsRequest);
