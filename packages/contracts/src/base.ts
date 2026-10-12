@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ItemDefinitionSchema } from "./items";
 
 export const HunterRankSchema = z.enum(["E", "D", "C", "B", "A", "S"]);
 export type HunterRank = z.infer<typeof HunterRankSchema>;
@@ -12,7 +13,9 @@ export const BattleRewardsSchema = z.object({
   /** Nível travado pelo rank: o EXP fica retido até a prova de rank. */
   capped: z.boolean(),
   /** Cap de nível do rank atual (para a mensagem de "prova pendente"). */
-  levelCap: z.number().int().positive()
+  levelCap: z.number().int().positive(),
+  /** Itens efetivamente adicionados ao inventário nesta vitória (decididos pelo servidor). */
+  drops: z.array(ItemDefinitionSchema).optional()
 });
 export type BattleRewards = z.infer<typeof BattleRewardsSchema>;
 

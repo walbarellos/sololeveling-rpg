@@ -1,0 +1,54 @@
+/* =========================================================
+   GATE CLEAR BANNER — ANÚNCIO DE ABOLIÇÃO DE CHEFE DE GATE
+   ========================================================= */
+.gate-clear-banner {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  pointer-events: none;
+  animation: gateClearIn 0.45s ease-out;
+}
+
+.gate-clear-banner.hidden {
+  display: none !important;
+}
+
+.gate-clear-inner {
+  background: linear-gradient(135deg, #1a1408 0%, #3d2e0a 50%, #1a1408 100%);
+  border: 2px solid #d4a017;
+  box-shadow: 0 0 24px rgba(212, 160, 23, 0.55), inset 0 0 12px rgba(212, 160, 23, 0.15);
+  padding: 14px 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gate-clear-tag {
+  color: #ffd700;
+  font-family: var(--font-display, serif);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  font-size: 0.95rem;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
+#gate-clear-message {
+  color: #f5e6c8;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+@keyframes gateClearIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

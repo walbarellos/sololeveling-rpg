@@ -5,3 +5,7 @@ coverage/
 .env.*
 !.env.example
 .DS_Store
+*.zip
+*.log
+.system_generated/
+.gemini/

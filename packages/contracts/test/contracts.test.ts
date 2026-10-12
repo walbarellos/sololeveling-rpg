@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  ItemRaritySchema,
+  ITEM_RARITY_COLORS,
   AttackRequestSchema,
   BattleActionRequestSchema,
   BattleEventSchema,
@@ -27,7 +29,12 @@ import {
   PlayerAttributesSchema,
   DEFAULT_PLAYER_ATTRIBUTES,
   STARTING_STAT_POINTS,
-  STAT_POINTS_PER_LEVEL
+  STAT_POINTS_PER_LEVEL,
+  ItemDefinitionSchema,
+  InventoryStateSchema,
+  RANK_EXAM_REQUIREMENTS,
+  RankPromotionRequestSchema,
+  RankPromotionResultSchema
 } from "../src/index";
 
 describe("network contracts (tile & turn-based)", () => {
@@ -235,7 +242,7 @@ describe("progressão e eventos de combate", () => {
 
 describe("missões estilo Naruto Game (contratos)", () => {
   it("valida esquemas de missão e tabela mestre", () => {
-    expect(MISSIONS.length).toBe(7);
+    expect(MISSIONS.length).toBe(10);
     for (const m of MISSIONS) {
       expect(MissionDefinitionSchema.safeParse(m).success).toBe(true);
     }
@@ -297,5 +304,140 @@ describe("missões estilo Naruto Game (contratos)", () => {
       expect(AllocateStatsRequestSchema.safeParse({ str: -1, agi: 2 }).success).toBe(false);
     });
   });
+
+  describe("sistema de itens, raridades e inventário (Diablo style)", () => {
+    it("valida raridades, itens e bônus de atributos", () => {
+      const potion = {
+        id: "potion_hp_minor",
+        name: "Poção de Vitalidade Menor",
+        description: "Restaura 60 pontos de vida.",
+        type: "CONSUMABLE",
+        rarity: "COMMON",
+        minLevel: 1,
+        stats: {
+          bonusHp: 0,
+          bonusMp: 0,
+          bonusPhysicalAtk: 0,
+          bonusMagicalAtk: 0,
+          bonusCritChance: 0,
+          bonusDodgeChance: 0,
+          bonusBlockChance: 0
+        },
+        healAmount: 60,
+        icon: "potion_red"
+      };
+      expect(ItemDefinitionSchema.safeParse(potion).success).toBe(true);
+
+      const legendarySword = {
+        id: "weapon_goblin_slayer",
+        name: "Lâmina do Portão Carmesim",
+        description: "Forjada nos restos do chefe.",
+        type: "WEAPON",
+        rarity: "LEGENDARY",
+        minLevel: 8,
+        stats: {
+          bonusHp: 80,
+          bonusMp: 20,
+          bonusPhysicalAtk: 24,
+          bonusMagicalAtk: 10,
+          bonusCritChance: 0.12,
+          bonusDodgeChance: 0.05,
+          bonusBlockChance: 0.04
+        },
+        icon: "sword_gold"
+      };
+      expect(ItemDefinitionSchema.safeParse(legendarySword).success).toBe(true);
+
+      const invState = {
+        inventory: [{ slotIndex: 0, item: potion, quantity: 3 }],
+        equipment: { weapon: legendarySword, armor: null, amulet: null, ring: null },
+        careerStats: {
+          criticalHitsDealt: 12,
+          attacksDodged: 4,
+          attacksBlocked: 2,
+          regularMonstersSlain: 35,
+          gateBossesSlain: 1,
+          totalItemsDropped: 18,
+          highestRarityDropped: "LEGENDARY",
+          bestItemDroppedName: "Lâmina do Portão Carmesim",
+          missionsCompleted: 5
+        }
+      };
+      expect(InventoryStateSchema.safeParse(invState).success).toBe(true);
+    });
+
+    it("valida contrato de missões simultâneas (até 3 missões)", () => {
+      const state = {
+        available: [...MISSIONS],
+        activeRuns: [
+          {
+            runId: "run-1",
+            missionId: "patrol_5s",
+            name: "Patrulha Relâmpago",
+            startedAt: 1000,
+            endsAt: 6000,
+            durationMs: 5000,
+            killsEquiv: 1,
+            potentialExp: 8,
+            completed: false
+          },
+          {
+            runId: "run-2",
+            missionId: "recon_1m",
+            name: "Coleta de Essência",
+            startedAt: 1000,
+            endsAt: 61000,
+            durationMs: 60000,
+            killsEquiv: 3,
+            potentialExp: 24,
+            completed: false
+          }
+        ],
+        activeRun: null,
+        maxActiveMissions: 3,
+        serverTime: 2000
+      };
+      const parsed = MissionsStateSchema.safeParse(state);
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.activeRuns.length).toBe(2);
+        expect(parsed.data.maxActiveMissions).toBe(3);
+      }
+    });
+
+    it("valida contrato do exame da Academia de Caçadores (Escola)", () => {
+      const req = RANK_EXAM_REQUIREMENTS["D"];
+      expect(req).toBeDefined();
+      expect(req?.targetRank).toBe("D");
+      expect(req?.minLevel).toBe(8);
+      expect(req?.requiredTrophyItemId).toBe("trophy_goblin_boss_core");
+
+      expect(RankPromotionRequestSchema.safeParse({ targetRank: "D" }).success).toBe(true);
+      expect(
+        RankPromotionResultSchema.safeParse({
+          success: true,
+          newRank: "D",
+          message: "Promoção aprovada!",
+          unlockedLevelCap: 25,
+          rewardStatPoints: 10
+        }).success
+      ).toBe(true);
+    });
+  });
 });
 
+
+describe("raridades de item (8 níveis)", () => {
+  it("aceita DIVINE e rejeita raridades desconhecidas", () => {
+    expect(ItemRaritySchema.safeParse("DIVINE").success).toBe(true);
+    expect(ItemRaritySchema.safeParse("MYTHIC").success).toBe(false);
+    expect(ItemRaritySchema.options).toHaveLength(8);
+  });
+
+  it("define cor/nome para todas as raridades", () => {
+    for (const r of ItemRaritySchema.options) {
+      expect(ITEM_RARITY_COLORS[r].name.length).toBeGreaterThan(0);
+    }
+    expect(ITEM_RARITY_COLORS.DIVINE.name).toBe("Divino");
+  });
+});

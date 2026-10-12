@@ -232,6 +232,48 @@ describe("Instanced Turn-Based Battle (Naruto Game style)", () => {
     expect(game.snapshot().players[0].inBattle).toBe(false);
   });
 
+  it("resumes ongoing battle on re-engage and exposes getActiveBattleForPlayer", () => {
+    const clock = makeClock();
+    const repo = new InMemoryPlayerRepository();
+    const game = new GameService(clock, repo);
+    game.connect("p1");
+    navigateToAdjacentSlime(game, clock);
+
+    const start = game.startBattle("p1", "slime-1");
+    expect(start.success).toBe(true);
+
+    // Active battle can be retrieved directly by player id
+    const active = game.getActiveBattleForPlayer("p1");
+    expect(active).not.toBeNull();
+    expect(active?.battleId).toBe(start.battle!.battleId);
+
+    // Re-triggering startBattle on the same or adjacent mob returns existing active session
+    const reengage = game.startBattle("p1", "slime-1");
+    expect(reengage.success).toBe(true);
+    expect(reengage.battle?.battleId).toBe(start.battle!.battleId);
+  });
+
+  it("auto-cleans ghost battle state when stepping", () => {
+    const clock = makeClock();
+    const repo = new InMemoryPlayerRepository();
+    const game = new GameService(clock, repo);
+    game.connect("p1"); // at (2, 2)
+
+    // Artificially simulate a player marked inBattle with missing session (ghost battle)
+    const player = repo.findById("p1")!;
+    player.inBattle = true;
+    player.activeBattleId = "ghost-battle-999";
+    repo.save(player);
+
+    clock.advance(250);
+    const stepRes = game.step("p1", "RIGHT");
+    expect(stepRes.success).toBe(true);
+    if (stepRes.success) {
+      expect(stepRes.player.inBattle).toBe(false);
+    }
+    expect(repo.findById("p1")?.inBattle).toBe(false);
+  });
+
   it("calculates critical hits and registers [CRÍTICO] in combat log", () => {
     const clock = makeClock();
     const repo = new InMemoryPlayerRepository();

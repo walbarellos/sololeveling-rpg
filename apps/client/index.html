@@ -10,6 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
+    <div id="gate-clear-banner" class="gate-clear-banner hidden" role="alert">
+      <div class="gate-clear-inner">
+        <span class="gate-clear-tag">[GATE CLEAR]</span>
+        <span id="gate-clear-message">O Chefe da Fenda foi abatido!</span>
+      </div>
+    </div>
+
     <div id="app">
       <!-- CABEÇALHO SUPERIOR SÓBRIO (ASSOCIAÇÃO DE CAÇADORES) -->
       <header class="rpg-top-bar">
@@ -44,14 +51,10 @@
 
         <div class="hunter-identity-pill">
           <span id="hunter-rank-badge" class="rank-tag rank-e">RANK E</span>
+          <span id="hud-level" class="level-badge-top">LV 1</span>
           <div class="hunter-stats-mini">
             <span id="header-hunter-nick" class="hunter-name-glow">Sung Adventurer</span>
             <span id="header-hunter-resources" class="hunter-hp-mp-text">HP: 120/120 · MP: 80/80</span>
-            <div class="hud-exp" title="Experiência">
-              <span id="hud-level" class="hud-level">Lv 1</span>
-              <div class="exp-track hud-exp-track"><div id="hud-exp-fill" class="exp-fill"></div></div>
-              <span id="hud-exp-text" class="hud-exp-text">EXP 0 / 40</span>
-            </div>
           </div>
         </div>
       </header>
@@ -95,13 +98,25 @@
                 </div>
               </div>
 
-              <div class="sidebar-gauge-slot">
-                <div class="sidebar-gauge-header">
-                  <span id="sidebar-hunter-level" class="gauge-label-mini">Lv 1</span>
-                  <span id="sidebar-exp-text" class="gauge-value-mini">0 / 40 EXP</span>
+            </div>
+
+            <!-- CARTÃO OFICIAL DE NÍVEL & LICENÇA HUNTER -->
+            <div class="hunter-license-card">
+              <div class="license-card-header">
+                <span class="license-badge-tag">[LICENÇA HUNTER]</span>
+                <span id="sidebar-hunter-level" class="license-level-glow">Lv 1</span>
+              </div>
+              <div class="license-meta-row">
+                <span class="license-cap-label">CAP DE ASCENSÃO:</span>
+                <span id="sidebar-level-cap-text" class="license-cap-val">NÍVEL 12 (PROVA)</span>
+              </div>
+              <div class="license-exp-block">
+                <div class="license-exp-header">
+                  <span class="license-exp-label">PROGRESSO DE EXP</span>
+                  <span id="sidebar-exp-text" class="license-exp-val">0 / 40 EXP</span>
                 </div>
-                <div class="gauge-track-mini">
-                  <div id="sidebar-exp-fill" class="gauge-fill-mini bar-exp" style="width: 0%;"></div>
+                <div class="license-exp-track">
+                  <div id="sidebar-exp-fill" class="license-exp-fill" style="width: 0%;"></div>
                 </div>
               </div>
             </div>
@@ -114,6 +129,11 @@
               <span class="nav-btn-indicator">›</span>
               <span class="nav-btn-text">STATUS & PERFIL</span>
               <span id="sidebar-stat-points-badge" class="nav-badge stat-badge hidden">0 PTS</span>
+            </button>
+            <button id="menu-inventory" class="sidebar-nav-btn" type="button">
+              <span class="nav-btn-indicator">›</span>
+              <span class="nav-btn-text">INVENTÁRIO & ITENS</span>
+              <span id="sidebar-inventory-badge" class="nav-badge hidden">NOVO</span>
             </button>
             <button id="menu-missions" class="sidebar-nav-btn" type="button">
               <span class="nav-btn-indicator">›</span>
@@ -217,6 +237,30 @@
                       </div>
                       <div id="skills-deck" class="skills-card-deck"></div>
                       <div id="skill-info" class="skill-info">Passe o cursor sobre uma habilidade para ver detalhes táticos.</div>
+                    </div>
+
+                    <!-- Slot Rápido de Consumíveis Táticos & Cura -->
+                    <div class="consumables-panel">
+                      <div class="deck-header">
+                        <span class="deck-title">CONSUMÍVEIS & SUSTAIN</span>
+                        <span id="battle-consumables-charges" class="deck-hotkeys">CARGAS: 2 / 2</span>
+                      </div>
+                      <div id="battle-consumables-bar" class="consumables-quick-bar">
+                        <button id="btn-combat-potion-hp" class="combat-item-btn hp-potion" type="button" title="Poção de Vitalidade Menor (+60 HP)">
+                          <img class="c-item-icon" src="/assets/items/individual/potion_red.png" alt="" draggable="false" />
+                          <div class="c-item-meta">
+                            <span class="c-item-name">Poção HP (+60)</span>
+                            <span id="combat-hp-potion-qty" class="c-item-qty">x0</span>
+                          </div>
+                        </button>
+                        <button id="btn-combat-potion-mp" class="combat-item-btn mp-potion" type="button" title="Elixir de Mana Menor (+40 MP)">
+                          <img class="c-item-icon" src="/assets/items/individual/potion_blue.png" alt="" draggable="false" />
+                          <div class="c-item-meta">
+                            <span class="c-item-name">Elixir MP (+40)</span>
+                            <span id="combat-mp-potion-qty" class="c-item-qty">x0</span>
+                          </div>
+                        </button>
+                      </div>
                     </div>
 
                     <!-- Atributos do Caçador em Tabela Técnica -->
@@ -329,6 +373,7 @@
                       <div id="exp-gain" class="reward-badge"></div>
                       <div id="exp-note" class="exp-note"></div>
                     </div>
+                    <div id="reward-drops" class="reward-drops hidden"></div>
                     <span id="reward-none" class="reward-none hidden">Sem recompensas obtidas neste desfecho.</span>
                   </div>
                   <button id="btn-return-map" class="btn-rpg-return" type="button">RETORNAR À MASMORRA</button>
@@ -351,37 +396,21 @@
             <button id="btn-missions-close" class="btn-modal-close" title="Fechar" type="button">FECHAR [X]</button>
           </div>
 
-          <!-- Seção de Missão Ativa (se houver) -->
+          <!-- Seção de Missões Ativas (Até 3 Simultâneas) -->
           <div id="active-mission-container" class="active-mission-container hidden">
-            <div class="active-mission-card">
-              <div class="active-mission-header">
-                <span class="active-pulse">●</span>
-                <span class="active-label">MISSÃO EM EXECUÇÃO:</span>
-                <span id="active-mission-name" class="active-mission-name">Patrulha Relâmpago</span>
-              </div>
-              <div class="active-mission-body">
-                <div class="active-mission-meta">
-                  <span id="active-mission-status" class="active-status-text">Em andamento…</span>
-                  <span id="active-mission-timer" class="active-timer-display">00:05</span>
-                </div>
-                <div class="iron-gauge-track mission-progress-track">
-                  <div id="active-mission-progress" class="iron-bar bar-mission" style="width: 0%;"></div>
-                </div>
-                <div class="active-mission-actions">
-                  <button id="btn-claim-mission" class="btn-rpg-claim" disabled type="button">
-                    <span id="btn-claim-text">COLETAR RECOMPENSA</span>
-                  </button>
-                  <button id="btn-cancel-mission" class="btn-rpg-cancel-mission" type="button">
-                    <span>CANCELAR</span>
-                  </button>
-                </div>
-              </div>
+            <div class="active-missions-header-bar">
+              <span class="active-pulse">●</span>
+              <span class="active-label">MISSÕES EM EXECUÇÃO</span>
+              <span id="active-missions-counter" class="active-counter-badge">(0 / 3)</span>
+            </div>
+            <div id="active-missions-list" class="active-missions-list">
+              <!-- Cards de missões ativas gerados dinamicamente via JS -->
             </div>
           </div>
 
           <!-- Lista de Missões Disponíveis -->
           <div class="missions-board-body">
-            <div class="board-section-title">CONTRATOS DISPONÍVEIS</div>
+            <div class="board-section-title">CONTRATOS DISPONÍVEIS DA ASSOCIAÇÃO</div>
             <div id="missions-list" class="missions-cards-grid">
               <!-- Cards gerados dinamicamente via JS -->
             </div>
@@ -566,6 +595,139 @@
                   </div>
                 </div>
               </div>
+
+              <!-- REGISTROS DE CARREIRA DO CAÇADOR (SOLO LEVELING / DIABLO STATS) -->
+              <div class="profile-section career-records-section">
+                <div class="profile-section-heading">REGISTROS DE CARREIRA DO CAÇADOR</div>
+                <div class="career-stats-grid">
+                  <div class="career-stat-card">
+                    <span class="career-stat-label">Golpes Críticos</span>
+                    <span id="career-crits" class="career-stat-val gold-val">0</span>
+                  </div>
+                  <div class="career-stat-card">
+                    <span class="career-stat-label">Esquivas Perfeitas</span>
+                    <span id="career-dodges" class="career-stat-val blue-val">0</span>
+                  </div>
+                  <div class="career-stat-card">
+                    <span class="career-stat-label">Bloqueios de Escudo</span>
+                    <span id="career-blocks" class="career-stat-val green-val">0</span>
+                  </div>
+                  <div class="career-stat-card">
+                    <span class="career-stat-label">Monstros Eliminados</span>
+                    <span id="career-monsters" class="career-stat-val">0</span>
+                  </div>
+                  <div class="career-stat-card">
+                    <span class="career-stat-label">Chefes Abatidos</span>
+                    <span id="career-bosses" class="career-stat-val purple-val">0</span>
+                  </div>
+                  <div class="career-stat-card">
+                    <span class="career-stat-label">Missões Concluídas</span>
+                    <span id="career-missions" class="career-stat-val">0</span>
+                  </div>
+                  <div class="career-stat-card">
+                    <span class="career-stat-label">Itens Saqueados</span>
+                    <span id="career-total-items" class="career-stat-val">0</span>
+                  </div>
+                  <div class="career-stat-card">
+                    <span class="career-stat-label">Maior Raridade</span>
+                    <span id="career-highest-rarity" class="career-stat-val rarity-tag-inline">—</span>
+                  </div>
+                  <div class="career-stat-card col-span-2">
+                    <span class="career-stat-label">Melhor Drop Conquistado</span>
+                    <span id="career-best-item" class="career-stat-val highlight-val">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL DO INVENTÁRIO (ESTILO DIABLO · 24 SLOTS + EQUIPAMENTOS + INSPECT) -->
+      <div id="inventory-modal" class="modal-overlay hidden">
+        <div class="inventory-modal-window">
+          <div class="modal-header-plate">
+            <div class="modal-title-group">
+              <span class="modal-tag">[MOCHILA DIMENSIONAL & ARSENAL]</span>
+              <h2 class="modal-title">INVENTÁRIO DO CAÇADOR</h2>
+              <span class="modal-subtitle">Equipamentos, artefatos, elixires e troféus de abolição</span>
+            </div>
+            <button id="btn-inventory-close" class="btn-modal-close" title="Fechar" type="button">FECHAR [X]</button>
+          </div>
+
+          <div class="inventory-modal-body">
+            <!-- COLUNA ESQUERDA: BONECO DE PAPEL (EQUIPAMENTOS) -->
+            <div class="inventory-paperdoll-col">
+              <div class="paperdoll-card">
+                <div class="paperdoll-header">
+                  <span class="paperdoll-title">EQUIPAMENTO ATIVO</span>
+                  <span id="paperdoll-gear-score" class="paperdoll-gs">ARSENAL</span>
+                </div>
+                <div class="paperdoll-slots">
+                  <div class="equip-slot-box" data-slot="weapon" id="equip-slot-weapon">
+                    <span class="slot-type-label">ARMA</span>
+                    <div class="slot-content empty">
+                      <img class="slot-placeholder-icon" src="/assets/items/individual/sword_goblin.png" alt="" draggable="false" />
+                      <span class="slot-item-name">Vazio</span>
+                    </div>
+                  </div>
+                  <div class="equip-slot-box" data-slot="armor" id="equip-slot-armor">
+                    <span class="slot-type-label">ARMADURA</span>
+                    <div class="slot-content empty">
+                      <img class="slot-placeholder-icon" src="/assets/items/individual/armor_shadow.png" alt="" draggable="false" />
+                      <span class="slot-item-name">Vazio</span>
+                    </div>
+                  </div>
+                  <div class="equip-slot-box" data-slot="amulet" id="equip-slot-amulet">
+                    <span class="slot-type-label">AMULETO</span>
+                    <div class="slot-content empty">
+                      <img class="slot-placeholder-icon" src="/assets/items/individual/amulet_fang.png" alt="" draggable="false" />
+                      <span class="slot-item-name">Vazio</span>
+                    </div>
+                  </div>
+                  <div class="equip-slot-box" data-slot="ring" id="equip-slot-ring">
+                    <span class="slot-type-label">ANEL</span>
+                    <div class="slot-content empty">
+                      <img class="slot-placeholder-icon" src="/assets/items/individual/ring_silver.png" alt="" draggable="false" />
+                      <span class="slot-item-name">Vazio</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- BÔNUS DE ATRIBUTOS TOTAIS DOS EQUIPAMENTOS -->
+                <div class="paperdoll-stats-summary">
+                  <div class="gear-stat-line"><span>ATK Físico:</span><span id="gear-bonus-patk" class="gear-val">+0</span></div>
+                  <div class="gear-stat-line"><span>ATK Mágico:</span><span id="gear-bonus-matk" class="gear-val">+0</span></div>
+                  <div class="gear-stat-line"><span>Bloqueio / Esq:</span><span id="gear-bonus-def" class="gear-val">+0% / +0%</span></div>
+                  <div class="gear-stat-line"><span>HP / MP:</span><span id="gear-bonus-hpmp" class="gear-val">+0 / +0</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUNA CENTRAL: GRADE 24 SLOTS DA MOCHILA -->
+            <div class="inventory-grid-col">
+              <div class="inventory-grid-header">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <span class="inv-grid-title">GRADE DE ITENS</span>
+                  <span id="inv-gold-display" style="color: #fbbf24; font-weight: 700; font-size: 0.85rem; background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid #d9770666;">💰 0 OURO</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button id="btn-sell-all-junk" type="button" style="background: #991b1b; color: #fef08a; font-weight: 700; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; border: 1px solid #f8717188; cursor: pointer;" title="Vender todos os itens comuns e incomuns do inventário por ouro">LIMPAR COMUNS ($)</button>
+                  <span id="inv-capacity-counter" class="inv-capacity">0 / 24 OCUPADOS</span>
+                </div>
+              </div>
+              <div id="inventory-grid-slots" class="inventory-grid-24">
+                <!-- 24 slots gerados via JS -->
+              </div>
+            </div>
+
+            <!-- COLUNA DIREITA: PAINEL DE INSPEÇÃO & AÇÕES (ESTILO DIABLO TOOLTIP) -->
+            <div class="inventory-inspect-col">
+              <div id="inventory-inspect-card" class="item-inspect-card empty-inspect">
+                <div class="inspect-placeholder-msg">
+                  Selecione um item da mochila ou equipamento para inspecionar atributos e raridade.
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -584,6 +746,22 @@
           </div>
 
           <div class="academy-body">
+            <!-- PAINEL OFICIAL DE EXAME DE ASCENSÃO (RANK D) -->
+            <article class="academy-article academy-exam-panel">
+              <div class="exam-panel-header">
+                <span class="exam-badge">HOMOLOGAÇÃO MILITAR</span>
+                <h3 class="article-title">PROVA OFICIAL DE ASCENSÃO — RANK D</h3>
+                <span class="exam-subtitle">Exame de Qualificação perante a Associação de Caçadores</span>
+              </div>
+              <div id="academy-exam-status" class="exam-status-box">
+                <!-- Checklist preenchido dinamicamente via JS -->
+              </div>
+              <div class="exam-actions">
+                <button id="btn-start-rank-exam" class="btn-primary btn-rank-exam" type="button" disabled>
+                  Requisitos incompletos
+                </button>
+              </div>
+            </article>
             <!-- ARTIGO 1: COMO SUBIR DE RANK -->
             <article class="academy-article">
               <h3 class="article-title">1. COMO ASCENDER DO RANK E PARA O RANK D</h3>
@@ -652,6 +830,37 @@
                 </div>
               </div>
             </article>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL DE INTERAÇÃO COM NPC (INSPETOR BAEK, MERCADOR KIM, OPERADOR JIN) -->
+      <div id="npc-modal" class="modal-overlay hidden">
+        <div class="npc-modal-window">
+          <div class="modal-header-plate">
+            <div class="modal-title-group">
+              <span id="npc-modal-tag" class="modal-tag">[NPC · ASSOCIAÇÃO DE CAÇADORES]</span>
+              <h2 id="npc-modal-name" class="modal-title">INSPETOR BAEK</h2>
+              <span id="npc-modal-title" class="modal-subtitle">Representante Oficial da Associação</span>
+            </div>
+            <button id="btn-npc-close" class="btn-modal-close" title="Fechar" type="button">FECHAR [X]</button>
+          </div>
+
+          <div class="npc-modal-body">
+            <div class="npc-portrait-col">
+              <div class="npc-portrait-frame">
+                <img id="npc-portrait-img" src="/assets/portraits/healer.png" alt="NPC" draggable="false" />
+              </div>
+            </div>
+            <div class="npc-dialogue-col">
+              <div class="npc-speech-bubble">
+                <p id="npc-dialogue-text">Carregando diálogo...</p>
+              </div>
+
+              <div id="npc-actions-container" class="npc-actions-grid">
+                <!-- Botões de ação dinâmicos gerados pelo controller -->
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -56,7 +56,9 @@ export type CancelMissionRequest = z.infer<typeof CancelMissionRequestSchema>;
 
 export const MissionsStateSchema = z.object({
   available: z.array(MissionDefinitionSchema),
-  activeRun: MissionRunSchema.nullable(),
+  activeRuns: z.array(MissionRunSchema).default([]),
+  activeRun: MissionRunSchema.nullable().default(null),
+  maxActiveMissions: z.number().int().default(3),
   serverTime: z.number().int().positive()
 });
 export type MissionsState = z.infer<typeof MissionsStateSchema>;
@@ -107,23 +109,53 @@ export const MISSIONS: readonly MissionDefinition[] = [
     icon: "hunt"
   },
   {
-    id: "gate_d_1h",
-    name: "Incursão Gate D",
-    description: "Limpeza completa de masmorra de rank D com esquadrão tático.",
-    durationMs: 3_600_000,
-    killsEquiv: 30,
+    id: "gate_d_recon",
+    name: "Reconhecimento de Gate D",
+    description: "Incursão tática inicial na floresta dos lobos e fenda de rank D.",
+    durationMs: 15_000,
+    killsEquiv: 4,
     minRank: "D",
-    minLevel: 13,
+    minLevel: 8,
+    icon: "patrol"
+  },
+  {
+    id: "hunt_d_wolves",
+    name: "Caçada de Lobos das Sombras",
+    description: "Eliminação de matilhas de lobos que ameaçam as fronteiras do Gate D.",
+    durationMs: 300_000,
+    killsEquiv: 16,
+    minRank: "D",
+    minLevel: 9,
+    icon: "hunt"
+  },
+  {
+    id: "gate_d_1h",
+    name: "Incursão Completa Gate D",
+    description: "Limpeza profunda de masmorra de rank D com esquadrão tático.",
+    durationMs: 1_800_000,
+    killsEquiv: 35,
+    minRank: "D",
+    minLevel: 11,
     icon: "dungeon"
+  },
+  {
+    id: "gate_c_recon",
+    name: "Reconhecimento de Gate C",
+    description: "Operação rápida de inspeção no covil vulcânico e catacumbas de rank C.",
+    durationMs: 30_000,
+    killsEquiv: 8,
+    minRank: "C",
+    minLevel: 15,
+    icon: "patrol"
   },
   {
     id: "gate_c_3h",
     name: "Expedição Profunda C",
     description: "Exploração de cavernas dimensionais e enfrentamento de chefes locais.",
-    durationMs: 10_800_000,
+    durationMs: 3_600_000,
     killsEquiv: 70,
     minRank: "C",
-    minLevel: 26,
+    minLevel: 18,
     icon: "expedition"
   },
   {

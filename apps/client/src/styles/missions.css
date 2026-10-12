@@ -1,0 +1,328 @@
+/* =========================================================
+   MODAL DE MISSÕES DA ASSOCIAÇÃO (MULTI-MISSÕES: ATÉ 3 RUNS)
+   ========================================================= */
+
+.missions-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 5, 10, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+.missions-modal-window {
+  width: 100%;
+  max-width: 860px;
+  max-height: 90vh;
+  background: #090d16;
+  border: 1px solid var(--border-slate);
+  border-top: 2px solid var(--border-gold-bright);
+  border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.active-mission-container {
+  padding: 14px 20px;
+  background: #060910;
+  border-bottom: 1px solid #162032;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.active-missions-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.active-pulse {
+  color: #22c55e;
+  animation: pulseLight 1.5s infinite;
+  font-size: 0.75rem;
+}
+
+.active-label {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #cbd5e1;
+}
+
+.active-counter-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ca8a04;
+  letter-spacing: 0.05em;
+  background: rgba(202, 138, 4, 0.15);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(202, 138, 4, 0.3);
+}
+
+.active-missions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.active-mission-card {
+  background: #0a0f1c;
+  border: 1px solid #1e293b;
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.active-mission-card.ready {
+  border-left-color: #22c55e;
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.1) 0%, #0a0f1c 100%);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+.active-mission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.active-mission-name {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.active-mission-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.active-mission-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: #94a3b8;
+}
+
+.active-timer-display {
+  font-weight: 700;
+  color: #38bdf8;
+  font-family: monospace;
+}
+
+.mission-progress-track {
+  height: 6px;
+  background: #04060b;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #141c2c;
+}
+
+.bar-mission {
+  height: 100%;
+  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%);
+  transition: width 0.4s ease;
+}
+
+.active-mission-card.ready .bar-mission {
+  background: linear-gradient(90deg, #16a34a 0%, #4ade80 100%);
+}
+
+.active-mission-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-rpg-claim {
+  padding: 6px 14px;
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
+  color: #fff;
+  border: 1px solid #22c55e;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-rpg-claim:hover:not(:disabled) {
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+}
+
+.btn-rpg-claim:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-rpg-cancel-mission {
+  padding: 6px 10px;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-rpg-cancel-mission:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.missions-board-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.board-section-title {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #cbd5e1;
+}
+
+.missions-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mission-item-card {
+  background: #060a14;
+  border: 1px solid #1a2538;
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  transition: all 0.15s;
+}
+
+.mission-item-card:hover:not(.locked) {
+  border-color: #3b82f6;
+  background: #090e1c;
+}
+
+.mission-item-card.locked {
+  opacity: 0.55;
+  filter: grayscale(0.5);
+}
+
+.mission-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mission-item-icon {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #ca8a04;
+  background: rgba(202, 138, 4, 0.15);
+  border: 1px solid rgba(202, 138, 4, 0.35);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.mission-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mission-item-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mission-item-name {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.mission-badge-time,
+.mission-badge-exp {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.mission-badge-time {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.mission-badge-exp {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fde047;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.mission-item-desc {
+  font-size: 0.74rem;
+  color: #94a3b8;
+}
+
+.mission-item-reqs {
+  font-size: 0.68rem;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.btn-start-mission {
+  padding: 8px 16px;
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  background: #1d4ed8;
+  color: #fff;
+  border: 1px solid #3b82f6;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn-start-mission:hover:not(:disabled) {
+  background: #2563eb;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.btn-start-mission:disabled {
+  background: #1e293b;
+  border-color: #334155;
+  color: #64748b;
+  cursor: not-allowed;
+}

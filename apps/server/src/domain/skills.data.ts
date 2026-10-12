@@ -1,7 +1,9 @@
 import {
   statMult,
   type HunterClass,
+  type ItemStatBonuses,
   type PlayerAttributes,
+  type PlayerEquipment,
   type PlayerStats,
   type Skill
 } from "@rpg/contracts";
@@ -38,7 +40,7 @@ export const CLASS_STATS: Record<HunterClass, ClassConfig> = {
       {
         id: "strike",
         name: "Corte Pesado",
-        description: "Golpe físico direto com a espada",
+        description: "Um corte firme e limpo — a base de todo guerreiro",
         mpCost: 0,
         cooldownTurns: 0,
         currentCooldown: 0,
@@ -49,7 +51,7 @@ export const CLASS_STATS: Record<HunterClass, ClassConfig> = {
       {
         id: "brutal_cleave",
         name: "Golpe Demolidor",
-        description: "Ataque concentrado que racha armaduras",
+        description: "Concentra o peso da lâmina num ponto; parte armaduras",
         mpCost: 15,
         cooldownTurns: 2,
         currentCooldown: 0,
@@ -60,7 +62,7 @@ export const CLASS_STATS: Record<HunterClass, ClassConfig> = {
       {
         id: "iron_bulwark",
         name: "Muralha de Ferro",
-        description: "Postura defensiva firme e contra-golpe",
+        description: "Ergue o escudo, absorve o golpe e devolve com fúria",
         mpCost: 20,
         cooldownTurns: 2,
         currentCooldown: 0,
@@ -83,7 +85,7 @@ export const CLASS_STATS: Record<HunterClass, ClassConfig> = {
       {
         id: "dagger_slash",
         name: "Golpe de Adaga",
-        description: "Corte veloz com adagas gêmeas",
+        description: "Duas lâminas em arco — rápido demais para reagir",
         mpCost: 0,
         cooldownTurns: 0,
         currentCooldown: 0,
@@ -94,7 +96,7 @@ export const CLASS_STATS: Record<HunterClass, ClassConfig> = {
       {
         id: "shadow_slice",
         name: "Corte Fantasma",
-        description: "Passo sombrio que atinge pontos vitais",
+        description: "Desaparece por um instante e reaparece no ponto vital",
         mpCost: 15,
         cooldownTurns: 2,
         currentCooldown: 0,
@@ -207,13 +209,40 @@ export const CLASS_STATS: Record<HunterClass, ClassConfig> = {
   }
 };
 
+export function sumEquipmentStats(equipment?: PlayerEquipment): ItemStatBonuses {
+  const result: ItemStatBonuses = {
+    bonusHp: 0,
+    bonusMp: 0,
+    bonusPhysicalAtk: 0,
+    bonusMagicalAtk: 0,
+    bonusCritChance: 0,
+    bonusDodgeChance: 0,
+    bonusBlockChance: 0
+  };
+  if (!equipment) return result;
+  for (const item of [equipment.weapon, equipment.armor, equipment.amulet, equipment.ring]) {
+    if (item?.stats) {
+      result.bonusHp += item.stats.bonusHp ?? 0;
+      result.bonusMp += item.stats.bonusMp ?? 0;
+      result.bonusPhysicalAtk += item.stats.bonusPhysicalAtk ?? 0;
+      result.bonusMagicalAtk += item.stats.bonusMagicalAtk ?? 0;
+      result.bonusCritChance += item.stats.bonusCritChance ?? 0;
+      result.bonusDodgeChance += item.stats.bonusDodgeChance ?? 0;
+      result.bonusBlockChance += item.stats.bonusBlockChance ?? 0;
+    }
+  }
+  return result;
+}
+
 export function calculatePlayerStats(
   hunterClass: HunterClass,
   level: number,
-  attributes?: PlayerAttributes
+  attributes?: PlayerAttributes,
+  equipment?: PlayerEquipment
 ): PlayerStats {
   const config = CLASS_STATS[hunterClass] ?? CLASS_STATS.WARRIOR;
   const mult = statMult(level);
+  const eq = sumEquipmentStats(equipment);
 
   const bonusStr = attributes ? Math.max(0, attributes.str - 10) : 0;
   const bonusAgi = attributes ? Math.max(0, attributes.agi - 10) : 0;
@@ -221,24 +250,36 @@ export function calculatePlayerStats(
   const bonusInt = attributes ? Math.max(0, attributes.int - 10) : 0;
 
   return {
-    physicalAtk: Math.round(config.basePhysicalAtk * mult + bonusStr * 2),
-    magicalAtk: Math.round(config.baseMagicalAtk * mult + bonusInt * 2.5),
-    critChance: Math.min(0.75, Number((config.critChance + bonusAgi * 0.005).toFixed(4))),
-    dodgeChance: Math.min(0.50, Number((config.dodgeChance + bonusAgi * 0.004).toFixed(4))),
-    blockChance: Math.min(0.60, Number((config.blockChance + bonusVit * 0.003).toFixed(4)))
+    physicalAtk: Math.round(config.basePhysicalAtk * mult + bonusStr * 2 + eq.bonusPhysicalAtk),
+    magicalAtk: Math.round(config.baseMagicalAtk * mult + bonusInt * 2.5 + eq.bonusMagicalAtk),
+    critChance: Math.min(0.75, Number((config.critChance + bonusAgi * 0.005 + eq.bonusCritChance).toFixed(4))),
+    dodgeChance: Math.min(0.50, Number((config.dodgeChance + bonusAgi * 0.004 + eq.bonusDodgeChance).toFixed(4))),
+    blockChance: Math.min(0.60, Number((config.blockChance + bonusVit * 0.003 + eq.bonusBlockChance).toFixed(4)))
   };
 }
 
-export function calculatePlayerMaxHp(hunterClass: HunterClass, level: number, vit = 10): number {
+export function calculatePlayerMaxHp(
+  hunterClass: HunterClass,
+  level: number,
+  vit = 10,
+  equipment?: PlayerEquipment
+): number {
   const config = CLASS_STATS[hunterClass] ?? CLASS_STATS.WARRIOR;
   const mult = statMult(level);
   const bonusVit = Math.max(0, vit - 10);
-  return Math.floor(config.baseHp * mult + bonusVit * 10);
+  const eq = sumEquipmentStats(equipment);
+  return Math.floor(config.baseHp * mult + bonusVit * 10 + eq.bonusHp);
 }
 
-export function calculatePlayerMaxMp(hunterClass: HunterClass, level: number, int = 10): number {
+export function calculatePlayerMaxMp(
+  hunterClass: HunterClass,
+  level: number,
+  int = 10,
+  equipment?: PlayerEquipment
+): number {
   const config = CLASS_STATS[hunterClass] ?? CLASS_STATS.WARRIOR;
   const mult = statMult(level);
   const bonusInt = Math.max(0, int - 10);
-  return Math.floor(config.baseMp * mult + bonusInt * 8);
+  const eq = sumEquipmentStats(equipment);
+  return Math.floor(config.baseMp * mult + bonusInt * 8 + eq.bonusMp);
 }

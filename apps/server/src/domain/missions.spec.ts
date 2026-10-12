@@ -22,14 +22,17 @@ function setup() {
 }
 
 describe("Naruto Game style Missions (ADR 5 lazy evaluation & ADR 10 idempotency)", () => {
-  it("provides all 7 mission tiers in master table", () => {
-    expect(MISSIONS).toHaveLength(7);
+  it("provides all 10 mission tiers in master table", () => {
+    expect(MISSIONS).toHaveLength(10);
     const ids = MISSIONS.map((m) => m.id);
     expect(ids).toEqual([
       "patrol_5s",
       "recon_1m",
       "subdue_10m",
+      "gate_d_recon",
+      "hunt_d_wolves",
       "gate_d_1h",
+      "gate_c_recon",
       "gate_c_3h",
       "tower_b_6h",
       "monarch_a_12h"
@@ -39,7 +42,7 @@ describe("Naruto Game style Missions (ADR 5 lazy evaluation & ADR 10 idempotency
   it("lists missions state with no active run initially", () => {
     const { game } = setup();
     const state = game.getMissionsState("p1");
-    expect(state.available).toHaveLength(7);
+    expect(state.available).toHaveLength(10);
     expect(state.activeRun).toBeNull();
     expect(state.serverTime).toBe(10_000);
   });
@@ -60,12 +63,32 @@ describe("Naruto Game style Missions (ADR 5 lazy evaluation & ADR 10 idempotency
     expect(active?.completed).toBe(false);
   });
 
-  it("rejects starting a second mission while one is active", () => {
+  it("rejects starting the same mission while it is active", () => {
     const { game } = setup();
     game.startMission("p1", "patrol_5s");
-    const second = game.startMission("p1", "recon_1m");
+    const second = game.startMission("p1", "patrol_5s");
     expect(second.success).toBe(false);
     expect(second.error).toBe("MISSION_ALREADY_ACTIVE");
+  });
+
+  it("supports up to 3 concurrent active missions and rejects a 4th", () => {
+    const { game, repo } = setup();
+    const player = repo.findById("p1")!;
+    player.level = 10;
+    repo.save(player);
+
+    const m1 = game.startMission("p1", "patrol_5s");
+    const m2 = game.startMission("p1", "recon_1m");
+    const m3 = game.startMission("p1", "subdue_10m");
+    expect(m1.success).toBe(true);
+    expect(m2.success).toBe(true);
+    expect(m3.success).toBe(true);
+    expect(m3.state?.activeRuns.length).toBe(3);
+
+    // 4ª missão simultânea é rejeitada
+    const m4 = game.startMission("p1", "gate_d_1h");
+    expect(m4.success).toBe(false);
+    expect(m4.error).toBe("MAX_ACTIVE_MISSIONS_REACHED");
   });
 
   it("rejects mission when player rank or level requirements are not met", () => {

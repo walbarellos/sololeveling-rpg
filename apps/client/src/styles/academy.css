@@ -1,0 +1,256 @@
+/* =========================================================
+   ACADEMIA HUNTER (GUIA DE REGRAS, EXAME & PROMOÇÃO)
+   ========================================================= */
+
+.academy-modal-window {
+  width: 100%;
+  max-width: 820px;
+  max-height: 90vh;
+  background: #090d16;
+  border: 1px solid var(--border-slate);
+  border-top: 2px solid var(--border-gold-bright);
+  border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.academy-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.academy-exam-panel {
+  border: 1px solid rgba(212, 160, 23, 0.45);
+  background: linear-gradient(180deg, rgba(28, 22, 12, 0.7) 0%, rgba(14, 11, 6, 0.85) 100%);
+  border-radius: 4px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(212, 160, 23, 0.08);
+}
+
+.exam-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.exam-badge {
+  align-self: flex-start;
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 0.08em;
+  background: rgba(212, 160, 23, 0.15);
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid rgba(212, 160, 23, 0.4);
+}
+
+.exam-subtitle {
+  font-size: 0.74rem;
+  color: #94a3b8;
+}
+
+.exam-status-box {
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exam-req {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.exam-req.ok {
+  background: rgba(34, 197, 94, 0.15);
+  border-left: 3px solid #22c55e;
+  color: #bbf7d0;
+}
+
+.exam-req.missing {
+  background: rgba(239, 68, 68, 0.15);
+  border-left: 3px solid #ef4444;
+  color: #fecaca;
+}
+
+.exam-missing {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: #fca5a5;
+  font-size: 0.78rem;
+}
+
+.exam-hint {
+  margin-top: 8px;
+  color: #fde68a;
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.btn-rank-exam {
+  margin-top: 10px;
+  width: 100%;
+  padding: 12px 18px;
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border-radius: 3px;
+  border: 1px solid #ca8a04;
+  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(217, 119, 6, 0.35);
+}
+
+.btn-rank-exam:not(:disabled):hover {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-rank-exam:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: grayscale(0.8);
+}
+
+.rank-promotion-banner {
+  text-align: center;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(20, 83, 45, 0.4) 100%);
+  border: 1px solid #22c55e;
+  border-radius: 6px;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.rank-promotion-banner strong {
+  display: block;
+  color: #86efac;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+}
+
+.academy-article {
+  background: #060910;
+  border: 1px solid #162032;
+  border-radius: 4px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.article-title {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #e2e8f0;
+}
+
+.article-text {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.academy-callout {
+  background: rgba(180, 83, 9, 0.15);
+  border-left: 3px solid #f59e0b;
+  border-radius: 2px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  color: #fde68a;
+  line-height: 1.4;
+}
+
+.callout-heading {
+  font-weight: 800;
+  margin-bottom: 4px;
+  color: #fbbf24;
+}
+
+.academy-steps {
+  list-style-type: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.academy-steps li {
+  padding-left: 12px;
+  border-left: 2px solid #334155;
+  line-height: 1.4;
+}
+
+.academy-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.academy-subcard {
+  background: #04060b;
+  border: 1px solid #141c2c;
+  border-radius: 3px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.subcard-title {
+  font-weight: 800;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+}
+
+.academy-tips-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tip-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #05080f;
+  border: 1px solid #141c2c;
+  border-radius: 3px;
+  padding: 8px 10px;
+}
+
+.tip-name {
+  font-weight: 800;
+  color: #f8fafc;
+  font-size: 0.78rem;
+}
+
+.tip-desc {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}

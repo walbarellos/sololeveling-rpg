@@ -52,6 +52,7 @@ export const PlayerSnapshotSchema = z.object({
   stats: PlayerStatsSchema,
   attributes: PlayerAttributesSchema.default(DEFAULT_PLAYER_ATTRIBUTES),
   unallocatedStatPoints: z.number().int().nonnegative().default(0),
+  gold: z.number().int().nonnegative().default(0),
   inBattle: z.boolean(),
   activeBattleId: z.string().optional(),
   sequence: z.number().int().nonnegative()
@@ -163,7 +164,9 @@ export const BattleSnapshotSchema = z.object({
   rewardExp: z.number().int().nonnegative().optional(),
   rewards: BattleRewardsSchema.optional(),
   /** Eventos do último turno resolvido (vazio no snapshot de início de batalha). */
-  events: z.array(BattleEventSchema).default([])
+  events: z.array(BattleEventSchema).default([]),
+  consumablesRemaining: z.number().int().nonnegative().default(2),
+  isGateBoss: z.boolean().default(false)
 });
 export type BattleSnapshot = z.infer<typeof BattleSnapshotSchema>;
 
@@ -182,6 +185,15 @@ export const AttackRequestSchema = z.object({
   targetId: z.string().min(1).max(100)
 });
 export type AttackRequest = z.infer<typeof AttackRequestSchema>;
+
+export const GateClearAnnouncementSchema = z.object({
+  bossName: z.string(),
+  slayerName: z.string(),
+  rewardExp: z.number().int().nonnegative(),
+  trophyDropped: z.string(),
+  newPortalUnlocked: z.boolean()
+});
+export type GateClearAnnouncement = z.infer<typeof GateClearAnnouncementSchema>;
 
 export const ServerErrorCodeSchema = z.enum([
   "INVALID_PAYLOAD",
@@ -202,8 +214,19 @@ export const ServerErrorCodeSchema = z.enum([
   "NO_ACTIVE_MISSION",
   "MISSION_IN_PROGRESS",
   "MISSION_ALREADY_CLAIMED",
+  "MAX_ACTIVE_MISSIONS_REACHED",
   "INSUFFICIENT_STAT_POINTS",
-  "CANNOT_ALLOCATE_IN_BATTLE"
+  "CANNOT_ALLOCATE_IN_BATTLE",
+  "ITEM_NOT_FOUND",
+  "CANNOT_EQUIP",
+  "INSUFFICIENT_LEVEL_FOR_ITEM",
+  "CONSUMABLE_CHARGES_EXHAUSTED",
+  "ACADEMY_REQUIREMENTS_UNMET",
+  "NOT_ENOUGH_GOLD",
+  "CANNOT_SELL_EQUIPPED",
+  "CANNOT_SELL_TROPHY",
+  "ZONE_NOT_FOUND",
+  "NPC_NOT_FOUND"
 ]);
 export type ServerErrorCode = z.infer<typeof ServerErrorCodeSchema>;
 
@@ -212,6 +235,69 @@ export const ServerErrorSchema = z.object({
   message: z.string().max(200)
 });
 export type ServerError = z.infer<typeof ServerErrorSchema>;
+
+export const NpcRoleSchema = z.enum(["ACADEMY", "MERCHANT", "GATEKEEPER"]);
+export type NpcRole = z.infer<typeof NpcRoleSchema>;
+
+export const NpcDefinitionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  title: z.string().min(1),
+  role: NpcRoleSchema,
+  portrait: z.string(),
+  position: TileCoordSchema,
+  dialogue: z.string()
+});
+export type NpcDefinition = z.infer<typeof NpcDefinitionSchema>;
+
+export const WORLD_NPCS: readonly NpcDefinition[] = [
+  {
+    id: "npc_baek",
+    name: "Inspetor Baek",
+    title: "Associação de Caçadores",
+    role: "ACADEMY",
+    portrait: "director",
+    position: { x: 3, y: 3 },
+    dialogue: "Saudações, Caçador. Sou o Inspetor Baek da Associação. Homologo promoções de Rank militar e restituo troféus de abolição extraviados em combate."
+  },
+  {
+    id: "npc_merchant",
+    name: "Mercador Kim",
+    title: "Mercado Negro & Suprimentos",
+    role: "MERCHANT",
+    portrait: "healer",
+    position: { x: 1, y: 3 },
+    dialogue: "Bem-vindo ao bazar tático! Compro qualquer equipamento e espólio por ouro vivo, e vendo elixires para manter você respirando."
+  },
+  {
+    id: "npc_gatekeeper",
+    name: "Operador Jin",
+    title: "Mestre de Portais e Fendas",
+    role: "GATEKEEPER",
+    portrait: "warrior",
+    position: { x: 3, y: 1 },
+    dialogue: "Gerencio as coordenadas dimensionais dos Gates. Posso sintonizar o teleporte para qualquer setor da masmorra ou reiniciar a fenda inteira para despertar os chefes."
+  }
+];
+
+export const ZoneTeleportRequestSchema = z.object({
+  zoneId: z.enum(["SANTUARIO", "CATACUMBAS", "COVIL", "ABISMO", "CHAMBER"])
+});
+export type ZoneTeleportRequest = z.infer<typeof ZoneTeleportRequestSchema>;
+
+export const MerchantBuyRequestSchema = z.object({
+  itemId: z.string().min(1),
+  quantity: z.number().int().positive().default(1)
+});
+export type MerchantBuyRequest = z.infer<typeof MerchantBuyRequestSchema>;
+
+export const ClaimLostTrophyRequestSchema = z.object({
+  trophyId: z.string().min(1)
+});
+export type ClaimLostTrophyRequest = z.infer<typeof ClaimLostTrophyRequestSchema>;
+
+export const ResetGateRequestSchema = z.object({}).default({});
+export type ResetGateRequest = z.infer<typeof ResetGateRequestSchema>;
 
 /** Stable transport event names. Keep event payloads versioned as the game evolves. */
 export const ClientEvents = {
@@ -226,7 +312,19 @@ export const ClientEvents = {
   ClaimMissionRequest: "game:mission:claim",
   CancelMissionRequest: "game:mission:cancel",
   MissionsRequest: "game:mission:list",
-  AllocateStatsRequest: "game:stats:allocate"
+  AllocateStatsRequest: "game:stats:allocate",
+  EquipItemRequest: "game:item:equip",
+  UnequipItemRequest: "game:item:unequip",
+  UseItemRequest: "game:item:use",
+  UseCombatConsumableRequest: "game:item:combat-use",
+  InventoryRequest: "game:inventory:request",
+  RankPromotionRequest: "game:academy:promote",
+  SellItemRequest: "game:item:sell",
+  SellAllJunkRequest: "game:item:sell-junk",
+  ZoneTeleportRequest: "game:zone:teleport",
+  ResetGateRequest: "game:gate:reset",
+  MerchantBuyRequest: "game:merchant:buy",
+  ClaimLostTrophyRequest: "game:academy:claim-trophy"
 } as const;
 
 export const ServerEvents = {
@@ -238,7 +336,11 @@ export const ServerEvents = {
   CombatLog: "game:combat-log",
   SessionReplaced: "game:session:replaced",
   MissionsState: "game:mission:state",
-  MissionClaimResult: "game:mission:claim-result"
+  MissionClaimResult: "game:mission:claim-result",
+  InventoryState: "game:inventory:state",
+  RankPromotionResult: "game:academy:promote-result",
+  GateClearAnnouncement: "game:gate:clear",
+  GateResetAnnouncement: "game:gate:reset-announcement"
 } as const;
 
 /**
@@ -272,3 +374,5 @@ export type CombatLog = z.infer<typeof CombatLogSchema>;
 
 export * from "./progression";
 export * from "./missions";
+export * from "./items";
+export * from "./academy";

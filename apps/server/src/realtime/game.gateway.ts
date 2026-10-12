@@ -16,11 +16,22 @@ import {
   CancelMissionRequestSchema,
   ClaimMissionRequestSchema,
   ClientEvents,
+  EquipItemRequestSchema,
+  RankPromotionRequestSchema,
   SelectClassRequestSchema,
   ServerEvents,
   StartBattleRequestSchema,
   StartMissionRequestSchema,
   StepRequestSchema,
+  UnequipItemRequestSchema,
+  UseCombatConsumableRequestSchema,
+  UseItemRequestSchema,
+  SellItemRequestSchema,
+  SellAllJunkRequestSchema,
+  ZoneTeleportRequestSchema,
+  ResetGateRequestSchema,
+  MerchantBuyRequestSchema,
+  ClaimLostTrophyRequestSchema,
   type ServerErrorCode,
   type ServerError
 } from "@rpg/contracts";
@@ -62,6 +73,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       ...this.game.dimensions
     });
     client.emit(ServerEvents.MissionsState, this.game.getMissionsState(player.id));
+    client.emit(ServerEvents.InventoryState, this.game.getInventoryState(player.id));
     this.broadcastSnapshot();
   }
 
@@ -193,7 +205,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage(ClientEvents.SnapshotRequest)
   handleSnapshotRequest(@ConnectedSocket() client: Socket) {
+    const playerId = this.pid(client);
     client.emit(ServerEvents.Snapshot, this.game.snapshot());
+    const battle = this.game.getActiveBattleForPlayer(playerId);
+    if (battle) {
+      client.emit(ServerEvents.BattleSnapshot, battle);
+    }
   }
 
   @SubscribeMessage(ClientEvents.MissionsRequest)
@@ -278,6 +295,176 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         result.error ?? "INVALID_PAYLOAD",
         messages[result.error ?? ""] ?? "Falha ao distribuir pontos de atributo."
       );
+    }
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.InventoryRequest)
+  handleInventoryRequest(@ConnectedSocket() client: Socket) {
+    const state = this.game.getInventoryState(this.pid(client));
+    if (state) {
+      client.emit(ServerEvents.InventoryState, state);
+    }
+  }
+
+  @SubscribeMessage(ClientEvents.EquipItemRequest)
+  handleEquipItem(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = EquipItemRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de equipamento inválida.");
+    }
+    const result = this.game.equipItem(this.pid(client), parsed.data.slotIndex);
+    if (!result.success || !result.state) {
+      const messages: Record<string, string> = {
+        ITEM_NOT_FOUND: "Item não encontrado no inventário.",
+        CANNOT_EQUIP: "Este item não pode ser equipado.",
+        INSUFFICIENT_LEVEL_FOR_ITEM: "Nível insuficiente para equipar este item."
+      };
+      return this.sendError(client, result.error ?? "CANNOT_EQUIP", messages[result.error ?? ""] ?? "Falha ao equipar item.");
+    }
+    client.emit(ServerEvents.InventoryState, result.state);
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.UnequipItemRequest)
+  handleUnequipItem(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = UnequipItemRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de desequipar inválida.");
+    }
+    const result = this.game.unequipItem(this.pid(client), parsed.data.slot);
+    if (!result.success || !result.state) {
+      return this.sendError(client, result.error ?? "CANNOT_EQUIP", "Inventário cheio ou item inválido.");
+    }
+    client.emit(ServerEvents.InventoryState, result.state);
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.UseItemRequest)
+  handleUseItem(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = UseItemRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de uso de item inválida.");
+    }
+    const result = this.game.useItem(this.pid(client), parsed.data.slotIndex);
+    if (!result.success || !result.state) {
+      return this.sendError(client, result.error ?? "ITEM_NOT_FOUND", "Não foi possível consumir o item.");
+    }
+    client.emit(ServerEvents.InventoryState, result.state);
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.UseCombatConsumableRequest)
+  handleUseCombatConsumable(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = UseCombatConsumableRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de consumível de combate inválida.");
+    }
+    const result = this.game.useCombatConsumable(this.pid(client), parsed.data.battleId, parsed.data.itemId);
+    if (!result.success || !result.snapshot) {
+      const messages: Record<string, string> = {
+        CONSUMABLE_CHARGES_EXHAUSTED: "Limite de 2 consumíveis por combate atingido!",
+        ITEM_NOT_FOUND: "Item não encontrado no inventário.",
+        NOT_IN_BATTLE: "Você não está em combate."
+      };
+      return this.sendError(
+        client,
+        result.error ?? "INVALID_PAYLOAD",
+        messages[result.error ?? ""] ?? "Falha ao usar consumível."
+      );
+    }
+    client.emit(ServerEvents.BattleSnapshot, result.snapshot);
+    if (result.inventoryState) {
+      client.emit(ServerEvents.InventoryState, result.inventoryState);
+    }
+    if (result.snapshot.finished) {
+      this.broadcastSnapshot();
+      client.emit(ServerEvents.BattleEnded, result.snapshot);
+    }
+  }
+
+  @SubscribeMessage(ClientEvents.RankPromotionRequest)
+  handleRankPromotion(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = RankPromotionRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de promoção inválida.");
+    }
+    const result = this.game.promoteRank(this.pid(client), parsed.data.targetRank);
+    client.emit(ServerEvents.RankPromotionResult, result.result);
+    if (result.success) {
+      this.broadcastSnapshot();
+    }
+  }
+
+  @SubscribeMessage(ClientEvents.SellItemRequest)
+  handleSellItem(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = SellItemRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de venda inválida.");
+    }
+    const result = this.game.sellItem(this.pid(client), parsed.data.slotIndex);
+    if (!result.success || !result.state) {
+      return this.sendError(client, result.error ?? "INVALID_PAYLOAD", "Não foi possível vender o item.");
+    }
+    client.emit(ServerEvents.InventoryState, result.state);
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.SellAllJunkRequest)
+  handleSellAllJunk(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = SellAllJunkRequestSchema.safeParse(body);
+    const maxRarity = parsed.success ? parsed.data.maxRarity : "UNCOMMON";
+    const result = this.game.sellAllJunk(this.pid(client), maxRarity);
+    client.emit(ServerEvents.InventoryState, result.state);
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.ZoneTeleportRequest)
+  handleZoneTeleport(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = ZoneTeleportRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Zona de teleporte inválida.");
+    }
+    const result = this.game.teleportPlayerToZone(this.pid(client), parsed.data.zoneId);
+    if (!result.success) {
+      return this.sendError(client, result.error ?? "INVALID_PAYLOAD", "Falha ao teleportar para o setor.");
+    }
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.ResetGateRequest)
+  handleResetGate(@ConnectedSocket() client: Socket) {
+    const result = this.game.resetGate(this.pid(client));
+    this.server.emit(ServerEvents.GateResetAnnouncement, { message: result.announcement });
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.MerchantBuyRequest)
+  handleMerchantBuy(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = MerchantBuyRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Requisição de compra inválida.");
+    }
+    const result = this.game.buyMerchantItem(this.pid(client), parsed.data.itemId, parsed.data.quantity);
+    if (!result.success || !result.state) {
+      return this.sendError(client, result.error ?? "INVALID_PAYLOAD", "Ouro insuficiente ou inventário cheio.");
+    }
+    client.emit(ServerEvents.InventoryState, result.state);
+    this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.ClaimLostTrophyRequest)
+  handleClaimLostTrophy(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = ClaimLostTrophyRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Troféu inválido.");
+    }
+    const result = this.game.claimLostTrophy(this.pid(client), parsed.data.trophyId);
+    if (!result.success) {
+      return this.sendError(client, result.error ?? "INVALID_PAYLOAD", "Você ainda não possui autorização ou abate registrado para este troféu.");
+    }
+    if (result.state) {
+      client.emit(ServerEvents.InventoryState, result.state);
     }
     this.broadcastSnapshot();
   }

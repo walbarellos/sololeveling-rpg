@@ -1,0 +1,766 @@
+/* =========================================================
+   ARENA DE COMBATE EM TURNOS (ESTILO NARUTO GAME SÓBRIO)
+   ========================================================= */
+
+.battle-screen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, #0d1322 0%, #060910 80%, #030408 100%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.battle-screen.hidden {
+  display: none !important;
+}
+
+.battle-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--battle-banner, none) center 30% / cover no-repeat;
+  opacity: 0.12;
+  filter: saturate(0.6) blur(1px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.battle-top-banner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #090d16;
+  border: 1px solid #1a2336;
+  border-bottom: 2px solid var(--border-gold-bright);
+  padding: 6px 14px;
+  border-radius: 2px;
+}
+
+.battle-mode-tag {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  display: block;
+}
+
+.battle-mode-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: 0.08em;
+}
+
+.turn-counter-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #05070e;
+  border: 1px solid #28354c;
+  padding: 3px 10px;
+  border-radius: 2px;
+}
+
+.turn-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.turn-number {
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--border-gold-bright);
+}
+
+/* 3 COLUNAS DO COMBATE */
+.ng-battle-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr) 260px;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+.ng-fighter-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fighter-frame {
+  background: #0a0d16;
+  border: 1px solid #1c2538;
+  border-radius: 2px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.player-frame {
+  border-top: 2px solid #2563eb;
+}
+
+.enemy-frame {
+  border-top: 2px solid #b91c1c;
+}
+
+.fighter-header-plate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #161e2e;
+  padding-bottom: 6px;
+}
+
+.fighter-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.fighter-nick {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.04em;
+}
+
+.fighter-sub-title {
+  font-size: 0.7rem;
+  color: var(--border-gold-bright);
+  font-weight: 600;
+}
+
+.threat-sub {
+  color: #f87171;
+}
+
+/* CAIXA DE AVATAR */
+.avatar-canvas-box {
+  width: 100%;
+  height: 180px;
+  flex-shrink: 0;
+  background: radial-gradient(circle at center, #141b2a 0%, #05070c 80%);
+  border: 1px solid #1c2436;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.avatar-canvas-box .portrait-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+  user-select: none;
+}
+
+/* GAUGES DE FERRO */
+.resource-gauges {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.gauge-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gauge-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.hp-label { color: #f87171; }
+.mp-label { color: #60a5fa; }
+.enemy-hp-label { color: #f87171; }
+.enemy-mp-label { color: #c084fc; }
+
+.gauge-value {
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.iron-gauge-track {
+  width: 100%;
+  height: 9px;
+  background: #04050a;
+  border: 1px solid #161e2e;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.iron-bar {
+  height: 100%;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bar-hp { background: linear-gradient(90deg, #991b1b, #dc2626); }
+.bar-mp { background: linear-gradient(90deg, #1e3a8a, #2563eb); }
+.bar-enemy-hp { background: linear-gradient(90deg, #881337, #e11d48); }
+.bar-enemy-mp { background: linear-gradient(90deg, #581c87, #9333ea); }
+
+/* DECK DE HABILIDADES TÁTEIS */
+.skills-panel {
+  background: #070910;
+  border: 1px solid #161e2e;
+  border-radius: 2px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deck-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+
+.deck-hotkeys {
+  color: var(--border-gold-bright);
+}
+
+.skills-card-deck {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.skill-icon-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 3px;
+  border-radius: 2px;
+  border: 1px solid #232d42;
+  background: #0e1320;
+  color: #f1f5f9;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.skill-icon-btn:hover:not(:disabled) {
+  background: #172136;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.skill-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+.skill-key {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 0.62rem;
+  font-family: monospace;
+  font-weight: 900;
+  color: var(--border-gold-bright);
+}
+
+.skill-glyph {
+  width: 44px;
+  height: 44px;
+  border-radius: 2px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 2px;
+}
+
+.skill-glyph svg { width: 100%; height: 100%; display: block; }
+.kind-phys   .skill-glyph { background: #1c0a0a; }
+.kind-shadow .skill-glyph { background: #0f0a1f; }
+.kind-magic  .skill-glyph { background: #070b1c; }
+.kind-holy   .skill-glyph { background: #1a1205; }
+.kind-heal   .skill-glyph { background: #04140a; }
+.kind-guard  .skill-glyph { background: #0b1220; }
+
+.skill-name {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: center;
+}
+
+.skill-cost {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.skill-cost-low { color: #f87171; }
+
+.skill-cd {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 6, 12, 0.85);
+  color: #f59e0b;
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.skill-info {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.25;
+  min-height: 2.2em;
+}
+
+/* PAINEL DE CONSUMÍVEIS DE COMBATE */
+.consumables-panel {
+  background: #070910;
+  border: 1px solid #161e2e;
+  border-radius: 2px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.consumables-quick-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.combat-item-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #0d1424;
+  border: 1px solid #1e293b;
+  border-radius: 3px;
+  color: #cbd5e1;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.combat-item-btn.hp-potion:hover:not(:disabled) {
+  border-color: #ef4444;
+  background: #1f1216;
+}
+
+.combat-item-btn.mp-potion:hover:not(:disabled) {
+  border-color: #3b82f6;
+  background: #0e1c38;
+}
+
+.combat-item-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+.c-item-icon {
+  font-size: 0.95rem;
+}
+
+.c-item-qty {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+/* TABELA DE PARÂMETROS / FICHA DE AMEAÇA */
+.attributes-card {
+  background: #070910;
+  border: 1px solid #161e2e;
+  border-radius: 2px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.attr-header {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid #141a28;
+  padding-bottom: 2px;
+}
+
+.attr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 6px;
+  font-size: 0.72rem;
+}
+
+.attr-pill {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 4px;
+  background: #090c14;
+  border-radius: 2px;
+}
+
+.attr-label { color: var(--text-muted); }
+.attr-val { font-weight: 700; color: #f1f5f9; }
+
+/* COLUNA CENTRAL: LOG DE COMBATE */
+.ng-center-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+}
+
+.battle-log-parchment {
+  flex: 1;
+  background: #060810;
+  border: 1px solid #1c2538;
+  border-radius: 2px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 240px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.log-parchment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid #161e2e;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.log-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--border-gold-bright);
+  letter-spacing: 0.06em;
+}
+
+.log-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.battle-log-feed {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  padding-right: 2px;
+}
+
+.log-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(22, 30, 46, 0.6);
+}
+
+.log-line.log-hidden { display: none; }
+
+.log-badge {
+  font-size: 0.62rem;
+  font-weight: 900;
+  padding: 1px 4px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.badge-crit   { background: #78350f; color: #fef08a; border: 1px solid #ca8a04; }
+.badge-damage { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+.badge-dodge  { background: #082f49; color: #7dd3fc; border: 1px solid #0284c7; }
+.badge-block  { background: #1e293b; color: #cbd5e1; border: 1px solid #475569; }
+.badge-heal   { background: #052e16; color: #86efac; border: 1px solid #16a34a; }
+.badge-normal { background: #111827; color: #94a3b8; border: 1px solid #1f2937; }
+
+.deck-footer-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-rpg-flee {
+  flex: 1;
+  background: #101420;
+  border: 1px solid #232d42;
+  color: #94a3b8;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-rpg-flee:hover {
+  background: #7f1d1d;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+.btn-rpg-calc {
+  flex: 1;
+  background: #0c1424;
+  border: 1px solid #1e3a8a;
+  color: #60a5fa;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-rpg-calc:hover {
+  background: #172554;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+/* MODAL DE RESULTADO DE BATALHA */
+.battle-result-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 5, 10, 0.92);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.battle-result-modal.hidden {
+  display: none !important;
+}
+
+.result-card {
+  background: #090d16;
+  border: 1px solid var(--border-slate);
+  border-top: 2px solid var(--border-gold-bright);
+  border-radius: 3px;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+}
+
+.result-badge-text {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+
+.tag-win { color: #facc15; border: 1px solid #ca8a04; background: #1c1407; }
+.tag-draw { color: #38bdf8; border: 1px solid #0284c7; background: #082f49; }
+.tag-lose { color: #ef4444; border: 1px solid #991b1b; background: #450a0a; }
+.tag-flee { color: #cbd5e1; border: 1px solid #475569; background: #1e293b; }
+
+.result-headline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
+.result-summary {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.result-rewards-box {
+  background: #05070c;
+  border: 1px solid #161e2e;
+  border-radius: 2px;
+  padding: 8px 12px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reward-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--border-gold-bright);
+  letter-spacing: 0.06em;
+}
+
+.reward-badge {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #4ade80;
+}
+
+.btn-rpg-return {
+  background: #1e3a8a;
+  color: #fff;
+  border: 1px solid #3b82f6;
+  border-radius: 2px;
+  padding: 8px 24px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-rpg-return:hover {
+  background: #2563eb;
+}
+
+/* NÚMEROS FLUTUANTES DE COMBATE */
+.float-num {
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.4rem;
+  text-shadow: 0 2px 4px #000;
+  pointer-events: none;
+  z-index: 10;
+  animation: float-up 1s ease-out forwards;
+  white-space: nowrap;
+}
+
+.float-hit   { color: #f87171; }
+.float-block { color: #cbd5e1; font-size: 1.1rem; }
+.float-heal  { color: #4ade80; }
+.float-dodge { color: #7dd3fc; font-size: 1.05rem; }
+.float-crit  { color: #facc15; font-size: 1.8rem; }
+
+@keyframes float-up {
+  0%   { opacity: 0; transform: translate(-50%, 8px) scale(0.8); }
+  15%  { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -35px) scale(1); }
+}
+
+.avatar-canvas-box.hit-flash > :not(.float-num) { animation: hit-flash 0.3s ease-out; }
+.avatar-canvas-box.hit-crit > :not(.float-num)  { animation: hit-crit 0.4s ease-out; }
+.avatar-canvas-box.dodge-slide > :not(.float-num) { animation: dodge-slide 0.35s ease-out; }
+
+@keyframes hit-flash {
+  0%   { filter: brightness(2.5); transform: translateX(-4px); }
+  50%  { transform: translateX(4px); }
+  100% { filter: none; transform: none; }
+}
+
+@keyframes hit-crit {
+  0%   { filter: brightness(3.5); transform: scale(1.08) translateX(-6px); }
+  50%  { transform: scale(1.04) translateX(6px); }
+  100% { filter: none; transform: none; }
+}
+
+@keyframes dodge-slide {
+  0%   { transform: none; opacity: 1; }
+  50%  { transform: translateX(12px); opacity: 0.4; }
+  100% { transform: none; opacity: 1; }
+}
+
+.avatar-canvas-box.dying > :not(.float-num) {
+  animation: die 1s ease-in forwards;
+}
+
+@keyframes die {
+  0%   { filter: none; transform: none; }
+  30%  { filter: brightness(2.5); }
+  100% { filter: grayscale(1) brightness(0.2); transform: translateY(18px); opacity: 0.25; }
+}
+
+.battle-screen.shake { animation: screen-shake 0.35s ease-out; }
+@keyframes screen-shake {
+  0%, 100% { transform: none; }
+  25% { transform: translate(-4px, 2px); }
+  75% { transform: translate(4px, -2px); }
+}
+
+.outcome-win { box-shadow: inset 0 0 50px rgba(245, 158, 11, 0.25); }
+.outcome-lose { box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.35); }
+.outcome-neutral { box-shadow: inset 0 0 50px rgba(59, 130, 246, 0.25); }
+
+/* Itens obtidos na tela de vitória */
+.reward-drops {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.reward-drop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #04060b;
+  border: 1px solid #141c2c;
+  border-radius: 3px;
+}
+.reward-drop-item .item-img { width: 2.4rem; height: 2.4rem; }
+.reward-drop-name { font-weight: 700; font-size: 0.85rem; flex: 1; text-align: left; }
+.reward-drop-rarity { font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; }

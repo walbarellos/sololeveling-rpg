@@ -6,7 +6,8 @@ import {
   type BattlePlayerParticipant,
   type BattleRewards,
   type BattleSnapshot,
-  type EnemySnapshot
+  type EnemySnapshot,
+  type ItemDefinition
 } from "@rpg/contracts";
 import type { PlayerEntity } from "./player.repository";
 import { CLASS_STATS, calculatePlayerStats, type SkillDefinition } from "./skills.data";
@@ -28,6 +29,9 @@ export class BattleSession {
   public rewards?: BattleRewards;
   /** Eventos do último turno resolvido, na ordem em que aconteceram. */
   public events: BattleEvent[] = [];
+  public consumablesRemaining = 2;
+  public readonly isGateBoss: boolean;
+  public turnCareerCounters = { crits: 0, dodges: 0, blocks: 0 };
 
   private skillDefs: Map<string, SkillDefinition>;
   private readonly enemyDamageBase: number;
@@ -86,8 +90,12 @@ export class BattleSession {
       maxMp: enemySnapshot.maxMp
     };
     this.enemyDamageBase = Math.round(
-      (enemySnapshot.rank === "D" ? 18 : 12) * statMult(enemySnapshot.level)
+      (enemySnapshot.rank === "C" ? 24 : enemySnapshot.rank === "D" ? 18 : 12) * statMult(enemySnapshot.level)
     );
+
+    this.isGateBoss =
+      enemySnapshot.name.toLowerCase().includes("chefe") ||
+      enemySnapshot.name.toLowerCase().includes("boss");
 
     this.log.push(
       `[SISTEMA] Confronto iniciado! [${this.player.rank}] ${this.player.name} (${classInfo.title}) VS [${this.enemy.rank}] ${this.enemy.name}.`
@@ -108,6 +116,59 @@ export class BattleSession {
   ): void {
     this.log.push(text);
     this.events.push({ kind, target, amount, targetHpAfter, logIndex: this.log.length - 1 });
+  }
+
+  executeConsumable(item: ItemDefinition): {
+    success: boolean;
+    error?: "CONSUMABLE_CHARGES_EXHAUSTED" | "INVALID_PAYLOAD";
+  } {
+    if (this.finished) return { success: false, error: "INVALID_PAYLOAD" };
+    if (this.consumablesRemaining <= 0) {
+      return { success: false, error: "CONSUMABLE_CHARGES_EXHAUSTED" };
+    }
+    if (item.type !== "CONSUMABLE") {
+      return { success: false, error: "INVALID_PAYLOAD" };
+    }
+
+    this.events = [];
+    this.consumablesRemaining--;
+
+    // Aplica cura de vida ou restauração de mana
+    if (item.healAmount && item.healAmount > 0) {
+      const heal = Math.min(this.player.maxHp - this.player.hp, item.healAmount);
+      this.player.hp += heal;
+      this.note(
+        `[CONSUMÍVEL] Você bebeu ${item.name} recuperando +${heal} de HP! (${this.consumablesRemaining} uso(s) restante(s)).`,
+        "HEAL",
+        "player",
+        heal,
+        this.player.hp
+      );
+    }
+    if (item.manaAmount && item.manaAmount > 0) {
+      const mana = Math.min(this.player.maxMp - this.player.mp, item.manaAmount);
+      this.player.mp += mana;
+      this.note(
+        `[CONSUMÍVEL] Você usou ${item.name} restaurando +${mana} de Mana! (${this.consumablesRemaining} uso(s) restante(s)).`,
+        "HEAL",
+        "player",
+        mana,
+        this.player.hp
+      );
+    }
+
+    // Retaliação do monstro
+    this.resolveEnemyRetaliation();
+
+    // Reduz cooldowns das habilidades do jogador em 1 turno
+    for (const s of this.player.skills) {
+      if (s.currentCooldown > 0) {
+        s.currentCooldown = Math.max(0, s.currentCooldown - 1);
+      }
+    }
+
+    this.checkEndConditions();
+    return { success: true };
   }
 
   executeAction(actionId: string): {
@@ -140,17 +201,14 @@ export class BattleSession {
     // --- PLAYER ACTION RESOLUTION ---
     let playerDmg = skillDef.baseDamage;
     let isCrit = false;
-    let isEnemyDodge = false;
     let isEnemyBlock = false;
 
     if (playerDmg > 0) {
-      // Rates based on class stats
       const critChance = this.player.stats?.critChance ?? 0.15;
       const enemyDodgeChance = this.enemy.rank === "D" ? 0.12 : 0.06;
       const enemyBlockChance = 0.10;
 
       if (this.rng() < enemyDodgeChance) {
-        isEnemyDodge = true;
         playerDmg = 0;
         this.note(
           `[ESQUIVA] [${this.enemy.rank}] ${this.enemy.name} se esquivou agilmente de ${skillDef.name}! (0 de dano)`,
@@ -162,6 +220,7 @@ export class BattleSession {
       } else {
         if (this.rng() < critChance) {
           isCrit = true;
+          this.turnCareerCounters.crits++;
           playerDmg = Math.floor(playerDmg * 1.6);
         } else if (this.rng() < enemyBlockChance) {
           isEnemyBlock = true;
@@ -212,39 +271,7 @@ export class BattleSession {
 
     // --- ENEMY ACTION RESOLUTION (simultaneous turn like Naruto Game) ---
     if (enemyHpAtStart > 0) {
-      let enemyDmg = this.enemyDamageBase;
-      const playerDodgeChance = this.player.stats?.dodgeChance ?? 0.08;
-      const playerBlockChance = this.player.stats?.blockChance ?? 0.10;
-
-      if (this.rng() < playerDodgeChance) {
-        this.note(
-          `[ESQUIVA] Você previu o movimento de ${this.enemy.name} e se esquivou com maestria! (0 de dano sofrido)`,
-          "DODGE",
-          "player",
-          0,
-          this.player.hp
-        );
-      } else if (this.rng() < playerBlockChance) {
-        enemyDmg = Math.floor(enemyDmg * 0.5);
-        this.player.hp = Math.max(0, this.player.hp - enemyDmg);
-        this.note(
-          `[BLOQUEIO] Você ergueu a guarda e bloqueou o impacto! Sofreu apenas ${enemyDmg} de dano de ${this.enemy.name}.`,
-          "BLOCK",
-          "player",
-          enemyDmg,
-          this.player.hp
-        );
-      } else {
-        // Monster hit
-        this.player.hp = Math.max(0, this.player.hp - enemyDmg);
-        this.note(
-          `[DANO] ${this.enemy.name} revidou com ferocidade causando ${enemyDmg} de dano em você!`,
-          "HIT",
-          "player",
-          enemyDmg,
-          this.player.hp
-        );
-      }
+      this.resolveEnemyRetaliation();
     }
 
     // Decrement cooldowns for other skills, and set cooldown for the used skill
@@ -256,12 +283,52 @@ export class BattleSession {
       }
     }
 
-    // Check End Conditions (including DRAW / Empate estilo NG)
+    this.checkEndConditions();
+    return { success: true };
+  }
+
+  private resolveEnemyRetaliation(): void {
+    let enemyDmg = this.enemyDamageBase;
+    const playerDodgeChance = this.player.stats?.dodgeChance ?? 0.08;
+    const playerBlockChance = this.player.stats?.blockChance ?? 0.10;
+
+    if (this.rng() < playerDodgeChance) {
+      this.turnCareerCounters.dodges++;
+      this.note(
+        `[ESQUIVA] Você previu o movimento de ${this.enemy.name} e se esquivou com maestria! (0 de dano sofrido)`,
+        "DODGE",
+        "player",
+        0,
+        this.player.hp
+      );
+    } else if (this.rng() < playerBlockChance) {
+      this.turnCareerCounters.blocks++;
+      enemyDmg = Math.floor(enemyDmg * 0.5);
+      this.player.hp = Math.max(0, this.player.hp - enemyDmg);
+      this.note(
+        `[BLOQUEIO] Você ergueu a guarda e bloqueou o impacto! Sofreu apenas ${enemyDmg} de dano de ${this.enemy.name}.`,
+        "BLOCK",
+        "player",
+        enemyDmg,
+        this.player.hp
+      );
+    } else {
+      this.player.hp = Math.max(0, this.player.hp - enemyDmg);
+      this.note(
+        `[DANO] ${this.enemy.name} revidou com ferocidade causando ${enemyDmg} de dano em você!`,
+        "HIT",
+        "player",
+        enemyDmg,
+        this.player.hp
+      );
+    }
+  }
+
+  private checkEndConditions(): void {
     if (this.player.hp <= 0 && this.enemy.hp <= 0) {
       this.finished = true;
       this.result = "DRAW";
       this.drawReason = "MUTUAL_DEATH";
-      // Empate com o monstro caído: metade do EXP (o monstro morreu junto).
       this.rewardExp = Math.floor(mobExp(this.enemy.level) / 2);
       this.note(
         "[EMPATE] Golpe mútuo fatal! Ambos os combatentes tombaram ao mesmo tempo.",
@@ -274,7 +341,8 @@ export class BattleSession {
     } else if (this.enemy.hp <= 0) {
       this.finished = true;
       this.result = "VICTORY";
-      this.rewardExp = mobExp(this.enemy.level);
+      // Chefes de Gate rendem 5x o EXP de um monstro comum do mesmo nível.
+      this.rewardExp = mobExp(this.enemy.level) * (this.isGateBoss ? 5 : 1);
       this.note(
         `[VITÓRIA] Oponente aniquilado! [${this.enemy.rank}] ${this.enemy.name} foi eliminado (+${this.rewardExp} EXP).`,
         "DEATH",
@@ -304,8 +372,6 @@ export class BattleSession {
         );
       }
     }
-
-    return { success: true };
   }
 
   flee(): void {
@@ -333,7 +399,9 @@ export class BattleSession {
       drawReason: this.drawReason,
       rewardExp: this.rewardExp > 0 ? this.rewardExp : undefined,
       rewards: this.rewards ? { ...this.rewards } : undefined,
-      events: this.events.map((e) => ({ ...e }))
+      events: this.events.map((e) => ({ ...e })),
+      consumablesRemaining: this.consumablesRemaining,
+      isGateBoss: this.isGateBoss
     };
   }
 }

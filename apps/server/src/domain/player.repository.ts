@@ -1,12 +1,34 @@
 import {
   DEFAULT_PLAYER_ATTRIBUTES,
   STARTING_STAT_POINTS,
+  type HunterCareerStats,
   type HunterClass,
   type HunterRank,
+  type InventorySlot,
   type MissionRun,
   type PlayerAttributes,
+  type PlayerEquipment,
   type TileCoord
 } from "@rpg/contracts";
+
+export const DEFAULT_CAREER_STATS: HunterCareerStats = {
+  criticalHitsDealt: 0,
+  attacksDodged: 0,
+  attacksBlocked: 0,
+  regularMonstersSlain: 0,
+  gateBossesSlain: 0,
+  totalItemsDropped: 0,
+  highestRarityDropped: null,
+  bestItemDroppedName: null,
+  missionsCompleted: 0
+};
+
+export const DEFAULT_EQUIPMENT: PlayerEquipment = {
+  weapon: null,
+  armor: null,
+  amulet: null,
+  ring: null
+};
 
 export interface PlayerEntity {
   id: string;
@@ -31,7 +53,13 @@ export interface PlayerEntity {
   lastStepAt: number;
   lastAttackAt: number;
   activeMission?: MissionRun;
+  activeRuns?: MissionRun[];
   lastClaimedMissionRunId?: string;
+  inventory?: InventorySlot[];
+  equipment?: PlayerEquipment;
+  careerStats?: HunterCareerStats;
+  gold?: number;
+  unclaimedTrophies?: string[];
 }
 
 export const PLAYER_REPOSITORY = "PLAYER_REPOSITORY";
@@ -54,7 +82,11 @@ export class InMemoryPlayerRepository implements PlayerRepository {
           position: { ...found.position },
           attributes: found.attributes ? { ...found.attributes } : { ...DEFAULT_PLAYER_ATTRIBUTES },
           unallocatedStatPoints: found.unallocatedStatPoints ?? STARTING_STAT_POINTS,
-          activeMission: found.activeMission ? { ...found.activeMission } : undefined
+          activeMission: found.activeMission ? { ...found.activeMission } : undefined,
+          activeRuns: found.activeRuns ? [...found.activeRuns] : (found.activeMission ? [{ ...found.activeMission }] : []),
+          inventory: found.inventory ? found.inventory.map((s) => ({ ...s, item: { ...s.item } })) : [],
+          equipment: found.equipment ? { ...found.equipment } : { ...DEFAULT_EQUIPMENT },
+          careerStats: found.careerStats ? { ...found.careerStats } : { ...DEFAULT_CAREER_STATS }
         }
       : null;
   }
@@ -65,7 +97,11 @@ export class InMemoryPlayerRepository implements PlayerRepository {
       position: { ...player.position },
       attributes: player.attributes ? { ...player.attributes } : { ...DEFAULT_PLAYER_ATTRIBUTES },
       unallocatedStatPoints: player.unallocatedStatPoints ?? 0,
-      activeMission: player.activeMission ? { ...player.activeMission } : undefined
+      activeMission: player.activeMission ? { ...player.activeMission } : undefined,
+      activeRuns: player.activeRuns ? [...player.activeRuns] : [],
+      inventory: player.inventory ? player.inventory.map((s) => ({ ...s, item: { ...s.item } })) : [],
+      equipment: player.equipment ? { ...player.equipment } : { ...DEFAULT_EQUIPMENT },
+      careerStats: player.careerStats ? { ...player.careerStats } : { ...DEFAULT_CAREER_STATS }
     });
   }
 
@@ -79,7 +115,11 @@ export class InMemoryPlayerRepository implements PlayerRepository {
       position: { ...p.position },
       attributes: p.attributes ? { ...p.attributes } : { ...DEFAULT_PLAYER_ATTRIBUTES },
       unallocatedStatPoints: p.unallocatedStatPoints ?? 0,
-      activeMission: p.activeMission ? { ...p.activeMission } : undefined
+      activeMission: p.activeMission ? { ...p.activeMission } : undefined,
+      activeRuns: p.activeRuns ? [...p.activeRuns] : [],
+      inventory: p.inventory ? p.inventory.map((s) => ({ ...s, item: { ...s.item } })) : [],
+      equipment: p.equipment ? { ...p.equipment } : { ...DEFAULT_EQUIPMENT },
+      careerStats: p.careerStats ? { ...p.careerStats } : { ...DEFAULT_CAREER_STATS }
     }));
   }
 }

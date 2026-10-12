@@ -18,17 +18,22 @@ import {
   type EnemySnapshot,
   type HunterClass,
   type HunterRank,
+  type InventoryState,
   type MissionClaimResult,
-  type MissionRun,
   type MissionsState,
   type PlayerSnapshot,
+  type RankPromotionResult,
   type ServerErrorCode,
   type TileCoord,
-  type WorldSnapshot
+  type WorldSnapshot,
+  type ItemDefinition,
+  type ItemRarity
 } from "@rpg/contracts";
 import { BattleSession } from "./battle.session";
 import { CLOCK, SystemClock, type Clock } from "./clock";
 import {
+  DEFAULT_CAREER_STATS,
+  DEFAULT_EQUIPMENT,
   InMemoryPlayerRepository,
   PLAYER_REPOSITORY,
   type PlayerEntity,
@@ -40,42 +45,55 @@ import {
   calculatePlayerMaxMp,
   calculatePlayerStats
 } from "./skills.data";
+import { LootService } from "./loot.service";
+import { AcademyService } from "./academy.service";
+import { BossService } from "./boss.service";
+import { MissionsService } from "./missions.service";
+import { InventoryService } from "./inventory.service";
+import { MASTER_ITEMS } from "./items.data";
 
-export const GRID_WIDTH = 20;
-export const GRID_HEIGHT = 12;
+export const GRID_WIDTH = 48;
+export const GRID_HEIGHT = 28;
 export const TILE_SIZE = 48;
 export const STEP_COOLDOWN_MS = 200;
 export const ATTACK_COOLDOWN_MS = 600;
 export const PLAYER_ATTACK_DAMAGE = 30;
 /** Respawn lazy: o monstro volta a ficar vivo na próxima leitura do mundo após este intervalo. */
-export const ENEMY_RESPAWN_MS = 30_000;
+export const ENEMY_RESPAWN_MS = 18_000;
 
 export interface MobTemplate {
   name: string;
   rank: HunterRank;
   baseHp: number;
   baseMp: number;
+  /** Tema visual do bioma: nature | larva | space | hell | swamp | crypt | frost */
+  theme: string;
 }
 
+/** Valores de demonstração (apenas fora de NODE_ENV=test): nível suficiente para encarar o chefe. */
+const DEMO_LEVEL = 9;
+const DEMO_EXP = 500;
+const DEMO_STAT_POINTS = 40;
+
+/** Amostra de itens de todas as raridades (armas e armaduras) + 1 amuleto e 1 anel, para inspeção visual. */
+const DEMO_SHOWCASE_ITEMS: readonly ItemDefinition[] = [
+  ...Object.values(MASTER_ITEMS).filter((i) => i.type === "WEAPON" || i.type === "ARMOR"),
+  MASTER_ITEMS.amulet_solar_core,
+  MASTER_ITEMS.ring_infinite_stars
+];
+
 export const MOB_TEMPLATES: Record<string, MobTemplate> = {
-  slime: {
-    name: "Dungeon Slime",
-    rank: "E",
-    baseHp: 60,
-    baseMp: 10
-  },
-  goblin: {
-    name: "Gate Goblin",
-    rank: "E",
-    baseHp: 68,
-    baseMp: 17
-  },
-  wolf: {
-    name: "Shadow Wolf",
-    rank: "D",
-    baseHp: 83,
-    baseMp: 21
-  }
+  slime: { name: "Dungeon Slime", rank: "E", baseHp: 60, baseMp: 10, theme: "swamp" },
+  larva: { name: "Cave Larva", rank: "E", baseHp: 48, baseMp: 6, theme: "larva" },
+  goblin: { name: "Gate Goblin", rank: "E", baseHp: 68, baseMp: 14, theme: "crypt" },
+  sprout: { name: "Thorn Sprout", rank: "E", baseHp: 52, baseMp: 18, theme: "nature" },
+  wolf: { name: "Shadow Wolf", rank: "D", baseHp: 83, baseMp: 21, theme: "crypt" },
+  ember: { name: "Ember Imp", rank: "D", baseHp: 72, baseMp: 30, theme: "hell" },
+  voidling: { name: "Voidling", rank: "D", baseHp: 78, baseMp: 35, theme: "space" },
+  frostbat: { name: "Frost Bat", rank: "D", baseHp: 70, baseMp: 22, theme: "frost" },
+  hellhound: { name: "Hell Hound", rank: "C", baseHp: 115, baseMp: 28, theme: "hell" },
+  starspawn: { name: "Starspawn", rank: "C", baseHp: 105, baseMp: 42, theme: "space" },
+  boss: { name: "Chefe Goblin do Gate", rank: "C", baseHp: 220, baseMp: 50, theme: "crypt" }
 };
 
 export function createEnemyInstance(
@@ -103,16 +121,51 @@ export function createEnemyInstance(
 }
 
 export const DEFAULT_OBSTACLES: readonly TileCoord[] = [
-  { x: 5, y: 3 },
-  { x: 5, y: 4 },
-  { x: 5, y: 5 },
-  { x: 14, y: 6 },
-  { x: 14, y: 7 },
-  { x: 14, y: 8 },
-  { x: 9, y: 2 },
-  { x: 10, y: 2 },
-  { x: 9, y: 9 },
-  { x: 10, y: 9 }
+  // --- SALA 1: Santuário do Gate (0..15, 0..13) ---
+  // Pilares interiores (preserva teste no pilar (5, 3))
+  { x: 5, y: 3 }, { x: 5, y: 4 }, { x: 5, y: 5 },
+  { x: 9, y: 2 }, { x: 10, y: 2 },
+  { x: 9, y: 9 }, { x: 10, y: 9 },
+  // Muralha leste dividindo Sala 1 e Sala 2 (passagem aberta em y=5,6,7)
+  { x: 15, y: 0 }, { x: 15, y: 1 }, { x: 15, y: 2 }, { x: 15, y: 3 }, { x: 15, y: 4 },
+  { x: 15, y: 8 }, { x: 15, y: 9 }, { x: 15, y: 10 }, { x: 15, y: 11 }, { x: 15, y: 12 }, { x: 15, y: 13 },
+  // Muralha sul dividindo Sala 1 e Sala 3 (passagem aberta em x=6,7,8)
+  { x: 0, y: 13 }, { x: 1, y: 13 }, { x: 2, y: 13 }, { x: 3, y: 13 }, { x: 4, y: 13 }, { x: 5, y: 13 },
+  { x: 9, y: 13 }, { x: 10, y: 13 }, { x: 11, y: 13 }, { x: 12, y: 13 }, { x: 13, y: 13 }, { x: 14, y: 13 },
+
+  // --- SALA 2: Catacumbas Esquecidas (16..31, 0..13) ---
+  // Pilares de pedra das catacumbas
+  { x: 20, y: 3 }, { x: 21, y: 3 }, { x: 26, y: 3 }, { x: 27, y: 3 },
+  { x: 20, y: 9 }, { x: 21, y: 9 }, { x: 26, y: 9 }, { x: 27, y: 9 },
+  // Muralha sul dividindo Sala 2 e Sala 4 (passagem aberta em x=23,24,25)
+  { x: 16, y: 13 }, { x: 17, y: 13 }, { x: 18, y: 13 }, { x: 19, y: 13 }, { x: 20, y: 13 }, { x: 21, y: 13 }, { x: 22, y: 13 },
+  { x: 26, y: 13 }, { x: 27, y: 13 }, { x: 28, y: 13 }, { x: 29, y: 13 }, { x: 30, y: 13 }, { x: 31, y: 13 },
+  // Muralha leste dividindo Sala 2 e Sala 5 (A Sala Final) (passagem aberta em y=5,6,7)
+  { x: 31, y: 0 }, { x: 31, y: 1 }, { x: 31, y: 2 }, { x: 31, y: 3 }, { x: 31, y: 4 },
+  { x: 31, y: 8 }, { x: 31, y: 9 }, { x: 31, y: 10 }, { x: 31, y: 11 }, { x: 31, y: 12 },
+
+  // --- SALA 3: Fenda Vulcânica / Covil das Feras (0..15, 14..27) ---
+  // Formações rochosas vulcânicas
+  { x: 4, y: 18 }, { x: 5, y: 18 },
+  { x: 10, y: 23 }, { x: 11, y: 23 },
+  // Muralha leste dividindo Sala 3 e Sala 4 (passagem aberta em y=20,21,22)
+  { x: 15, y: 14 }, { x: 15, y: 15 }, { x: 15, y: 16 }, { x: 15, y: 17 }, { x: 15, y: 18 }, { x: 15, y: 19 },
+  { x: 15, y: 23 }, { x: 15, y: 24 }, { x: 15, y: 25 }, { x: 15, y: 26 }, { x: 15, y: 27 },
+
+  // --- SALA 4: Abismo Dimensional / Câmara Cósmica (16..31, 14..27) ---
+  // Monolitos arcanos
+  { x: 21, y: 17 }, { x: 22, y: 17 }, { x: 27, y: 17 }, { x: 28, y: 17 },
+  { x: 21, y: 23 }, { x: 22, y: 23 }, { x: 27, y: 23 }, { x: 28, y: 23 },
+  // Muralha leste dividindo Sala 4 e Sala 5 (passagem aberta em y=20,21,22)
+  { x: 31, y: 14 }, { x: 31, y: 15 }, { x: 31, y: 16 }, { x: 31, y: 17 }, { x: 31, y: 18 }, { x: 31, y: 19 },
+  { x: 31, y: 23 }, { x: 31, y: 24 }, { x: 31, y: 25 }, { x: 31, y: 26 }, { x: 31, y: 27 },
+
+  // --- SALA 5: A Sala Final / Câmara do Chefe do Gate (32..47, 0..27) ---
+  // Pilares colossais da sala do trono do chefe
+  { x: 36, y: 7 }, { x: 37, y: 7 }, { x: 36, y: 8 }, { x: 37, y: 8 },
+  { x: 36, y: 19 }, { x: 37, y: 19 }, { x: 36, y: 20 }, { x: 37, y: 20 },
+  { x: 43, y: 7 }, { x: 44, y: 7 }, { x: 43, y: 8 }, { x: 44, y: 8 },
+  { x: 43, y: 19 }, { x: 44, y: 19 }, { x: 43, y: 20 }, { x: 44, y: 20 }
 ];
 
 export type StepResult =
@@ -127,16 +180,43 @@ export type AttackResult =
 export class GameService {
   private readonly obstacleSet = new Set<string>();
   private readonly enemies = new Map<string, EnemySnapshot>([
+    // SALA 1: Santuário do Gate (Entrada & Treinamento Rank E, Lv 1–3)
     ["slime-1", createEnemyInstance("slime-1", "slime", 1, { x: 7, y: 4 })],
-    ["goblin-1", createEnemyInstance("goblin-1", "goblin", 3, { x: 12, y: 7 })],
-    ["wolf-1", createEnemyInstance("wolf-1", "wolf", 6, { x: 16, y: 3 })]
+    ["slime-2", createEnemyInstance("slime-2", "slime", 1, { x: 10, y: 3 })],
+    ["larva-1", createEnemyInstance("larva-1", "larva", 1, { x: 3, y: 8 })],
+    ["sprout-1", createEnemyInstance("sprout-1", "sprout", 2, { x: 12, y: 10 })],
+
+    // SALA 2: Catacumbas Esquecidas (Rank E/D, Lv 3–5)
+    ["goblin-1", createEnemyInstance("goblin-1", "goblin", 3, { x: 22, y: 5 })],
+    ["goblin-2", createEnemyInstance("goblin-2", "goblin", 3, { x: 28, y: 6 })],
+    ["larva-2", createEnemyInstance("larva-2", "larva", 2, { x: 18, y: 10 })],
+    ["frostbat-1", createEnemyInstance("frostbat-1", "frostbat", 4, { x: 25, y: 11 })],
+
+    // SALA 3: Fenda Vulcânica / Covil das Feras (Rank D, Lv 5–7)
+    ["wolf-1", createEnemyInstance("wolf-1", "wolf", 5, { x: 6, y: 20 })],
+    ["ember-1", createEnemyInstance("ember-1", "ember", 5, { x: 12, y: 22 })],
+    ["wolf-2", createEnemyInstance("wolf-2", "wolf", 6, { x: 4, y: 25 })],
+
+    // SALA 4: Abismo Dimensional / Câmara Cósmica (Rank D/C, Lv 7–9)
+    ["voidling-1", createEnemyInstance("voidling-1", "voidling", 6, { x: 22, y: 19 })],
+    ["hellhound-1", createEnemyInstance("hellhound-1", "hellhound", 8, { x: 26, y: 23 })],
+    ["starspawn-1", createEnemyInstance("starspawn-1", "starspawn", 9, { x: 29, y: 17 })],
+
+    // SALA 5: A Sala Final / Câmara do Chefe do Gate (Rank C, Lv 10 Boss gerenciado pelo BossService)
+    ["hellhound-2", createEnemyInstance("hellhound-2", "hellhound", 8, { x: 38, y: 11 })],
+    ["starspawn-2", createEnemyInstance("starspawn-2", "starspawn", 9, { x: 38, y: 16 })]
   ]);
   private readonly activeBattles = new Map<string, BattleSession>();
   private readonly online = new Set<string>();
   private readonly diedAt = new Map<string, number>();
   private sequence = 0;
   private battleCounter = 0;
-  private missionCounter = 0;
+
+  private readonly lootService = new LootService();
+  private readonly academyService = new AcademyService();
+  public readonly bossService = new BossService();
+  private readonly missionsService: MissionsService;
+  private readonly inventoryService: InventoryService;
 
   constructor(
     @Optional() @Inject(CLOCK) private readonly clock: Clock = new SystemClock(),
@@ -144,6 +224,8 @@ export class GameService {
     @Inject(PLAYER_REPOSITORY)
     private readonly playerRepository: PlayerRepository = new InMemoryPlayerRepository()
   ) {
+    this.missionsService = new MissionsService(this.lootService);
+    this.inventoryService = new InventoryService(this.lootService);
     for (const obs of DEFAULT_OBSTACLES) {
       this.obstacleSet.add(`${obs.x},${obs.y}`);
     }
@@ -176,22 +258,68 @@ export class GameService {
       if (existing.unallocatedStatPoints === undefined) {
         existing.unallocatedStatPoints = STARTING_STAT_POINTS;
       }
+      if (!existing.inventory || existing.inventory.length === 0) {
+        existing.inventory = this.lootService.createStartingInventory();
+      }
+      if (!existing.equipment) {
+        existing.equipment = { ...DEFAULT_EQUIPMENT };
+      }
+      if (!existing.careerStats) {
+        existing.careerStats = { ...DEFAULT_CAREER_STATS };
+      }
+      if (existing.gold === undefined) {
+        existing.gold = 150;
+      }
+      if (!existing.unclaimedTrophies) {
+        existing.unclaimedTrophies = [];
+      }
+
+      // Em ambiente interativo (fora de testes unitários), popula para teste do jogador
+      if (process.env.NODE_ENV !== "test") {
+        if (existing.unallocatedStatPoints < DEMO_STAT_POINTS) {
+          existing.unallocatedStatPoints = DEMO_STAT_POINTS;
+        }
+        if (existing.level < DEMO_LEVEL) {
+          existing.level = DEMO_LEVEL;
+          existing.exp = DEMO_EXP;
+        }
+        for (const item of DEMO_SHOWCASE_ITEMS) {
+          if (!existing.inventory.some((s) => s.item.id === item.id)) {
+            this.lootService.addItemToInventory(existing.inventory, item);
+          }
+        }
+        this.recomputeMaxStats(existing);
+        existing.hp = existing.maxHp;
+        existing.mp = existing.maxMp;
+      }
+
       existing.lastStepAt = now;
       this.playerRepository.save(existing);
       return this.toSnapshot(existing);
     }
 
     const defaultClass: HunterClass = "BATTLE_HEALER";
-    const initialHp = calculatePlayerMaxHp(defaultClass, 1, DEFAULT_PLAYER_ATTRIBUTES.vit);
-    const initialMp = calculatePlayerMaxMp(defaultClass, 1, DEFAULT_PLAYER_ATTRIBUTES.int);
+    const isTest = process.env.NODE_ENV === "test";
+    const initialLevel = isTest ? 1 : DEMO_LEVEL;
+    const initialExp = isTest ? 0 : DEMO_EXP;
+    const initialPoints = isTest ? STARTING_STAT_POINTS : DEMO_STAT_POINTS;
+    const initialHp = calculatePlayerMaxHp(defaultClass, initialLevel, DEFAULT_PLAYER_ATTRIBUTES.vit);
+    const initialMp = calculatePlayerMaxMp(defaultClass, initialLevel, DEFAULT_PLAYER_ATTRIBUTES.int);
+
+    const inventory = this.lootService.createStartingInventory();
+    if (!isTest) {
+      for (const item of DEMO_SHOWCASE_ITEMS) {
+        this.lootService.addItemToInventory(inventory, item);
+      }
+    }
 
     const newPlayer: PlayerEntity = {
       id,
       name: `Hunter-${id.slice(0, 4)}`,
       rank: "E",
       hunterClass: defaultClass,
-      level: 1,
-      exp: 0,
+      level: initialLevel,
+      exp: initialExp,
       position: { x: 2, y: 2 },
       hp: initialHp,
       maxHp: initialHp,
@@ -200,11 +328,16 @@ export class GameService {
       stamina: 50,
       maxStamina: 50,
       attributes: { ...DEFAULT_PLAYER_ATTRIBUTES },
-      unallocatedStatPoints: STARTING_STAT_POINTS,
+      unallocatedStatPoints: initialPoints,
       inBattle: false,
       sequence: ++this.sequence,
       lastStepAt: now,
-      lastAttackAt: 0
+      lastAttackAt: 0,
+      inventory,
+      equipment: { ...DEFAULT_EQUIPMENT },
+      careerStats: { ...DEFAULT_CAREER_STATS },
+      gold: isTest ? 0 : 250,
+      unclaimedTrophies: []
     };
 
     this.playerRepository.save(newPlayer);
@@ -244,7 +377,21 @@ export class GameService {
     this.reviveEnemies();
 
     if (player.inBattle) {
-      return { success: false, error: "ALREADY_IN_BATTLE" };
+      if (!player.activeBattleId || !this.activeBattles.has(player.activeBattleId)) {
+        player.inBattle = false;
+        player.activeBattleId = undefined;
+        this.playerRepository.save(player);
+      } else {
+        const session = this.activeBattles.get(player.activeBattleId);
+        if (session && session.finished) {
+          player.inBattle = false;
+          player.activeBattleId = undefined;
+          this.activeBattles.delete(session.battleId);
+          this.playerRepository.save(player);
+        } else {
+          return { success: false, error: "ALREADY_IN_BATTLE" };
+        }
+      }
     }
 
     const now = this.clock.nowMs();
@@ -279,20 +426,54 @@ export class GameService {
     return { success: true, player: this.toSnapshot(player) };
   }
 
+  getActiveBattleForPlayer(playerId: string): BattleSnapshot | null {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player || !player.inBattle || !player.activeBattleId) return null;
+    const session = this.activeBattles.get(player.activeBattleId);
+    if (!session || session.finished) return null;
+    return session.toSnapshot();
+  }
+
   startBattle(
     playerId: string,
     targetEnemyId: string
   ): { success: boolean; battle?: BattleSnapshot; error?: ServerErrorCode } {
     this.reviveEnemies();
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
-    const enemy = this.enemies.get(targetEnemyId);
+    let enemy = this.enemies.get(targetEnemyId);
+
+    if (!enemy) {
+      const boss = this.bossService.getBoss(targetEnemyId);
+      if (boss && boss.alive) {
+        enemy = {
+          id: boss.id,
+          name: boss.name,
+          rank: boss.rank,
+          level: boss.level,
+          position: { ...boss.position },
+          hp: boss.currentHp,
+          maxHp: boss.maxHp,
+          mp: 100,
+          maxMp: 100,
+          alive: boss.alive
+        };
+      }
+    }
 
     if (!player || !enemy || !enemy.alive) {
       return { success: false, error: "TARGET_UNAVAILABLE" };
     }
 
     if (player.inBattle) {
-      return { success: false, error: "ALREADY_IN_BATTLE" };
+      if (player.activeBattleId && this.activeBattles.has(player.activeBattleId)) {
+        const existingSession = this.activeBattles.get(player.activeBattleId)!;
+        if (!existingSession.finished) {
+          return { success: true, battle: existingSession.toSnapshot() };
+        }
+      }
+      player.inBattle = false;
+      player.activeBattleId = undefined;
+      this.playerRepository.save(player);
     }
 
     // Proximity check: Chebyshev distance <= 1
@@ -338,6 +519,41 @@ export class GameService {
     return { success: true, battle: session.toSnapshot() };
   }
 
+  useCombatConsumable(
+    playerId: string,
+    battleId: string,
+    itemId: string
+  ): {
+    success: boolean;
+    snapshot?: BattleSnapshot;
+    inventoryState?: InventoryState;
+    error?: ServerErrorCode;
+  } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    const session = this.activeBattles.get(battleId);
+
+    if (!player || !session || session.player.id !== playerId) {
+      return { success: false, error: "BATTLE_NOT_FOUND" };
+    }
+
+    const result = this.inventoryService.useCombatConsumable(player, session, itemId);
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    if (session.finished) {
+      this.resolveBattleEnd(player, session);
+    } else {
+      this.playerRepository.save(player);
+    }
+
+    return {
+      success: true,
+      snapshot: session.toSnapshot(),
+      inventoryState: this.inventoryService.getInventoryState(player)
+    };
+  }
+
   fleeBattle(
     playerId: string,
     battleId: string
@@ -364,32 +580,92 @@ export class GameService {
       if (enemy) this.killEnemy(enemy);
     };
 
+    if (!player.careerStats) {
+      player.careerStats = { ...DEFAULT_CAREER_STATS };
+    }
+    player.careerStats.criticalHitsDealt += session.turnCareerCounters.crits;
+    player.careerStats.attacksDodged += session.turnCareerCounters.dodges;
+    player.careerStats.attacksBlocked += session.turnCareerCounters.blocks;
+
+    const droppedItems: ItemDefinition[] = [];
+    const giveItem = (item: ItemDefinition): void => {
+      if (!player.inventory || !player.careerStats) return;
+      if (this.lootService.addItemToInventory(player.inventory, item)) {
+        this.lootService.recordItemDrop(player.careerStats, item);
+        droppedItems.push(item);
+      }
+    };
+
     if (session.result === "VICTORY") {
-      kill();
+      if (this.bossService.isBoss(session.enemy.id)) {
+        this.bossService.updateBossHp(session.enemy.id, 0);
+        player.careerStats.gateBossesSlain += 1;
+
+        if (player.inventory) {
+          let bossTrophy = MASTER_ITEMS.trophy_goblin_boss_core;
+          if (session.enemy.id === "boss_shadow_wolf") {
+            bossTrophy = MASTER_ITEMS.trophy_shadow_wolf_fang;
+          } else if (session.enemy.id === "boss-1") {
+            bossTrophy = MASTER_ITEMS.trophy_fire_gate_core;
+          }
+
+          if (this.lootService.addItemToInventory(player.inventory, bossTrophy)) {
+            this.lootService.recordItemDrop(player.careerStats, bossTrophy);
+            droppedItems.push(bossTrophy);
+          } else {
+            if (!player.unclaimedTrophies) player.unclaimedTrophies = [];
+            player.unclaimedTrophies.push(bossTrophy.id);
+          }
+
+          if (session.enemy.id === "boss-1" && !player.inventory.some((s) => s.item.id === "trophy_goblin_boss_core")) {
+            giveItem(MASTER_ITEMS.trophy_goblin_boss_core);
+          }
+
+          const bossLoot = this.lootService.rollMonsterDrop(session.enemy.level, true);
+          if (bossLoot) giveItem(bossLoot);
+        }
+      } else {
+        kill();
+        player.careerStats.regularMonstersSlain += 1;
+
+        if (player.inventory) {
+          const mobLoot = this.lootService.rollMonsterDrop(session.enemy.level, false);
+          if (mobLoot) giveItem(mobLoot);
+        }
+      }
       player.hp = Math.max(1, session.player.hp);
       player.mp = Math.max(0, session.player.mp);
     } else if (session.result === "DEFEAT") {
-      // Defeated: respawn at entrance
+      if (this.bossService.isBoss(session.enemy.id)) {
+        this.bossService.updateBossHp(session.enemy.id, session.enemy.hp);
+      }
       player.position = { x: 2, y: 2 };
       player.hp = player.maxHp;
       player.mp = player.maxMp;
     } else if (session.result === "DRAW") {
       if (session.drawReason === "TURN_LIMIT" || (session.player.hp > 0 && session.enemy.hp > 0)) {
-        // Recuo tático por limite de turnos: monstro permanece vivo com o HP restante
-        const enemy = this.enemies.get(session.enemy.id);
-        if (enemy) {
-          enemy.hp = Math.max(1, session.enemy.hp);
+        if (this.bossService.isBoss(session.enemy.id)) {
+          this.bossService.updateBossHp(session.enemy.id, session.enemy.hp);
+        } else {
+          const enemy = this.enemies.get(session.enemy.id);
+          if (enemy) enemy.hp = Math.max(1, session.enemy.hp);
         }
         player.hp = Math.max(1, session.player.hp);
         player.mp = Math.max(0, session.player.mp);
       } else {
-        // Empate por morte simultânea: ambos caem, monstro derrotado e player respawna
-        kill();
+        if (this.bossService.isBoss(session.enemy.id)) {
+          this.bossService.updateBossHp(session.enemy.id, 0);
+        } else {
+          kill();
+        }
         player.position = { x: 2, y: 2 };
         player.hp = Math.floor(player.maxHp * 0.5);
         player.mp = Math.floor(player.maxMp * 0.5);
       }
     } else if (session.result === "FLED") {
+      if (this.bossService.isBoss(session.enemy.id)) {
+        this.bossService.updateBossHp(session.enemy.id, session.enemy.hp);
+      }
       player.hp = Math.max(1, session.player.hp);
       player.mp = Math.max(0, session.player.mp);
     }
@@ -397,6 +673,9 @@ export class GameService {
     // Servidor é a única fonte de EXP: o valor vem da sessão, nunca do cliente.
     if (session.rewardExp > 0) {
       this.grantExp(player, session);
+    }
+    if (droppedItems.length > 0 && session.rewards) {
+      session.rewards.drops = droppedItems.map((i) => ({ ...i }));
     }
 
     player.sequence = ++this.sequence;
@@ -435,12 +714,14 @@ export class GameService {
     player.maxHp = calculatePlayerMaxHp(
       player.hunterClass,
       player.level,
-      player.attributes?.vit ?? 10
+      player.attributes?.vit ?? 10,
+      player.equipment
     );
     player.maxMp = calculatePlayerMaxMp(
       player.hunterClass,
       player.level,
-      player.attributes?.int ?? 10
+      player.attributes?.int ?? 10,
+      player.equipment
     );
   }
 
@@ -452,6 +733,7 @@ export class GameService {
   /** Respawn lazy (ADR 5): sem timers, avalia o tempo decorrido ao ler o mundo. */
   private reviveEnemies(): void {
     const now = this.clock.nowMs();
+    this.bossService.reviveBosses(now);
     const players = this.playerRepository.findAll() as PlayerEntity[];
     for (const enemy of this.enemies.values()) {
       if (enemy.alive) continue;
@@ -523,18 +805,16 @@ export class GameService {
   getMissionsState(playerId: string): MissionsState {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     const now = this.clock.nowMs();
-    let activeRun: MissionRun | null = null;
-    if (player?.activeMission) {
-      activeRun = {
-        ...player.activeMission,
-        completed: now >= player.activeMission.endsAt
+    if (!player) {
+      return {
+        available: [...MISSIONS],
+        activeRuns: [],
+        activeRun: null,
+        maxActiveMissions: 3,
+        serverTime: now
       };
     }
-    return {
-      available: [...MISSIONS],
-      activeRun,
-      serverTime: now
-    };
+    return this.missionsService.getMissionsState(player, now);
   }
 
   startMission(
@@ -544,37 +824,11 @@ export class GameService {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
 
-    if (player.activeMission) {
-      return { success: false, error: "MISSION_ALREADY_ACTIVE" };
+    const res = this.missionsService.startMission(player, missionId, this.clock.nowMs());
+    if (res.success) {
+      this.playerRepository.save(player);
     }
-
-    const mission = MISSIONS.find((m) => m.id === missionId);
-    if (!mission) {
-      return { success: false, error: "MISSION_NOT_FOUND" };
-    }
-
-    if (!isRankAllowed(player.rank, mission.minRank) || player.level < mission.minLevel) {
-      return { success: false, error: "MISSION_LOCKED" };
-    }
-
-    const now = this.clock.nowMs();
-    const runId = `mission-${player.id}-${now}-${++this.missionCounter}`;
-    const potentialExp = mobExp(player.level) * mission.killsEquiv;
-
-    player.activeMission = {
-      runId,
-      missionId: mission.id,
-      name: mission.name,
-      startedAt: now,
-      endsAt: now + mission.durationMs,
-      durationMs: mission.durationMs,
-      killsEquiv: mission.killsEquiv,
-      potentialExp,
-      completed: false
-    };
-
-    this.playerRepository.save(player);
-    return { success: true, state: this.getMissionsState(playerId) };
+    return res;
   }
 
   claimMission(
@@ -589,63 +843,13 @@ export class GameService {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
 
-    // ADR 10: Idempotência de recompensas
-    if (player.lastClaimedMissionRunId === runId) {
-      return { success: false, error: "MISSION_ALREADY_CLAIMED" };
+    const res = this.missionsService.claimMission(player, runId, this.clock.nowMs());
+    if (res.success) {
+      player.sequence = ++this.sequence;
+      this.playerRepository.save(player);
+      return { success: true, result: res.result, player: this.toSnapshot(player) };
     }
-
-    if (!player.activeMission || player.activeMission.runId !== runId) {
-      return { success: false, error: "NO_ACTIVE_MISSION" };
-    }
-
-    // ADR 5: Avaliação lazy por timestamp, sem timers de servidor
-    const now = this.clock.nowMs();
-    if (now < player.activeMission.endsAt) {
-      return { success: false, error: "MISSION_IN_PROGRESS" };
-    }
-
-    const missionRun = player.activeMission;
-    const expGained = missionRun.potentialExp;
-
-    const before = { level: player.level, exp: player.exp };
-    const expResult = applyExp(player, expGained);
-    player.level = expResult.level;
-    player.exp = expResult.exp;
-
-    if (expResult.level > before.level) {
-      const levelsGained = expResult.level - before.level;
-      player.unallocatedStatPoints =
-        (player.unallocatedStatPoints ?? 0) + levelsGained * STAT_POINTS_PER_LEVEL;
-      this.recomputeMaxStats(player);
-      player.hp = player.maxHp;
-      player.mp = player.maxMp;
-    }
-
-    const rewards: BattleRewards = {
-      expGained,
-      levelBefore: before.level,
-      levelAfter: expResult.level,
-      expBefore: before.exp,
-      expAfter: expResult.exp,
-      capped: expResult.capped,
-      levelCap: RANK_CAP[player.rank]
-    };
-
-    player.lastClaimedMissionRunId = runId;
-    player.activeMission = undefined;
-    player.sequence = ++this.sequence;
-    this.playerRepository.save(player);
-
-    const result: MissionClaimResult = {
-      success: true,
-      runId,
-      missionId: missionRun.missionId,
-      expGained,
-      rewards,
-      message: `Missão "${missionRun.name}" concluída com sucesso! +${expGained} EXP coletados.`
-    };
-
-    return { success: true, result, player: this.toSnapshot(player) };
+    return res;
   }
 
   cancelMission(
@@ -655,13 +859,242 @@ export class GameService {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
 
-    if (!player.activeMission || player.activeMission.runId !== runId) {
-      return { success: false, error: "NO_ACTIVE_MISSION" };
+    const res = this.missionsService.cancelMission(player, runId, this.clock.nowMs());
+    if (res.success) {
+      this.playerRepository.save(player);
+    }
+    return res;
+  }
+
+  getInventoryState(playerId: string): InventoryState | null {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return null;
+    return this.inventoryService.getInventoryState(player);
+  }
+
+  equipItem(
+    playerId: string,
+    slotIndex: number
+  ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    const res = this.inventoryService.equipItem(player, slotIndex);
+    if (res.success) {
+      player.sequence = ++this.sequence;
+      this.playerRepository.save(player);
+      return { success: true, state: res.state, player: this.toSnapshot(player) };
+    }
+    return res;
+  }
+
+  unequipItem(
+    playerId: string,
+    slot: "weapon" | "armor" | "amulet" | "ring"
+  ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    const res = this.inventoryService.unequipItem(player, slot);
+    if (res.success) {
+      player.sequence = ++this.sequence;
+      this.playerRepository.save(player);
+      return { success: true, state: res.state, player: this.toSnapshot(player) };
+    }
+    return res;
+  }
+
+  useItem(
+    playerId: string,
+    slotIndex: number
+  ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    const res = this.inventoryService.useItem(player, slotIndex);
+    if (res.success) {
+      player.sequence = ++this.sequence;
+      this.playerRepository.save(player);
+      return { success: true, state: res.state, player: this.toSnapshot(player) };
+    }
+    return res;
+  }
+
+  promoteRank(
+    playerId: string,
+    targetRank: HunterRank
+  ): { success: boolean; result?: RankPromotionResult; player?: PlayerSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    const res = this.academyService.evaluatePromotion(player, targetRank);
+    if (res.success) {
+      this.recomputeMaxStats(player);
+      player.sequence = ++this.sequence;
+      this.playerRepository.save(player);
+      return { success: true, result: res, player: this.toSnapshot(player) };
+    }
+    return { success: false, result: res };
+  }
+
+  sellItem(
+    playerId: string,
+    slotIndex: number
+  ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; goldEarned?: number; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    const res = this.inventoryService.sellItem(player, slotIndex);
+    if (res.success) {
+      player.sequence = ++this.sequence;
+      this.playerRepository.save(player);
+      return { success: true, state: res.state, player: this.toSnapshot(player), goldEarned: res.goldEarned };
+    }
+    return res;
+  }
+
+  sellAllJunk(
+    playerId: string,
+    maxRarity: ItemRarity = "UNCOMMON"
+  ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; goldEarned?: number; itemsSold?: number } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, goldEarned: 0, itemsSold: 0, state: { inventory: [], equipment: DEFAULT_EQUIPMENT, careerStats: DEFAULT_CAREER_STATS } };
+
+    const res = this.inventoryService.sellAllJunk(player, maxRarity);
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+    return { success: true, state: res.state, player: this.toSnapshot(player), goldEarned: res.goldEarned, itemsSold: res.itemsSold };
+  }
+
+  teleportPlayerToZone(
+    playerId: string,
+    zoneId: "SANTUARIO" | "CATACUMBAS" | "COVIL" | "ABISMO" | "CHAMBER"
+  ): { success: boolean; player?: PlayerSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+    if (player.inBattle) return { success: false, error: "ALREADY_IN_BATTLE" };
+
+    const zoneCoords: Record<string, TileCoord> = {
+      SANTUARIO: { x: 2, y: 2 },
+      CATACUMBAS: { x: 18, y: 5 },
+      COVIL: { x: 6, y: 21 },
+      ABISMO: { x: 22, y: 20 },
+      CHAMBER: { x: 38, y: 13 }
+    };
+
+    const targetPos = zoneCoords[zoneId];
+    if (!targetPos) return { success: false, error: "ZONE_NOT_FOUND" };
+
+    player.position = { ...targetPos };
+    player.lastStepAt = this.clock.nowMs();
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+
+    return { success: true, player: this.toSnapshot(player) };
+  }
+
+  resetGate(
+    playerId: string
+  ): { success: boolean; announcement: string } {
+    this.bossService.resetAllBosses();
+    for (const enemy of this.enemies.values()) {
+      enemy.alive = true;
+      enemy.hp = enemy.maxHp;
+      enemy.mp = enemy.maxMp;
+    }
+    this.diedAt.clear();
+
+    const announcement = "A Fenda Dimensional foi resetada pelo Operador Jin! Todos os monstros e chefes renasceram com poder total!";
+    return { success: true, announcement };
+  }
+
+  buyMerchantItem(
+    playerId: string,
+    itemId: string,
+    quantity = 1
+  ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    const itemDef = MASTER_ITEMS[itemId];
+    if (!itemDef) return { success: false, error: "ITEM_NOT_FOUND" };
+
+    const prices: Record<string, number> = {
+      potion_hp_minor: 30,
+      potion_mp_minor: 30,
+      potion_hp_greater: 100,
+      potion_mp_greater: 100,
+      weapon_iron_sword: 120,
+      armor_leather_vest: 120,
+      armor_iron_shield: 160
+    };
+    const unitPrice = prices[itemId] ?? 50;
+    const totalCost = unitPrice * quantity;
+
+    const currentGold = player.gold ?? 0;
+    if (currentGold < totalCost) {
+      return { success: false, error: "NOT_ENOUGH_GOLD" };
     }
 
-    player.activeMission = undefined;
+    if (!player.inventory) player.inventory = [];
+    const added = this.lootService.addItemToInventory(player.inventory, itemDef, quantity);
+    if (!added) return { success: false, error: "CANNOT_EQUIP" }; // Inventory full
+
+    player.gold = currentGold - totalCost;
+    player.sequence = ++this.sequence;
     this.playerRepository.save(player);
-    return { success: true, state: this.getMissionsState(playerId) };
+
+    return {
+      success: true,
+      state: this.inventoryService.getInventoryState(player),
+      player: this.toSnapshot(player)
+    };
+  }
+
+  claimLostTrophy(
+    playerId: string,
+    trophyId: string
+  ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; message?: string; error?: ServerErrorCode } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
+
+    const trophyDef = MASTER_ITEMS[trophyId];
+    if (!trophyDef || trophyDef.type !== "TROPHY") return { success: false, error: "ITEM_NOT_FOUND" };
+
+    if (!player.inventory) player.inventory = [];
+    const alreadyHas = player.inventory.some((s) => s.item.id === trophyId);
+    if (alreadyHas) {
+      return {
+        success: true,
+        state: this.inventoryService.getInventoryState(player),
+        player: this.toSnapshot(player),
+        message: `Você já possui o troféu [${trophyDef.name}] em seu inventário!`
+      };
+    }
+
+    const canClaim = (player.careerStats && player.careerStats.gateBossesSlain > 0) ||
+      (player.unclaimedTrophies && player.unclaimedTrophies.includes(trophyId));
+
+    if (!canClaim) {
+      return { success: false, error: "ACADEMY_REQUIREMENTS_UNMET" };
+    }
+
+    const added = this.lootService.addItemToInventory(player.inventory, trophyDef);
+    if (!added) return { success: false, error: "CANNOT_EQUIP" };
+
+    if (player.unclaimedTrophies) {
+      player.unclaimedTrophies = player.unclaimedTrophies.filter((id) => id !== trophyId);
+    }
+
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+
+    return {
+      success: true,
+      state: this.inventoryService.getInventoryState(player),
+      player: this.toSnapshot(player),
+      message: `Troféu militar oficial [${trophyDef.name}] recuperado com sucesso pelo Inspetor Baek!`
+    };
   }
 
   allocateStats(
@@ -720,7 +1153,10 @@ export class GameService {
       .map((p) => this.toSnapshot(p));
     return {
       players: allPlayers,
-      enemies: [...this.enemies.values()].map((e) => ({
+      enemies: [
+        ...this.enemies.values(),
+        ...this.bossService.toEnemySnapshots()
+      ].map((e) => ({
         ...e,
         position: { ...e.position }
       })),
@@ -746,9 +1182,10 @@ export class GameService {
       maxMp: p.maxMp,
       stamina: p.stamina,
       maxStamina: p.maxStamina,
-      stats: calculatePlayerStats(p.hunterClass, p.level, p.attributes),
+      stats: calculatePlayerStats(p.hunterClass, p.level, p.attributes, p.equipment),
       attributes: p.attributes ? { ...p.attributes } : { ...DEFAULT_PLAYER_ATTRIBUTES },
       unallocatedStatPoints: p.unallocatedStatPoints ?? 0,
+      gold: p.gold ?? 0,
       inBattle: p.inBattle,
       activeBattleId: p.activeBattleId,
       sequence: p.sequence
