@@ -540,16 +540,17 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private pursueGoal() {
-    if (!this.goal || this.awaiting) return;
+    const goal = this.goal;
+    if (!goal || this.awaiting) return;
     const me = getMyPlayer();
     if (!me || me.inBattle) return;
 
     let tx: number, ty: number;
-    if (this.goal.type === "tile") {
-      tx = this.goal.x;
-      ty = this.goal.y;
+    if (goal.type === "tile") {
+      tx = goal.x;
+      ty = goal.y;
     } else {
-      const e = gameState.world.enemies.find((en) => en.id === this.goal!.id && en.alive);
+      const e = gameState.world.enemies.find((en) => en.id === goal.id && en.alive);
       if (!e) {
         this.goal = null;
         return;
