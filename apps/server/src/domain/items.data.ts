@@ -286,10 +286,60 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     id: "armor_iron_shield",
     name: "Escudo Tático Blindado",
     description: "Escudo pesado militar reforçado com placas de liga arcana para conter feras.",
-    type: "ARMOR",
+    type: "SHIELD",
     rarity: "UNCOMMON",
     minLevel: 3,
     stats: { bonusHp: 50, bonusMp: 0, bonusPhysicalAtk: 0, bonusMagicalAtk: 0, bonusCritChance: 0, bonusDodgeChance: 0.01, bonusBlockChance: 0.08 },
+    icon: "shield_iron"
+  },
+  shield_runic_aegis: {
+    id: "shield_runic_aegis",
+    name: "Escudo Rúnico Guardião",
+    description: "Escudo de carvalho reforçado com runas ancestrais que dissipam impactos brutais.",
+    type: "SHIELD",
+    rarity: "RARE",
+    minLevel: 8,
+    stats: { bonusHp: 90, bonusMp: 20, bonusPhysicalAtk: 4, bonusMagicalAtk: 2, bonusCritChance: 0, bonusDodgeChance: 0.02, bonusBlockChance: 0.12 },
+    icon: "shield_iron"
+  },
+  shield_frost_barrier: {
+    id: "shield_frost_barrier",
+    name: "Baluarte Glacial de Niflheim",
+    description: "Forjado no permafrost perpétuo, congela armas inimigas no momento do impacto.",
+    type: "SHIELD",
+    rarity: "EPIC",
+    minLevel: 25,
+    stats: { bonusHp: 180, bonusMp: 40, bonusPhysicalAtk: 8, bonusMagicalAtk: 6, bonusCritChance: 0, bonusDodgeChance: 0.03, bonusBlockChance: 0.16 },
+    icon: "shield_iron"
+  },
+  shield_dragon_scale: {
+    id: "shield_dragon_scale",
+    name: "Égide de Escamas Dracônicas",
+    description: "Revestido com escamas de dragão vermelho, absorve o calor e impactos sísmicos com maestria.",
+    type: "SHIELD",
+    rarity: "LEGENDARY",
+    minLevel: 60,
+    stats: { bonusHp: 320, bonusMp: 80, bonusPhysicalAtk: 15, bonusMagicalAtk: 12, bonusCritChance: 0, bonusDodgeChance: 0.04, bonusBlockChance: 0.20 },
+    icon: "shield_iron"
+  },
+  shield_divine_bastion: {
+    id: "shield_divine_bastion",
+    name: "Bastião Sagrado dos Monarcas",
+    description: "Escudo monumental sagrado que ergue uma barreira de luz intransponível contra o abismo.",
+    type: "SHIELD",
+    rarity: "IMMORTAL",
+    minLevel: 110,
+    stats: { bonusHp: 550, bonusMp: 150, bonusPhysicalAtk: 25, bonusMagicalAtk: 20, bonusCritChance: 0, bonusDodgeChance: 0.06, bonusBlockChance: 0.25 },
+    icon: "shield_iron"
+  },
+  shield_shadow_sovereign: {
+    id: "shield_shadow_sovereign",
+    name: "Escudo da Soberania das Sombras",
+    description: "Forjado da própria escuridão primordial de Ashborn, anula os ataques mais letais do cosmos.",
+    type: "SHIELD",
+    rarity: "DIVINE",
+    minLevel: 180,
+    stats: { bonusHp: 1200, bonusMp: 400, bonusPhysicalAtk: 50, bonusMagicalAtk: 40, bonusCritChance: 0.05, bonusDodgeChance: 0.08, bonusBlockChance: 0.32 },
     icon: "shield_iron"
   },
   armor_titanium_plate: {

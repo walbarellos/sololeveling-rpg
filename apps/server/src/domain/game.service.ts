@@ -31,6 +31,7 @@ import {
   type ZoneTeleportRequest,
   type ItemDefinition,
   type ItemRarity,
+  type EquipmentSlotName,
   type GateClearAnnouncement,
   getNextHunterRank,
   RANK_EXAM_REQUIREMENTS
@@ -1101,7 +1102,7 @@ export class GameService {
 
   unequipItem(
     playerId: string,
-    slot: "weapon" | "armor" | "amulet" | "ring"
+    slot: EquipmentSlotName
   ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; error?: ServerErrorCode } {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };

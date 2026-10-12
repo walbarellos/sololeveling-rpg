@@ -26,6 +26,7 @@ export const DEFAULT_CAREER_STATS: HunterCareerStats = {
 
 export const DEFAULT_EQUIPMENT: PlayerEquipment = {
   weapon: null,
+  shield: null,
   armor: null,
   amulet: null,
   ring: null

@@ -46,7 +46,7 @@ export const gameState: GameState = {
   currentHunterClass: "BATTLE_HEALER",
   currentMissionsState: null,
   inventory: [],
-  equipment: { weapon: null, armor: null, amulet: null, ring: null },
+  equipment: { weapon: null, shield: null, armor: null, amulet: null, ring: null },
   careerStats: {
     criticalHitsDealt: 0,
     attacksDodged: 0,

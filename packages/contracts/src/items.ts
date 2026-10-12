@@ -25,6 +25,7 @@ export const ITEM_RARITY_COLORS: Record<ItemRarity, { hex: string; name: string;
 
 export const ItemTypeSchema = z.enum([
   "WEAPON",
+  "SHIELD",
   "ARMOR",
   "AMULET",
   "RING",
@@ -67,6 +68,7 @@ export type InventorySlot = z.infer<typeof InventorySlotSchema>;
 
 export const PlayerEquipmentSchema = z.object({
   weapon: ItemDefinitionSchema.nullable().default(null),
+  shield: ItemDefinitionSchema.nullable().default(null),
   armor: ItemDefinitionSchema.nullable().default(null),
   amulet: ItemDefinitionSchema.nullable().default(null),
   ring: ItemDefinitionSchema.nullable().default(null)
@@ -98,7 +100,7 @@ export const EquipItemRequestSchema = z.object({
 });
 export type EquipItemRequest = z.infer<typeof EquipItemRequestSchema>;
 
-export const EquipmentSlotNameSchema = z.enum(["weapon", "armor", "amulet", "ring"]);
+export const EquipmentSlotNameSchema = z.enum(["weapon", "shield", "armor", "amulet", "ring"]);
 export type EquipmentSlotName = z.infer<typeof EquipmentSlotNameSchema>;
 
 export const UnequipItemRequestSchema = z.object({

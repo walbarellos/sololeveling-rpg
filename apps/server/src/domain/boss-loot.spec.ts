@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { BossService } from "./boss.service";
+import { InventoryService } from "./inventory.service";
 import { MASTER_ITEMS } from "./items.data";
 import { LootService } from "./loot.service";
+import { DEFAULT_CAREER_STATS, DEFAULT_EQUIPMENT, type PlayerEntity } from "./player.repository";
 
 describe("BossService — Chefes de Estágio e World Boss Kamish", () => {
   it("registra todos os chefes de estágio para cada Gate e o World Boss Kamish", () => {
@@ -112,5 +114,68 @@ describe("LootService e Itens expandidos até Lv 200", () => {
     // Deve ter pelo menos uma raridade entre IMMORTAL, COSMIC, DIVINE
     const hasHighTier = drops.has("IMMORTAL") || drops.has("COSMIC") || drops.has("DIVINE");
     expect(hasHighTier).toBe(true);
+  });
+});
+
+describe("Slot dedicado de Escudo (SHIELD) e Escudo Tático Blindado", () => {
+  it("Escudo Tático Blindado possui type SHIELD e icon shield_iron", () => {
+    const shield = MASTER_ITEMS.armor_iron_shield;
+    expect(shield).toBeDefined();
+    expect(shield.name).toBe("Escudo Tático Blindado");
+    expect(shield.type).toBe("SHIELD");
+    expect(shield.icon).toBe("shield_iron");
+    expect(shield.stats.bonusBlockChance).toBeGreaterThan(0);
+  });
+
+  it("equipa o escudo no slot 'shield' sem sobrescrever ou ocupar o slot 'armor'", () => {
+    const lootService = new LootService();
+    const invService = new InventoryService(lootService);
+
+    const player: PlayerEntity = {
+      id: "p_tank",
+      name: "Guardião",
+      rank: "E",
+      hunterClass: "WARRIOR",
+      level: 5,
+      exp: 0,
+      position: { x: 2, y: 2 },
+      hp: 200,
+      maxHp: 200,
+      mp: 50,
+      maxMp: 50,
+      stamina: 50,
+      maxStamina: 50,
+      attributes: { str: 10, agi: 10, vit: 10, int: 10 },
+      unallocatedStatPoints: 0,
+      inBattle: false,
+      sequence: 1,
+      lastStepAt: 0,
+      lastAttackAt: 0,
+      inventory: [
+        { slotIndex: 0, item: MASTER_ITEMS.armor_scout_mail, quantity: 1 },
+        { slotIndex: 1, item: MASTER_ITEMS.armor_iron_shield, quantity: 1 }
+      ],
+      equipment: { ...DEFAULT_EQUIPMENT },
+      careerStats: { ...DEFAULT_CAREER_STATS }
+    };
+
+    // 1. Equipa a Armadura (Cota de Malha)
+    const eqArmorRes = invService.equipItem(player, 0);
+    expect(eqArmorRes.success).toBe(true);
+    expect(player.equipment?.armor?.id).toBe("armor_scout_mail");
+    expect(player.equipment?.shield).toBeNull();
+
+    // 2. Equipa o Escudo Tático Blindado
+    const eqShieldRes = invService.equipItem(player, 1);
+    expect(eqShieldRes.success).toBe(true);
+    expect(player.equipment?.shield?.id).toBe("armor_iron_shield");
+    // A armadura continua equipada no slot armor!
+    expect(player.equipment?.armor?.id).toBe("armor_scout_mail");
+
+    // 3. Desequipa o escudo
+    const unequipRes = invService.unequipItem(player, "shield");
+    expect(unequipRes.success).toBe(true);
+    expect(player.equipment?.shield).toBeNull();
+    expect(player.equipment?.armor?.id).toBe("armor_scout_mail");
   });
 });

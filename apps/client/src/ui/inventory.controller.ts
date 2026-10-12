@@ -52,6 +52,7 @@ export class InventoryController {
   public readonly inspectCard = document.querySelector<HTMLDivElement>("#inventory-inspect-card");
 
   public readonly equipSlotWeapon = document.querySelector<HTMLDivElement>("#equip-slot-weapon");
+  public readonly equipSlotShield = document.querySelector<HTMLDivElement>("#equip-slot-shield");
   public readonly equipSlotArmor = document.querySelector<HTMLDivElement>("#equip-slot-armor");
   public readonly equipSlotAmulet = document.querySelector<HTMLDivElement>("#equip-slot-amulet");
   public readonly equipSlotRing = document.querySelector<HTMLDivElement>("#equip-slot-ring");
@@ -89,6 +90,7 @@ export class InventoryController {
     // Paperdoll click events
     const equipSlots: Array<{ el: HTMLDivElement | null; slot: EquipmentSlotName }> = [
       { el: this.equipSlotWeapon, slot: "weapon" },
+      { el: this.equipSlotShield, slot: "shield" },
       { el: this.equipSlotArmor, slot: "armor" },
       { el: this.equipSlotAmulet, slot: "amulet" },
       { el: this.equipSlotRing, slot: "ring" }
@@ -126,6 +128,7 @@ export class InventoryController {
   private renderPaperdoll() {
     const slots: Array<{ el: HTMLDivElement | null; slotName: EquipmentSlotName; fallbackIcon: string }> = [
       { el: this.equipSlotWeapon, slotName: "weapon", fallbackIcon: `${ITEM_ICON_BASE}/sword_goblin.png` },
+      { el: this.equipSlotShield, slotName: "shield", fallbackIcon: `${ITEM_ICON_BASE}/shield_iron.png` },
       { el: this.equipSlotArmor, slotName: "armor", fallbackIcon: `${ITEM_ICON_BASE}/armor_shadow.png` },
       { el: this.equipSlotAmulet, slotName: "amulet", fallbackIcon: `${ITEM_ICON_BASE}/amulet_fang.png` },
       { el: this.equipSlotRing, slotName: "ring", fallbackIcon: `${ITEM_ICON_BASE}/ring_silver.png` }
@@ -186,6 +189,7 @@ export class InventoryController {
   private getSlotForType(type: ItemType): EquipmentSlotName | null {
     switch (type) {
       case "WEAPON": return "weapon";
+      case "SHIELD": return "shield";
       case "ARMOR": return "armor";
       case "AMULET": return "amulet";
       case "RING": return "ring";
@@ -327,7 +331,7 @@ export class InventoryController {
     if (item.manaAmount) statLines.push(`<div class="inspect-stat-row"><span>Recuperação MP:</span><span class="inspect-stat-val" style="color: #60a5fa;">+${item.manaAmount} MP</span></div>`);
 
     let actionBtnHtml = "";
-    const isEquipment = ["WEAPON", "ARMOR", "AMULET", "RING"].includes(item.type);
+    const isEquipment = ["WEAPON", "SHIELD", "ARMOR", "AMULET", "RING"].includes(item.type);
     if (isActuallyEquipped && targetSlot) {
       actionBtnHtml = `<button id="btn-inspect-action" class="btn-item-action unequip" type="button">DESEQUIPAR (${this.getSlotLabel(targetSlot)})</button>`;
     } else if (isEquipment && slotIndex !== null) {
@@ -442,6 +446,7 @@ export class InventoryController {
   private getSlotLabel(slot: EquipmentSlotName): string {
     const map: Record<EquipmentSlotName, string> = {
       weapon: "ARMA",
+      shield: "ESCUDO",
       armor: "ARMADURA",
       amulet: "AMULETO",
       ring: "ANEL"
@@ -452,6 +457,7 @@ export class InventoryController {
   private getItemKindLabel(type: ItemType): string {
     const map: Record<ItemType, string> = {
       WEAPON: "Arma",
+      SHIELD: "Escudo",
       ARMOR: "Armadura",
       AMULET: "Amuleto",
       RING: "Anel",

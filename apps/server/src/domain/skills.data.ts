@@ -220,7 +220,7 @@ export function sumEquipmentStats(equipment?: PlayerEquipment): ItemStatBonuses 
     bonusBlockChance: 0
   };
   if (!equipment) return result;
-  for (const item of [equipment.weapon, equipment.armor, equipment.amulet, equipment.ring]) {
+  for (const item of [equipment.weapon, equipment.shield, equipment.armor, equipment.amulet, equipment.ring]) {
     if (item?.stats) {
       result.bonusHp += item.stats.bonusHp ?? 0;
       result.bonusMp += item.stats.bonusMp ?? 0;

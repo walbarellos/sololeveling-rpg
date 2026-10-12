@@ -1,5 +1,6 @@
 import {
   getItemGoldValue,
+  type EquipmentSlotName,
   type InventorySlot,
   type InventoryState,
   type ItemDefinition,
@@ -46,6 +47,9 @@ export class InventoryService {
     if (item.type === "WEAPON") {
       previousItem = eq.weapon;
       eq.weapon = item;
+    } else if (item.type === "SHIELD") {
+      previousItem = eq.shield;
+      eq.shield = item;
     } else if (item.type === "ARMOR") {
       previousItem = eq.armor;
       eq.armor = item;
@@ -76,7 +80,7 @@ export class InventoryService {
 
   unequipItem(
     player: PlayerEntity,
-    slot: "weapon" | "armor" | "amulet" | "ring"
+    slot: EquipmentSlotName
   ): { success: boolean; state?: InventoryState; error?: ServerErrorCode } {
     const eq = player.equipment ?? { ...DEFAULT_EQUIPMENT };
     const item = eq[slot];
