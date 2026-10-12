@@ -28,13 +28,6 @@ const PREFERS_REDUCED_MOTION = window.matchMedia?.("(prefers-reduced-motion: red
 
 type Goal = { type: "enemy"; id: string } | { type: "tile"; x: number; y: number };
 
-const DIR_VECTORS: ReadonlyArray<{ dir: Direction; dx: number; dy: number }> = [
-  { dir: "UP", dx: 0, dy: -1 },
-  { dir: "DOWN", dx: 0, dy: 1 },
-  { dir: "LEFT", dx: -1, dy: 0 },
-  { dir: "RIGHT", dx: 1, dy: 0 }
-];
-
 const chebyshev = (a: TileCoord, b: TileCoord) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 export class WorldScene extends Phaser.Scene {
@@ -61,13 +54,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create() {
-    buildTextures(this, gameState.tileSize);
+    const ts = gameState.tileSize || 48;
+    buildTextures(this, ts);
     this.textures.each((tex: Phaser.Textures.Texture) => {
       if (tex.key.startsWith("token_")) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
     }, this);
 
-    const worldW = gameState.gridWidth * gameState.tileSize;
-    const worldH = gameState.gridHeight * gameState.tileSize;
+    const worldW = gameState.gridWidth * ts;
+    const worldH = gameState.gridHeight * ts;
 
     this.cameras.main.setBounds(0, 0, worldW, worldH);
     this.cameras.main.setRoundPixels(true);
@@ -76,11 +70,12 @@ export class WorldScene extends Phaser.Scene {
 
     // Portal do Gate Rank E (ponto de respawn) em (2,2)
     const portal = this.add
-      .image(2 * gameState.tileSize + gameState.tileSize / 2, 2 * gameState.tileSize + gameState.tileSize / 2, TEX.portal)
+      .image(2 * ts + ts / 2, 2 * ts + ts / 2, TEX.portal)
       .setDepth(1)
-      .setAlpha(0.9);
+      .setAlpha(0.9)
+      .setDisplaySize(ts, ts);
     this.add
-      .text(portal.x, portal.y + gameState.tileSize * 0.5, "GATE E", {
+      .text(portal.x, portal.y + ts * 0.5, "GATE E", {
         fontSize: "9px",
         color: "#7dd3fc",
         stroke: "#020617",
@@ -91,12 +86,13 @@ export class WorldScene extends Phaser.Scene {
 
     // Portal Rank D — Fenda da Aurora
     const portalD = this.add
-      .image(5 * gameState.tileSize + gameState.tileSize / 2, 2 * gameState.tileSize + gameState.tileSize / 2, TEX.portal)
+      .image(5 * ts + ts / 2, 2 * ts + ts / 2, TEX.portal)
       .setDepth(1)
       .setAlpha(0.95)
-      .setTint(0xa78bfa);
+      .setTint(0xa78bfa)
+      .setDisplaySize(ts, ts);
     this.add
-      .text(portalD.x, portalD.y + gameState.tileSize * 0.5, "GATE D", {
+      .text(portalD.x, portalD.y + ts * 0.5, "GATE D", {
         fontSize: "9px",
         color: "#c4b5fd",
         stroke: "#020617",
@@ -140,15 +136,15 @@ export class WorldScene extends Phaser.Scene {
     }
 
     for (const npc of WORLD_NPCS) {
-      const px = npc.position.x * gameState.tileSize + gameState.tileSize / 2;
-      const py = npc.position.y * gameState.tileSize + gameState.tileSize / 2;
+      const px = npc.position.x * ts + ts / 2;
+      const py = npc.position.y * ts + ts / 2;
       const tokenKey = TEX.token(npc.portrait as any);
 
       const cont = this.add.container(px, py).setDepth(20);
-      const spr = this.add.image(0, 0, tokenKey).setDisplaySize(gameState.tileSize * 0.85, gameState.tileSize * 0.85);
+      const spr = this.add.image(0, 0, tokenKey).setDisplaySize(ts * 0.85, ts * 0.85);
 
       const badge = this.add
-        .text(0, -gameState.tileSize * 0.65, `[NPC] ${npc.name}`, {
+        .text(0, -ts * 0.65, `[NPC] ${npc.name}`, {
           fontSize: "9px",
           fontFamily: "'Rajdhani', sans-serif",
           fontStyle: "bold",
@@ -216,23 +212,29 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  /** Chamado no Welcome do servidor — atualiza bounds e força redesenho do terreno. */
   public updateWorldBounds(gw: number, gh: number, ts: number) {
     gameState.gridWidth = gw;
     gameState.gridHeight = gh;
     gameState.tileSize = ts;
-    this.terrainKey = "";
+    this.terrainKey = ""; // força rebuild
     if (this.cameras?.main) {
       this.cameras.main.setBounds(0, 0, gw * ts, gh * ts);
+    }
+    // Reconstroi terreno com obstáculos reais do Welcome
+    if (this.sys?.isActive()) {
+      this.rebuildTerrain();
     }
   }
 
   public rebuildTerrain() {
-    const key = `${gameState.gridWidth}x${gameState.gridHeight}:${gameState.obstacles.length}`;
+    const ts = gameState.tileSize || 48;
+    const key = `${gameState.gridWidth}x${gameState.gridHeight}:${gameState.obstacles.length}:${ts}`;
     if (this.terrainKey === key) return;
     this.terrainKey = key;
 
-    const worldW = gameState.gridWidth * gameState.tileSize;
-    const worldH = gameState.gridHeight * gameState.tileSize;
+    const worldW = gameState.gridWidth * ts;
+    const worldH = gameState.gridHeight * ts;
 
     if (!this.terrainRT) {
       this.terrainRT = this.add.renderTexture(0, 0, worldW, worldH).setOrigin(0, 0).setDepth(0);
@@ -247,8 +249,8 @@ export class WorldScene extends Phaser.Scene {
     this.terrainRT.beginDraw();
     for (let y = 0; y < gameState.gridHeight; y++) {
       for (let x = 0; x < gameState.gridWidth; x++) {
-        const px = x * gameState.tileSize;
-        const py = y * gameState.tileSize;
+        const px = x * ts;
+        const py = y * ts;
         const biomeIdx = biomeAt(x, y);
         const tileTex = TEX.floor(biomeIdx);
         this.terrainRT.batchDrawFrame(tileTex, undefined, px, py);
@@ -283,9 +285,6 @@ export class WorldScene extends Phaser.Scene {
       this.zoneBanner.setColor(accent);
     }
   }
-
-  // --- remaining methods (syncPlayers, syncEnemies, drawOverlay, handleKey, etc.)
-  // kept functional; full implementation restored from local backup in subsequent patch if needed
 
   public handleKey(k: string) {
     if (gameState.currentBattle) return;
@@ -392,24 +391,25 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private syncPlayers() {
+    const ts = gameState.tileSize || 48;
     const aliveIds = new Set<string>();
     for (const p of gameState.world.players) {
       aliveIds.add(p.id);
       const isMe = p.id === gameState.myPlayerId;
-      const targetPx = p.position.x * gameState.tileSize + gameState.tileSize / 2;
-      const targetPy = p.position.y * gameState.tileSize + gameState.tileSize / 2;
+      const targetPx = p.position.x * ts + ts / 2;
+      const targetPy = p.position.y * ts + ts / 2;
 
       let c = this.playerGraphics.get(p.id);
       if (!c) {
         c = this.add.container(targetPx, targetPy).setDepth(isMe ? 30 : 20);
-        const halo = this.add.circle(0, 0, gameState.tileSize * 0.44, 0x000000, 0.45);
+        const halo = this.add.circle(0, 0, ts * 0.44, 0x000000, 0.45);
         halo.setStrokeStyle(isMe ? 2 : 1, isMe ? 0x38bdf8 : 0x64748b, 0.9);
         const portraitKey = CLASS_PORTRAIT[p.hunterClass] ?? "healer";
         const tokKey = TEX.token(portraitKey);
         const texKey = this.textures.exists(tokKey) ? tokKey : TEX.token("healer");
-        const icon = this.add.image(0, 0, texKey).setDisplaySize(gameState.tileSize * 0.8, gameState.tileSize * 0.8);
+        const icon = this.add.image(0, 0, texKey).setDisplaySize(ts * 0.8, ts * 0.8);
         const lbl = this.add
-          .text(0, -gameState.tileSize * 0.62, `${isMe ? "Você" : p.name} · Lv ${p.level}`, {
+          .text(0, -ts * 0.62, `${isMe ? "Você" : p.name} · Lv ${p.level}`, {
             fontSize: "10px",
             fontFamily: "'Rajdhani', sans-serif",
             fontStyle: "bold",
@@ -426,7 +426,7 @@ export class WorldScene extends Phaser.Scene {
         c.setPosition(targetPx, targetPy);
       } else {
         const dist = Phaser.Math.Distance.Between(c.x, c.y, targetPx, targetPy);
-        if (dist > gameState.tileSize * 2.5) c.setPosition(targetPx, targetPy);
+        if (dist > ts * 2.5) c.setPosition(targetPx, targetPy);
         else if (dist > 1) {
           this.tweens.add({
             targets: c,
@@ -457,19 +457,20 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private syncEnemies() {
+    const ts = gameState.tileSize || 48;
     const aliveIds = new Set<string>();
     for (const e of gameState.world.enemies) {
       if (!e.alive) continue;
       aliveIds.add(e.id);
-      const targetPx = e.position.x * gameState.tileSize + gameState.tileSize / 2;
-      const targetPy = e.position.y * gameState.tileSize + gameState.tileSize / 2;
+      const targetPx = e.position.x * ts + ts / 2;
+      const targetPy = e.position.y * ts + ts / 2;
       let c = this.enemyGraphics.get(e.id);
       if (!c) {
         c = this.add.container(targetPx, targetPy).setDepth(15);
         const tex = enemyTextureKey(e.name);
-        const spr = this.add.image(0, 0, tex).setDisplaySize(gameState.tileSize * 0.8, gameState.tileSize * 0.8);
+        const spr = this.add.image(0, 0, tex).setDisplaySize(ts * 0.8, ts * 0.8);
         const lbl = this.add
-          .text(0, -gameState.tileSize * 0.62, `[E] ${e.name} · Lv ${e.level}`, {
+          .text(0, -ts * 0.62, `[E] ${e.name} · Lv ${e.level}`, {
             fontSize: "9px",
             fontFamily: "'Rajdhani', sans-serif",
             fontStyle: "bold",
@@ -493,14 +494,15 @@ export class WorldScene extends Phaser.Scene {
 
   private drawOverlay(time: number) {
     this.overlay.clear();
+    const ts = gameState.tileSize || 48;
     const me = getMyPlayer();
     if (this.hover && this.inBounds(this.hover.x, this.hover.y)) {
       this.overlay.lineStyle(1, 0x38bdf8, 0.6);
       this.overlay.strokeRect(
-        this.hover.x * gameState.tileSize,
-        this.hover.y * gameState.tileSize,
-        gameState.tileSize,
-        gameState.tileSize
+        this.hover.x * ts,
+        this.hover.y * ts,
+        ts,
+        ts
       );
     }
     const npcs = me && !me.inBattle && !gameState.currentBattle ? this.adjacentNpcs() : [];
@@ -509,8 +511,8 @@ export class WorldScene extends Phaser.Scene {
       this.hint.setText(`[E] Falar com ${target.name}`);
       this.hint
         .setPosition(
-          target.position.x * gameState.tileSize + gameState.tileSize / 2,
-          target.position.y * gameState.tileSize - 4
+          target.position.x * ts + ts / 2,
+          target.position.y * ts - 4
         )
         .setVisible(true);
       return;
@@ -521,17 +523,17 @@ export class WorldScene extends Phaser.Scene {
       this.overlay.lineStyle(2, 0xfacc15, pulseAlpha);
       for (const e of adjacent) {
         this.overlay.strokeRect(
-          e.position.x * gameState.tileSize + 2,
-          e.position.y * gameState.tileSize + 2,
-          gameState.tileSize - 4,
-          gameState.tileSize - 4
+          e.position.x * ts + 2,
+          e.position.y * ts + 2,
+          ts - 4,
+          ts - 4
         );
       }
       this.hint.setText(`[E] ${adjacent[0].name}`);
       this.hint
         .setPosition(
-          adjacent[0].position.x * gameState.tileSize + gameState.tileSize / 2,
-          adjacent[0].position.y * gameState.tileSize - 4
+          adjacent[0].position.x * ts + ts / 2,
+          adjacent[0].position.y * ts - 4
         )
         .setVisible(true);
     } else {
