@@ -23,12 +23,20 @@ import { gameState, getMyPlayer } from "../state/game-state";
 import { hudController } from "../ui/hud.controller";
 import { npcController } from "../ui/npc.controller";
 
-const STEP_INTERVAL_MS = 215;
+const STEP_INTERVAL_MS = 215; // > STEP_COOLDOWN_MS do servidor (200) para não tomar TOO_FAST
 const PREFERS_REDUCED_MOTION = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
 type Goal = { type: "enemy"; id: string } | { type: "tile"; x: number; y: number };
 
+const DIR_VECTORS: ReadonlyArray<{ dir: Direction; dx: number; dy: number }> = [
+  { dir: "UP", dx: 0, dy: -1 },
+  { dir: "DOWN", dx: 0, dy: 1 },
+  { dir: "LEFT", dx: -1, dy: 0 },
+  { dir: "RIGHT", dx: 1, dy: 0 }
+];
+
 const chebyshev = (a: TileCoord, b: TileCoord) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+const manhattan = (a: TileCoord, b: TileCoord) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
 export class WorldScene extends Phaser.Scene {
   private playerGraphics = new Map<string, Phaser.GameObjects.Container>();
@@ -44,6 +52,7 @@ export class WorldScene extends Phaser.Scene {
   private goal: Goal | null = null;
   private awaiting: { sequence: number; at: number } | null = null;
   private hover: TileCoord | null = null;
+  private isFollowingPlayer = false;
 
   constructor() {
     super("world");
@@ -84,7 +93,7 @@ export class WorldScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(1);
 
-    // Portal Rank D — Fenda da Aurora
+    // Portal Rank D — Fenda da Aurora em (5, 2)
     const portalD = this.add
       .image(5 * ts + ts / 2, 2 * ts + ts / 2, TEX.portal)
       .setDepth(1)
@@ -135,6 +144,7 @@ export class WorldScene extends Phaser.Scene {
         .setDepth(800);
     }
 
+    // Spawn dos NPCs no Santuário Seguro
     for (const npc of WORLD_NPCS) {
       const px = npc.position.x * ts + ts / 2;
       const py = npc.position.y * ts + ts / 2;
@@ -182,7 +192,7 @@ export class WorldScene extends Phaser.Scene {
       .setVisible(false);
 
     this.zoneBanner = this.add
-      .text(this.cameras.main.width - 12, 12, "SANTUÁRIO DO GATE", {
+      .text(945, 12, "SANTUÁRIO DO GATE", {
         fontSize: "11px",
         fontFamily: "'Rajdhani', sans-serif",
         fontStyle: "bold",
@@ -201,9 +211,10 @@ export class WorldScene extends Phaser.Scene {
       this.handlePointerClick(pointer);
     });
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      const ts = gameState.tileSize || 48;
       const t = {
-        x: Math.floor(pointer.worldX / gameState.tileSize),
-        y: Math.floor(pointer.worldY / gameState.tileSize)
+        x: Math.floor(pointer.worldX / ts),
+        y: Math.floor(pointer.worldY / ts)
       };
       this.hover = this.inBounds(t.x, t.y) ? t : null;
       const overEnemy =
@@ -212,16 +223,14 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  /** Chamado no Welcome do servidor — atualiza bounds e força redesenho do terreno. */
   public updateWorldBounds(gw: number, gh: number, ts: number) {
     gameState.gridWidth = gw;
     gameState.gridHeight = gh;
     gameState.tileSize = ts;
-    this.terrainKey = ""; // força rebuild
+    this.terrainKey = "";
     if (this.cameras?.main) {
       this.cameras.main.setBounds(0, 0, gw * ts, gh * ts);
     }
-    // Reconstroi terreno com obstáculos reais do Welcome
     if (this.sys?.isActive()) {
       this.rebuildTerrain();
     }
@@ -262,10 +271,16 @@ export class WorldScene extends Phaser.Scene {
           const hasRight = isObs(x + 1, y);
 
           let wallTex: string = TEX.wall;
-          if (!hasAbove && hasBelow) wallTex = TEX.wallTop;
-          else if (hasAbove && hasBelow) wallTex = TEX.wallMid;
-          else if (hasAbove && !hasBelow) wallTex = TEX.wallBase;
-          else if (!hasAbove && !hasBelow && !hasLeft && !hasRight) wallTex = TEX.pillar;
+
+          if (!hasAbove && hasBelow) {
+            wallTex = TEX.wallTop;
+          } else if (hasAbove && hasBelow) {
+            wallTex = TEX.wallMid;
+          } else if (hasAbove && !hasBelow) {
+            wallTex = TEX.wallBase;
+          } else if (!hasAbove && !hasBelow && !hasLeft && !hasRight) {
+            wallTex = TEX.pillar;
+          }
 
           this.terrainRT.batchDrawFrame(wallTex, undefined, px, py);
         }
@@ -283,6 +298,270 @@ export class WorldScene extends Phaser.Scene {
       this.zoneBanner.setText(zoneName.toUpperCase());
       const accent = BIOME_ACCENT[biomeIdx] ?? "#38bdf8";
       this.zoneBanner.setColor(accent);
+    }
+  }
+
+  private syncPlayers() {
+    const ts = gameState.tileSize || 48;
+    const aliveIds = new Set<string>();
+
+    for (const p of gameState.world.players) {
+      aliveIds.add(p.id);
+      const isMe = p.id === gameState.myPlayerId;
+      const targetPx = p.position.x * ts + ts / 2;
+      const targetPy = p.position.y * ts + ts / 2;
+
+      let c = this.playerGraphics.get(p.id);
+      if (!c) {
+        c = this.add.container(targetPx, targetPy).setDepth(isMe ? 30 : 20);
+
+        const halo = this.add.circle(0, 0, ts * 0.44, 0x000000, 0.45);
+        halo.setStrokeStyle(isMe ? 2 : 1, isMe ? 0x38bdf8 : 0x64748b, 0.9);
+
+        const portraitKey = CLASS_PORTRAIT[p.hunterClass] ?? "healer";
+        const tokKey = TEX.token(portraitKey);
+        const texKey = this.textures.exists(tokKey) ? tokKey : TEX.token("healer");
+        const icon = this.add.image(0, 0, texKey).setDisplaySize(ts * 0.8, ts * 0.8);
+
+        const lbl = this.add
+          .text(0, -ts * 0.62, `${isMe ? "Você" : p.name} · Lv ${p.level}`, {
+            fontSize: "10px",
+            fontFamily: "'Rajdhani', sans-serif",
+            fontStyle: "bold",
+            color: isMe ? "#7dd3fc" : "#cbd5e1",
+            stroke: "#020617",
+            strokeThickness: 3
+          })
+          .setOrigin(0.5);
+
+        const hpBg = this.add.rectangle(0, -ts * 0.44, ts * 0.7, 3, 0x0f172a);
+        const hpBar = this.add.rectangle(
+          -ts * 0.35,
+          -ts * 0.44,
+          ts * 0.7,
+          3,
+          isMe ? 0x22c55e : 0x38bdf8
+        );
+        hpBar.setOrigin(0, 0.5);
+
+        c.add([halo, icon, lbl, hpBg, hpBar]);
+        c.setData("icon", icon);
+        c.setData("halo", halo);
+        c.setData("hpBar", hpBar);
+        c.setData("lbl", lbl);
+        c.setData("lastClass", p.hunterClass);
+        this.playerGraphics.set(p.id, c);
+      }
+
+      if (c.getData("lastClass") !== p.hunterClass) {
+        c.setData("lastClass", p.hunterClass);
+        const portraitKey = CLASS_PORTRAIT[p.hunterClass] ?? "healer";
+        const tokKey = TEX.token(portraitKey);
+        const texKey = this.textures.exists(tokKey) ? tokKey : TEX.token("healer");
+        (c.getData("icon") as Phaser.GameObjects.Image).setTexture(texKey);
+      }
+
+      const hpRatio = p.maxHp > 0 ? Math.max(0, Math.min(1, p.hp / p.maxHp)) : 0;
+      const hpW = Math.round(ts * 0.7 * hpRatio);
+      if (c.getData("lastHpW") !== hpW) {
+        c.setData("lastHpW", hpW);
+        (c.getData("hpBar") as Phaser.GameObjects.Rectangle).setSize(hpW, 3);
+      }
+      const lblText = `${isMe ? "Você" : p.name} · Lv ${p.level}`;
+      if (c.getData("lastLblText") !== lblText) {
+        c.setData("lastLblText", lblText);
+        (c.getData("lbl") as Phaser.GameObjects.Text).setText(lblText);
+      }
+
+      if (PREFERS_REDUCED_MOTION) {
+        c.setPosition(targetPx, targetPy);
+      } else {
+        const dist = Phaser.Math.Distance.Between(c.x, c.y, targetPx, targetPy);
+        if (dist > ts * 2.5) {
+          c.setPosition(targetPx, targetPy);
+        } else if (dist > 1) {
+          this.tweens.add({
+            targets: c,
+            x: targetPx,
+            y: targetPy,
+            duration: 140,
+            ease: "Power2",
+            overwrite: true
+          });
+        }
+      }
+
+      if (isMe) {
+        this.updateZoneDisplay(p.position.x, p.position.y);
+        const cam = this.cameras.main;
+        if (!this.isFollowingPlayer) {
+          cam.centerOn(targetPx, targetPy);
+          cam.startFollow(c, true, 0.08, 0.08);
+          this.isFollowingPlayer = true;
+        }
+      }
+    }
+
+    for (const [id, c] of this.playerGraphics.entries()) {
+      if (!aliveIds.has(id)) {
+        c.destroy();
+        this.playerGraphics.delete(id);
+      }
+    }
+  }
+
+  private syncEnemies() {
+    const ts = gameState.tileSize || 48;
+    const aliveIds = new Set<string>();
+
+    for (const e of gameState.world.enemies) {
+      if (!e.alive) continue;
+      aliveIds.add(e.id);
+
+      const targetPx = e.position.x * ts + ts / 2;
+      const targetPy = e.position.y * ts + ts / 2;
+
+      let c = this.enemyGraphics.get(e.id);
+      if (!c) {
+        c = this.add.container(targetPx, targetPy).setDepth(15);
+        const tex = enemyTextureKey(e.name);
+        const spr = this.add.image(0, 0, tex).setDisplaySize(ts * 0.8, ts * 0.8);
+
+        const lbl = this.add
+          .text(0, -ts * 0.62, `[E] ${e.name} · Lv ${e.level}`, {
+            fontSize: "9px",
+            fontFamily: "'Rajdhani', sans-serif",
+            fontStyle: "bold",
+            color: "#f87171",
+            stroke: "#020617",
+            strokeThickness: 3
+          })
+          .setOrigin(0.5);
+
+        const hpBg = this.add.rectangle(0, -ts * 0.44, ts * 0.6, 2, 0x0f172a);
+        const hpBar = this.add.rectangle(-ts * 0.3, -ts * 0.44, ts * 0.6, 2, 0xef4444);
+        hpBar.setOrigin(0, 0.5);
+
+        c.add([spr, lbl, hpBg, hpBar]);
+        c.setData("hpBar", hpBar);
+        c.setData("spr", spr);
+
+        if (!PREFERS_REDUCED_MOTION) {
+          this.tweens.add({
+            targets: spr,
+            y: { from: -1, to: 1 },
+            duration: 800 + Math.random() * 400,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.easeInOut"
+          });
+        }
+
+        this.enemyGraphics.set(e.id, c);
+      }
+
+      const hpRatio = e.maxHp > 0 ? Math.max(0, Math.min(1, e.hp / e.maxHp)) : 0;
+      const hpW = Math.round(ts * 0.6 * hpRatio);
+      if (c.getData("lastHpW") !== hpW) {
+        c.setData("lastHpW", hpW);
+        (c.getData("hpBar") as Phaser.GameObjects.Rectangle).setSize(hpW, 2);
+      }
+      c.setPosition(targetPx, targetPy);
+    }
+
+    for (const [id, c] of this.enemyGraphics.entries()) {
+      if (!aliveIds.has(id)) {
+        if (!PREFERS_REDUCED_MOTION) {
+          this.tweens.add({
+            targets: c,
+            alpha: 0,
+            scale: 0.4,
+            duration: 350,
+            onComplete: () => c.destroy()
+          });
+        } else {
+          c.destroy();
+        }
+        this.enemyGraphics.delete(id);
+      }
+    }
+  }
+
+  private drawOverlay(time: number) {
+    this.overlay.clear();
+    const ts = gameState.tileSize || 48;
+    const me = getMyPlayer();
+
+    // Hover na célula
+    if (this.hover && this.inBounds(this.hover.x, this.hover.y)) {
+      this.overlay.lineStyle(1, 0x38bdf8, 0.6);
+      this.overlay.strokeRect(
+        this.hover.x * ts,
+        this.hover.y * ts,
+        ts,
+        ts
+      );
+    }
+
+    // Traçado do caminho até o alvo
+    if (this.goal && me) {
+      this.overlay.fillStyle(0xf59e0b, 0.2);
+      const gx =
+        this.goal.type === "tile"
+          ? this.goal.x
+          : gameState.world.enemies.find((e) => e.id === (this.goal as any).id)?.position.x;
+      const gy =
+        this.goal.type === "tile"
+          ? this.goal.y
+          : gameState.world.enemies.find((e) => e.id === (this.goal as any).id)?.position.y;
+      if (gx !== undefined && gy !== undefined) {
+        this.overlay.fillRect(gx * ts, gy * ts, ts, ts);
+      }
+    }
+
+    // Destaque de NPCs adjacentes
+    const npcs = me && !me.inBattle && !gameState.currentBattle ? this.adjacentNpcs() : [];
+    if (npcs.length) {
+      const target = npcs[0];
+      const hintText = `[E] Falar com ${target.name}`;
+      if (this.hint.text !== hintText) {
+        this.hint.setText(hintText);
+      }
+      this.hint
+        .setPosition(
+          target.position.x * ts + ts / 2,
+          target.position.y * ts - 4
+        )
+        .setVisible(true);
+      return;
+    }
+
+    // Destaque de monstros adjacentes
+    const adjacent = me && !me.inBattle && !gameState.currentBattle ? this.adjacentEnemies() : [];
+    if (adjacent.length) {
+      const pulseAlpha = 0.4 + 0.3 * Math.sin(time / 140);
+      this.overlay.lineStyle(2, 0xfacc15, pulseAlpha);
+      for (const e of adjacent) {
+        this.overlay.strokeRect(
+          e.position.x * ts + 2,
+          e.position.y * ts + 2,
+          ts - 4,
+          ts - 4
+        );
+      }
+      const target = adjacent[0];
+      const hintText = `[E] ${target.name}`;
+      if (this.hint.text !== hintText) {
+        this.hint.setText(hintText);
+      }
+      this.hint
+        .setPosition(
+          target.position.x * ts + ts / 2,
+          target.position.y * ts - 4
+        )
+        .setVisible(true);
+    } else {
+      this.hint.setVisible(false);
     }
   }
 
@@ -332,253 +611,167 @@ export class WorldScene extends Phaser.Scene {
     const now = Date.now();
     if (now - this.lastInputTime < STEP_INTERVAL_MS) return false;
     this.lastInputTime = now;
+    const me = getMyPlayer();
+    this.awaiting = me ? { sequence: me.sequence, at: now } : null;
     socket.emit(ClientEvents.StepRequest, { direction });
     return true;
   }
 
+  public adjacentNpcs(): NpcDefinition[] {
+    const me = getMyPlayer();
+    if (!me) return [];
+    return (WORLD_NPCS as NpcDefinition[])
+      .filter((n) => chebyshev(me.position, n.position) <= 1)
+      .sort((a, b) => manhattan(me.position, a.position) - manhattan(me.position, b.position));
+  }
+
+  public adjacentEnemies() {
+    const me = getMyPlayer();
+    if (!me) return [];
+    return gameState.world.enemies
+      .filter((e) => e.alive && chebyshev(me.position, e.position) <= 1)
+      .sort((a, b) => manhattan(me.position, a.position) - manhattan(me.position, b.position));
+  }
+
+  private startBattleWith(enemy: { id: string; rank: string; name: string }) {
+    const now = Date.now();
+    if (now - this.lastBattleRequestAt < 500) return;
+    this.lastBattleRequestAt = now;
+    this.cancelPursuit();
+    battleController.battleResultModal.classList.add("hidden");
+    hudController.setStatus(`Iniciando confronto com [${enemy.rank}] ${enemy.name}…`);
+    socket.emit(ClientEvents.StartBattleRequest, { targetEnemyId: enemy.id });
+  }
+
   private interact() {
     const me = getMyPlayer();
-    if (!me || me.inBattle || gameState.currentBattle) return;
+    if (!me || me.inBattle) return;
+
     const npcs = this.adjacentNpcs();
     if (npcs.length) {
       npcController.openNpc(npcs[0]);
       return;
     }
-    const enemies = this.adjacentEnemies();
-    if (enemies.length) {
-      const now = Date.now();
-      if (now - this.lastBattleRequestAt < 400) return;
-      this.lastBattleRequestAt = now;
-      socket.emit(ClientEvents.StartBattleRequest, { targetEnemyId: enemies[0].id });
+
+    const adjacent = this.adjacentEnemies();
+    if (adjacent.length) {
+      this.startBattleWith(adjacent[0]);
+      return;
     }
-  }
-
-  private adjacentNpcs(): NpcDefinition[] {
-    const me = getMyPlayer();
-    if (!me) return [];
-    return WORLD_NPCS.filter((n) => chebyshev(me.position, n.position) <= 1);
-  }
-
-  private adjacentEnemies() {
-    const me = getMyPlayer();
-    if (!me) return [];
-    return gameState.world.enemies.filter(
-      (e) => e.alive && chebyshev(me.position, e.position) <= 1
-    );
+    const nearest = gameState.world.enemies
+      .filter((e) => e.alive)
+      .sort((a, b) => manhattan(me.position, a.position) - manhattan(me.position, b.position))[0];
+    if (!nearest) {
+      hudController.setStatus("Nenhum monstro vivo no mapa.");
+      return;
+    }
+    this.goal = { type: "enemy", id: nearest.id };
+    hudController.setStatus(`Indo até [${nearest.rank}] ${nearest.name}… (Esc cancela)`);
   }
 
   private handlePointerClick(pointer: Phaser.Input.Pointer) {
-    const tx = Math.floor(pointer.worldX / gameState.tileSize);
-    const ty = Math.floor(pointer.worldY / gameState.tileSize);
-    if (!this.inBounds(tx, ty)) return;
-
-    const enemy = gameState.world.enemies.find(
-      (e) => e.alive && e.position.x === tx && e.position.y === ty
-    );
-    if (enemy) {
-      this.goal = { type: "enemy", id: enemy.id };
-      return;
-    }
-    this.goal = { type: "tile", x: tx, y: ty };
-  }
-
-  update(_time: number, _delta: number) {
-    if (gameState.currentBattle) return;
-    this.syncPlayers();
-    this.syncEnemies();
-    this.drawOverlay(_time);
-    this.pursueGoal();
-  }
-
-  private syncPlayers() {
     const ts = gameState.tileSize || 48;
-    const aliveIds = new Set<string>();
-    for (const p of gameState.world.players) {
-      aliveIds.add(p.id);
-      const isMe = p.id === gameState.myPlayerId;
-      const targetPx = p.position.x * ts + ts / 2;
-      const targetPy = p.position.y * ts + ts / 2;
-
-      let c = this.playerGraphics.get(p.id);
-      if (!c) {
-        c = this.add.container(targetPx, targetPy).setDepth(isMe ? 30 : 20);
-        const halo = this.add.circle(0, 0, ts * 0.44, 0x000000, 0.45);
-        halo.setStrokeStyle(isMe ? 2 : 1, isMe ? 0x38bdf8 : 0x64748b, 0.9);
-        const portraitKey = CLASS_PORTRAIT[p.hunterClass] ?? "healer";
-        const tokKey = TEX.token(portraitKey);
-        const texKey = this.textures.exists(tokKey) ? tokKey : TEX.token("healer");
-        const icon = this.add.image(0, 0, texKey).setDisplaySize(ts * 0.8, ts * 0.8);
-        const lbl = this.add
-          .text(0, -ts * 0.62, `${isMe ? "Você" : p.name} · Lv ${p.level}`, {
-            fontSize: "10px",
-            fontFamily: "'Rajdhani', sans-serif",
-            fontStyle: "bold",
-            color: isMe ? "#7dd3fc" : "#cbd5e1",
-            stroke: "#020617",
-            strokeThickness: 3
-          })
-          .setOrigin(0.5);
-        c.add([halo, icon, lbl]);
-        this.playerGraphics.set(p.id, c);
-      }
-
-      if (PREFERS_REDUCED_MOTION) {
-        c.setPosition(targetPx, targetPy);
-      } else {
-        const dist = Phaser.Math.Distance.Between(c.x, c.y, targetPx, targetPy);
-        if (dist > ts * 2.5) c.setPosition(targetPx, targetPy);
-        else if (dist > 1) {
-          this.tweens.add({
-            targets: c,
-            x: targetPx,
-            y: targetPy,
-            duration: 140,
-            ease: "Power2",
-            overwrite: true
-          });
-        }
-      }
-
-      if (isMe) {
-        this.updateZoneDisplay(p.position.x, p.position.y);
-        const cam = this.cameras.main;
-        if (!(cam as any)._follow) {
-          cam.startFollow(c, true, 0.08, 0.08);
-          (cam as any)._follow = true;
-        }
-      }
-    }
-    for (const [id, c] of this.playerGraphics.entries()) {
-      if (!aliveIds.has(id)) {
-        c.destroy();
-        this.playerGraphics.delete(id);
-      }
-    }
-  }
-
-  private syncEnemies() {
-    const ts = gameState.tileSize || 48;
-    const aliveIds = new Set<string>();
-    for (const e of gameState.world.enemies) {
-      if (!e.alive) continue;
-      aliveIds.add(e.id);
-      const targetPx = e.position.x * ts + ts / 2;
-      const targetPy = e.position.y * ts + ts / 2;
-      let c = this.enemyGraphics.get(e.id);
-      if (!c) {
-        c = this.add.container(targetPx, targetPy).setDepth(15);
-        const tex = enemyTextureKey(e.name);
-        const spr = this.add.image(0, 0, tex).setDisplaySize(ts * 0.8, ts * 0.8);
-        const lbl = this.add
-          .text(0, -ts * 0.62, `[E] ${e.name} · Lv ${e.level}`, {
-            fontSize: "9px",
-            fontFamily: "'Rajdhani', sans-serif",
-            fontStyle: "bold",
-            color: "#f87171",
-            stroke: "#020617",
-            strokeThickness: 3
-          })
-          .setOrigin(0.5);
-        c.add([spr, lbl]);
-        this.enemyGraphics.set(e.id, c);
-      }
-      c.setPosition(targetPx, targetPy);
-    }
-    for (const [id, c] of this.enemyGraphics.entries()) {
-      if (!aliveIds.has(id)) {
-        c.destroy();
-        this.enemyGraphics.delete(id);
-      }
-    }
-  }
-
-  private drawOverlay(time: number) {
-    this.overlay.clear();
-    const ts = gameState.tileSize || 48;
-    const me = getMyPlayer();
-    if (this.hover && this.inBounds(this.hover.x, this.hover.y)) {
-      this.overlay.lineStyle(1, 0x38bdf8, 0.6);
-      this.overlay.strokeRect(
-        this.hover.x * ts,
-        this.hover.y * ts,
-        ts,
-        ts
-      );
-    }
-    const npcs = me && !me.inBattle && !gameState.currentBattle ? this.adjacentNpcs() : [];
-    if (npcs.length) {
-      const target = npcs[0];
-      this.hint.setText(`[E] Falar com ${target.name}`);
-      this.hint
-        .setPosition(
-          target.position.x * ts + ts / 2,
-          target.position.y * ts - 4
-        )
-        .setVisible(true);
-      return;
-    }
-    const adjacent = me && !me.inBattle && !gameState.currentBattle ? this.adjacentEnemies() : [];
-    if (adjacent.length) {
-      const pulseAlpha = 0.4 + 0.3 * Math.sin(time / 140);
-      this.overlay.lineStyle(2, 0xfacc15, pulseAlpha);
-      for (const e of adjacent) {
-        this.overlay.strokeRect(
-          e.position.x * ts + 2,
-          e.position.y * ts + 2,
-          ts - 4,
-          ts - 4
-        );
-      }
-      this.hint.setText(`[E] ${adjacent[0].name}`);
-      this.hint
-        .setPosition(
-          adjacent[0].position.x * ts + ts / 2,
-          adjacent[0].position.y * ts - 4
-        )
-        .setVisible(true);
-    } else {
-      this.hint.setVisible(false);
-    }
-  }
-
-  private pursueGoal() {
-    const goal = this.goal;
-    if (!goal || this.awaiting) return;
+    const tileX = Math.floor(pointer.worldX / ts);
+    const tileY = Math.floor(pointer.worldY / ts);
+    if (!this.inBounds(tileX, tileY)) return;
     const me = getMyPlayer();
     if (!me || me.inBattle) return;
 
-    let tx: number, ty: number;
-    if (goal.type === "tile") {
-      tx = goal.x;
-      ty = goal.y;
-    } else {
-      const e = gameState.world.enemies.find((en) => en.id === goal.id && en.alive);
-      if (!e) {
-        this.goal = null;
-        return;
+    const clickedNpc = WORLD_NPCS.find((n) => n.position.x === tileX && n.position.y === tileY);
+    if (clickedNpc) {
+      if (chebyshev(me.position, clickedNpc.position) <= 1) {
+        npcController.openNpc(clickedNpc);
+      } else {
+        this.goal = { type: "tile", x: clickedNpc.position.x, y: clickedNpc.position.y };
+        hudController.setStatus(`Caminhando até [NPC] ${clickedNpc.name}… (Esc cancela)`);
       }
-      tx = e.position.x;
-      ty = e.position.y;
-      if (chebyshev(me.position, e.position) <= 1) {
-        this.interact();
-        this.goal = null;
-        return;
-      }
-    }
-
-    if (me.position.x === tx && me.position.y === ty) {
-      this.goal = null;
       return;
     }
 
-    const dx = Math.sign(tx - me.position.x);
-    const dy = Math.sign(ty - me.position.y);
-    let dir: Direction | null = null;
-    if (Math.abs(tx - me.position.x) >= Math.abs(ty - me.position.y)) {
-      dir = dx > 0 ? "RIGHT" : dx < 0 ? "LEFT" : null;
-    } else {
-      dir = dy > 0 ? "DOWN" : dy < 0 ? "UP" : null;
+    const clicked = gameState.world.enemies.find((e) => e.alive && e.position.x === tileX && e.position.y === tileY);
+    if (clicked) {
+      if (chebyshev(me.position, clicked.position) <= 1) {
+        this.startBattleWith(clicked);
+      } else {
+        this.goal = { type: "enemy", id: clicked.id };
+        hudController.setStatus(`Indo até [${clicked.rank}] ${clicked.name}… (Esc cancela)`);
+      }
+      return;
     }
-    if (dir) this.sendStep(dir);
+    if (tileX === me.position.x && tileY === me.position.y) return;
+    this.goal = { type: "tile", x: tileX, y: tileY };
+  }
+
+  private nextStepToward(from: TileCoord, isGoal: (x: number, y: number) => boolean, blocked: Set<string>): Direction | null {
+    const key = (x: number, y: number) => `${x},${y}`;
+    const queue: Array<{ x: number; y: number; first: Direction | null }> = [{ x: from.x, y: from.y, first: null }];
+    const seen = new Set<string>([key(from.x, from.y)]);
+    for (let i = 0; i < queue.length; i++) {
+      const cur = queue[i];
+      if (cur.first && isGoal(cur.x, cur.y)) return cur.first;
+      for (const v of DIR_VECTORS) {
+        const nx = cur.x + v.dx;
+        const ny = cur.y + v.dy;
+        if (!this.inBounds(nx, ny) || seen.has(key(nx, ny)) || blocked.has(key(nx, ny))) continue;
+        seen.add(key(nx, ny));
+        queue.push({ x: nx, y: ny, first: cur.first ?? v.dir });
+      }
+    }
+    return null;
+  }
+
+  private runGoal(time: number) {
+    const me = getMyPlayer();
+    if (!this.goal || !me || me.inBattle || gameState.currentBattle) return;
+
+    if (this.awaiting && (me.sequence !== this.awaiting.sequence || Date.now() - this.awaiting.at > 600)) {
+      this.awaiting = null;
+    }
+    void time;
+
+    const blocked = new Set<string>(gameState.obstacles.map((o) => `${o.x},${o.y}`));
+    for (const e of gameState.world.enemies) if (e.alive) blocked.add(`${e.position.x},${e.position.y}`);
+
+    if (this.goal.type === "enemy") {
+      const goalId = this.goal.id;
+      const enemy = gameState.world.enemies.find((e) => e.id === goalId);
+      if (!enemy || !enemy.alive) return this.cancelPursuit();
+      if (chebyshev(me.position, enemy.position) <= 1) {
+        this.startBattleWith(enemy);
+        return;
+      }
+      if (this.awaiting || Date.now() - this.lastInputTime < STEP_INTERVAL_MS) return;
+      const dir = this.nextStepToward(me.position, (x, y) => chebyshev({ x, y }, enemy.position) <= 1, blocked);
+      if (!dir) {
+        hudController.setStatus("Sem caminho livre até o monstro.");
+        return this.cancelPursuit();
+      }
+      this.sendStep(dir);
+    } else {
+      const { x: gx, y: gy } = this.goal;
+      const targetNpc = WORLD_NPCS.find((n) => n.position.x === gx && n.position.y === gy);
+      if (targetNpc && chebyshev(me.position, targetNpc.position) <= 1) {
+        this.cancelPursuit();
+        npcController.openNpc(targetNpc);
+        return;
+      }
+      if (me.position.x === gx && me.position.y === gy) return this.cancelPursuit();
+      if (this.awaiting || Date.now() - this.lastInputTime < STEP_INTERVAL_MS) return;
+      if (blocked.has(`${gx},${gy}`) && !targetNpc) return this.cancelPursuit();
+      const isTargetGoal = targetNpc
+        ? (x: number, y: number) => chebyshev({ x, y }, targetNpc.position) <= 1
+        : (x: number, y: number) => x === gx && y === gy;
+      const dir = this.nextStepToward(me.position, isTargetGoal, blocked);
+      if (!dir) return this.cancelPursuit();
+      this.sendStep(dir);
+    }
+  }
+
+  update(time: number) {
+    this.rebuildTerrain();
+    this.runGoal(time);
+    this.syncPlayers();
+    this.syncEnemies();
+    this.drawOverlay(time);
   }
 }

@@ -268,45 +268,58 @@
 .rpg-viewport {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .status-ticker {
   background: #090c14;
   border: 1px solid var(--border-slate);
-  padding: 5px 12px;
-  font-size: 0.76rem;
+  padding: 6px 12px;
+  font-size: 0.78rem;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 8px;
   border-radius: 2px;
-  flex-shrink: 0;
 }
 
 .ticker-badge {
   color: var(--border-gold-bright);
   font-weight: 800;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   letter-spacing: 0.06em;
 }
 
 .stage-container {
   position: relative;
   width: 100%;
-  flex: 1;
-  min-height: 0;
-  background: #070b12;
+  aspect-ratio: 960 / 576;
+  max-height: calc(100vh - 120px);
+  background: #040508;
   border: 1px solid var(--border-slate);
   border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #game {
-  position: absolute;
-  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
 }

@@ -25,6 +25,12 @@ import { npcController } from "./ui/npc.controller";
 import "./style.css";
 
 let worldScene: WorldScene | null = null;
+const getWorldScene = (): WorldScene | null => {
+  if (!worldScene && game?.scene) {
+    worldScene = game.scene.getScene("world") as WorldScene | null;
+  }
+  return worldScene;
+};
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -33,9 +39,6 @@ const config: Phaser.Types.Core.GameConfig = {
   height: 576,
   backgroundColor: "#030712",
   pixelArt: true,
-  // FIT: o canvas inteiro (20x12 tiles) cabe no palco, proporção travada.
-  // ENVELOP cortava e só sobrava o canto (LV no escuro).
-  // Não usar CSS width/height 100% no canvas — isso estica o personagem.
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
@@ -46,17 +49,6 @@ const config: Phaser.Types.Core.GameConfig = {
 const game = new Phaser.Game(config);
 game.events.once("ready", () => {
   worldScene = game.scene.getScene("world") as WorldScene;
-});
-
-const refreshScale = () => {
-  const el = document.getElementById("game");
-  if (!el || el.clientWidth < 80 || el.clientHeight < 80) return;
-  game.scale.refresh();
-};
-window.addEventListener("resize", refreshScale);
-window.addEventListener("load", () => {
-  refreshScale();
-  setTimeout(refreshScale, 200);
 });
 
 const gateClearBanner = document.querySelector<HTMLDivElement>("#gate-clear-banner");
@@ -94,8 +86,7 @@ socket.on(ServerEvents.Welcome, (raw: unknown) => {
   gameState.tileSize = parsed.data.tileSize;
   gameState.obstacles = parsed.data.obstacles;
 
-  worldScene?.updateWorldBounds(gameState.gridWidth, gameState.gridHeight, gameState.tileSize);
-  refreshScale();
+  getWorldScene()?.updateWorldBounds(gameState.gridWidth, gameState.gridHeight, gameState.tileSize);
   socket.emit(ClientEvents.SnapshotRequest);
   socket.emit(ClientEvents.InventoryRequest);
   socket.emit(ClientEvents.MissionsRequest);
@@ -114,7 +105,7 @@ socket.on(ServerEvents.Snapshot, (raw: unknown) => {
       hudController.applyHud(me);
     }
   }
-  worldScene?.rebuildTerrain();
+  getWorldScene()?.rebuildTerrain();
 });
 
 socket.on(ServerEvents.InventoryState, (raw: unknown) => {
@@ -172,7 +163,7 @@ socket.on(ServerEvents.BattleSnapshot, (raw: unknown) => {
   const prev = gameState.currentBattle;
   const next = parsed.data;
   gameState.currentBattle = next;
-  worldScene?.cancelPursuit();
+  getWorldScene()?.cancelPursuit();
   battleController.enqueue(() =>
     battleController.playTurn(prev && prev.battleId === next.battleId ? prev : null, next)
   );
@@ -196,7 +187,7 @@ socket.on(ServerEvents.SessionReplaced, () => {
 socket.on(ServerEvents.Error, (raw: unknown) => {
   const error = raw as { message?: string; code?: string };
   hudController.setStatus(`[ERRO] ${error?.message ?? "Ação rejeitada pelo servidor"}`);
-  worldScene?.onServerError(error?.code);
+  getWorldScene()?.onServerError(error?.code);
 });
 
 const MAP_KEYS = new Set([
@@ -222,7 +213,7 @@ window.addEventListener("keydown", (e: KeyboardEvent) => {
 
   if (k === "escape") {
     modalsController.closeAllModals();
-    worldScene?.cancelPursuit();
+    getWorldScene()?.cancelPursuit();
     return;
   }
 
@@ -245,7 +236,7 @@ window.addEventListener("keydown", (e: KeyboardEvent) => {
   }
 
   e.preventDefault();
-  worldScene?.handleKey(k);
+  getWorldScene()?.handleKey(k);
 });
 
 const urlParams = new URLSearchParams(window.location.search);
