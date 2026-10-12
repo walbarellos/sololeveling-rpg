@@ -1,8 +1,11 @@
 import {
   ClientEvents,
+  getNextHunterRank,
+  RANK_EXAM_REQUIREMENTS,
   type NpcDefinition
 } from "@rpg/contracts";
 import { socket } from "../network/game-socket";
+import { gameState } from "../state/game-state";
 import { academyController } from "./academy.controller";
 import { inventoryController } from "./inventory.controller";
 
@@ -94,14 +97,16 @@ export class NpcController {
           }
         },
         {
-          label: "Recuperar troféu de chefe perdido",
-          meta: "Quando o inventário estiver cheio no momento do abate",
+          label: "Recuperar troféu de chefe retido",
+          meta: "Quando o inventário estava cheio no momento do abate",
+          variant: "safe",
           onClick: () => {
-            socket.emit(ClientEvents.ClaimLostTrophyRequest, {
-              trophyId: "trophy_goblin_boss_core"
-            });
+            const nextRank = gameState.lastMe ? getNextHunterRank(gameState.lastMe.rank) : "D";
+            const req = nextRank ? RANK_EXAM_REQUIREMENTS[nextRank] : null;
+            const trophyId = req?.requiredTrophyItemId ?? "trophy_goblin_boss_core";
+            socket.emit(ClientEvents.ClaimLostTrophyRequest, { trophyId });
             this.setDialogue(
-              "Verificando os registros de combate. Se a vitória estiver homologada, o troféu será creditado na mochila."
+              `Verificando os registros de combate para o troféu [${req?.trophyName ?? "Núcleo Militar"}]. Se a vitória estiver homologada, o troféu será creditado na mochila.`
             );
           }
         },

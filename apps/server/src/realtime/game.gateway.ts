@@ -170,6 +170,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit(ServerEvents.BattleSnapshot, result.battle);
     if (result.battle.finished) {
       client.emit(ServerEvents.BattleEnded, result.battle);
+      const inv = this.game.getInventoryState(this.pid(client));
+      if (inv) {
+        client.emit(ServerEvents.InventoryState, inv);
+      }
+      if (result.announcement) {
+        this.server.emit(ServerEvents.GateClearAnnouncement, result.announcement);
+      }
       this.broadcastSnapshot();
     }
   }
@@ -186,6 +193,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     client.emit(ServerEvents.BattleSnapshot, result.battle);
     client.emit(ServerEvents.BattleEnded, result.battle);
+    const inv = this.game.getInventoryState(this.pid(client));
+    if (inv) {
+      client.emit(ServerEvents.InventoryState, inv);
+    }
     this.broadcastSnapshot();
   }
 
@@ -207,6 +218,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleSnapshotRequest(@ConnectedSocket() client: Socket) {
     const playerId = this.pid(client);
     client.emit(ServerEvents.Snapshot, this.game.snapshot());
+    const inv = this.game.getInventoryState(playerId);
+    if (inv) {
+      client.emit(ServerEvents.InventoryState, inv);
+    }
     const battle = this.game.getActiveBattleForPlayer(playerId);
     if (battle) {
       client.emit(ServerEvents.BattleSnapshot, battle);

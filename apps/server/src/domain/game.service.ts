@@ -27,7 +27,10 @@ import {
   type TileCoord,
   type WorldSnapshot,
   type ItemDefinition,
-  type ItemRarity
+  type ItemRarity,
+  type GateClearAnnouncement,
+  getNextHunterRank,
+  RANK_EXAM_REQUIREMENTS
 } from "@rpg/contracts";
 import { BattleSession } from "./battle.session";
 import { CLOCK, SystemClock, type Clock } from "./clock";
@@ -499,7 +502,12 @@ export class GameService {
     playerId: string,
     battleId: string,
     actionId: string
-  ): { success: boolean; battle?: BattleSnapshot; error?: ServerErrorCode } {
+  ): {
+    success: boolean;
+    battle?: BattleSnapshot;
+    announcement?: GateClearAnnouncement;
+    error?: ServerErrorCode;
+  } {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     const session = this.activeBattles.get(battleId);
 
@@ -512,11 +520,13 @@ export class GameService {
       return { success: false, error: result.error as ServerErrorCode };
     }
 
+    let announcement: GateClearAnnouncement | undefined;
     if (session.finished) {
-      this.resolveBattleEnd(player, session);
+      const endRes = this.resolveBattleEnd(player, session);
+      announcement = endRes.announcement;
     }
 
-    return { success: true, battle: session.toSnapshot() };
+    return { success: true, battle: session.toSnapshot(), announcement };
   }
 
   useCombatConsumable(
@@ -571,9 +581,13 @@ export class GameService {
     return { success: true, battle: session.toSnapshot() };
   }
 
-  private resolveBattleEnd(player: PlayerEntity, session: BattleSession): void {
+  private resolveBattleEnd(
+    player: PlayerEntity,
+    session: BattleSession
+  ): { announcement?: GateClearAnnouncement } {
     player.inBattle = false;
     player.activeBattleId = undefined;
+    let announcement: GateClearAnnouncement | undefined;
 
     const kill = (): void => {
       const enemy = this.enemies.get(session.enemy.id);
@@ -598,7 +612,13 @@ export class GameService {
 
     if (session.result === "VICTORY") {
       if (this.bossService.isBoss(session.enemy.id)) {
-        this.bossService.updateBossHp(session.enemy.id, 0);
+        const bossRes = this.bossService.updateBossHp(session.enemy.id, 0);
+        if (bossRes.defeated && bossRes.announcement) {
+          announcement = {
+            ...bossRes.announcement,
+            slayerName: player.name
+          };
+        }
         player.careerStats.gateBossesSlain += 1;
 
         if (player.inventory) {
@@ -615,6 +635,9 @@ export class GameService {
           } else {
             if (!player.unclaimedTrophies) player.unclaimedTrophies = [];
             player.unclaimedTrophies.push(bossTrophy.id);
+            session.log.push(
+              `[MOCHILA CHEIA] ${bossTrophy.name} foi retido em custódia com o Inspetor Baek na Associação!`
+            );
           }
 
           if (session.enemy.id === "boss-1" && !player.inventory.some((s) => s.item.id === "trophy_goblin_boss_core")) {
@@ -670,9 +693,18 @@ export class GameService {
       player.mp = Math.max(0, session.player.mp);
     }
 
-    // Servidor é a única fonte de EXP: o valor vem da sessão, nunca do cliente.
     if (session.rewardExp > 0) {
       this.grantExp(player, session);
+    } else if (session.result === "VICTORY") {
+      session.rewards = {
+        expGained: 0,
+        levelBefore: player.level,
+        levelAfter: player.level,
+        expBefore: player.exp,
+        expAfter: player.exp,
+        capped: true,
+        levelCap: RANK_CAP[player.rank]
+      };
     }
     if (droppedItems.length > 0 && session.rewards) {
       session.rewards.drops = droppedItems.map((i) => ({ ...i }));
@@ -681,6 +713,8 @@ export class GameService {
     player.sequence = ++this.sequence;
     this.playerRepository.save(player);
     this.activeBattles.delete(session.battleId);
+
+    return { announcement };
   }
 
   private grantExp(player: PlayerEntity, session: BattleSession): void {
@@ -1053,27 +1087,36 @@ export class GameService {
 
   claimLostTrophy(
     playerId: string,
-    trophyId: string
+    trophyId?: string
   ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; message?: string; error?: ServerErrorCode } {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
 
-    const trophyDef = MASTER_ITEMS[trophyId];
+    let finalTrophyId: string = trophyId ?? "";
+    if (!finalTrophyId || !MASTER_ITEMS[finalTrophyId]) {
+      const nextRank = getNextHunterRank(player.rank);
+      const req = nextRank ? RANK_EXAM_REQUIREMENTS[nextRank] : null;
+      finalTrophyId = req?.requiredTrophyItemId ?? "trophy_goblin_boss_core";
+    }
+
+    const trophyDef = MASTER_ITEMS[finalTrophyId];
     if (!trophyDef || trophyDef.type !== "TROPHY") return { success: false, error: "ITEM_NOT_FOUND" };
 
     if (!player.inventory) player.inventory = [];
-    const alreadyHas = player.inventory.some((s) => s.item.id === trophyId);
+    const alreadyHas = player.inventory.some((s) => s.item.id === finalTrophyId);
     if (alreadyHas) {
       return {
         success: true,
         state: this.inventoryService.getInventoryState(player),
         player: this.toSnapshot(player),
-        message: `Você já possui o troféu [${trophyDef.name}] em seu inventário!`
+        message: `Você já possui o troféu oficial [${trophyDef.name}] em seu inventário!`
       };
     }
 
-    const canClaim = (player.careerStats && player.careerStats.gateBossesSlain > 0) ||
-      (player.unclaimedTrophies && player.unclaimedTrophies.includes(trophyId));
+    const canClaim =
+      (player.careerStats && player.careerStats.gateBossesSlain > 0) ||
+      (player.unclaimedTrophies && player.unclaimedTrophies.length > 0) ||
+      player.level >= 8;
 
     if (!canClaim) {
       return { success: false, error: "ACADEMY_REQUIREMENTS_UNMET" };
@@ -1083,7 +1126,7 @@ export class GameService {
     if (!added) return { success: false, error: "CANNOT_EQUIP" };
 
     if (player.unclaimedTrophies) {
-      player.unclaimedTrophies = player.unclaimedTrophies.filter((id) => id !== trophyId);
+      player.unclaimedTrophies = player.unclaimedTrophies.filter((id) => id !== finalTrophyId);
     }
 
     player.sequence = ++this.sequence;
