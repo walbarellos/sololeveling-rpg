@@ -62,7 +62,7 @@
   padding: 4px 8px;
   border-radius: 2px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-modal-close:hover {
@@ -210,7 +210,6 @@
   color: #facc15;
 }
 
-/* Distribuição de Atributos */
 .stat-distrib-heading {
   display: flex;
   justify-content: space-between;
@@ -319,7 +318,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .btn-stat-adj:hover:not(:disabled) {
@@ -376,7 +375,6 @@
 
 .btn-stat-confirm:hover:not(:disabled) {
   background: #2563eb;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
 }
 
 .btn-stat-confirm:disabled {
@@ -417,10 +415,6 @@
 .p-stat-value.blue-val { color: #38bdf8; }
 .p-stat-value.hp-val { color: #f43f5e; }
 .p-stat-value.mp-val { color: #0ea5e9; }
-
-/* =========================================================
-   REGISTROS DE CARREIRA DO CAÇADOR (SOLO LEVELING / DIABLO)
-   ========================================================= */
 
 .career-stats-grid {
   display: grid;
@@ -464,29 +458,55 @@
 .career-stat-val.rarity-tag-inline { font-size: 0.75rem; }
 
 /* =========================================================
-   NPC DIALOGUE MODAL & ACTIONS
+   NPC — DOSSIER / DIALOGUE PLATE (dark fantasy, no emoji UI)
    ========================================================= */
 
 .npc-modal-window {
-  width: 95%;
-  max-width: 680px;
-  background: #080d1a;
-  border: 1px solid #1e293b;
-  border-radius: 6px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85);
+  width: min(96vw, 640px);
+  background:
+    linear-gradient(165deg, rgba(18, 26, 22, 0.97) 0%, rgba(8, 12, 10, 0.98) 100%);
+  border: 1px solid var(--border-slate);
+  border-top: 2px solid var(--border-gold-bright);
+  border-radius: 2px;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
+/* Header inherits .modal-header-plate; tighten for NPC */
+#npc-modal .modal-header-plate {
+  background: linear-gradient(180deg, #1a2820 0%, #0f1612 100%);
+  border-bottom-color: var(--border-slate);
+}
+
+#npc-modal .modal-tag {
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+#npc-modal .modal-title {
+  color: var(--text-primary);
+  letter-spacing: 0.08em;
+}
+
+#npc-modal .modal-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
 .npc-modal-body {
   display: flex;
-  padding: 16px;
-  gap: 16px;
+  padding: 18px 18px 20px;
+  gap: 18px;
 }
 
 .npc-portrait-col {
-  width: 120px;
+  width: 118px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -494,84 +514,190 @@
 }
 
 .npc-portrait-frame {
-  width: 110px;
-  height: 140px;
-  border: 2px solid #38bdf8;
-  border-radius: 6px;
-  background: #020617;
+  width: 112px;
+  height: 148px;
+  border: 1px solid var(--border-iron);
+  border-radius: 1px;
+  background: #050807;
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.2);
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+/* Role accent — cheap border-color only, no blur */
+#npc-modal[data-npc-role="GATEKEEPER"] .npc-portrait-frame {
+  border-color: #3d6b7a;
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.12);
+}
+
+#npc-modal[data-npc-role="ACADEMY"] .npc-portrait-frame {
+  border-color: #8a6a28;
+  box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.15);
+}
+
+#npc-modal[data-npc-role="MERCHANT"] .npc-portrait-frame {
+  border-color: #7a5a32;
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.12);
 }
 
 .npc-portrait-frame img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center top;
+  display: block;
 }
 
 .npc-dialogue-col {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
 .npc-speech-bubble {
-  background: #0d1527;
-  border: 1px solid #1e293b;
-  border-left: 3px solid #38bdf8;
-  border-radius: 4px;
+  position: relative;
+  background: rgba(6, 10, 8, 0.85);
+  border: 1px solid var(--border-slate);
+  border-left: 2px solid var(--border-gold);
+  border-radius: 1px;
   padding: 12px 14px;
-  color: #e2e8f0;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  line-height: 1.5;
   font-family: var(--font-ui);
+  font-weight: 500;
+}
+
+#npc-modal[data-npc-role="GATEKEEPER"] .npc-speech-bubble {
+  border-left-color: #5b9aab;
+}
+
+#npc-modal[data-npc-role="ACADEMY"] .npc-speech-bubble {
+  border-left-color: var(--border-gold-bright);
+}
+
+#npc-modal[data-npc-role="MERCHANT"] .npc-speech-bubble {
+  border-left-color: #c4892a;
 }
 
 .npc-actions-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .btn-npc-action {
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  border: 1px solid #334155;
-  color: #f8fafc;
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 10px 14px;
-  border-radius: 4px;
+  appearance: none;
+  width: 100%;
+  background: rgba(14, 20, 16, 0.9);
+  border: 1px solid var(--border-slate);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  padding: 10px 12px;
+  border-radius: 1px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease,
+    transform 0.12s ease;
+  will-change: transform;
 }
 
 .btn-npc-action:hover {
-  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-  border-color: #60a5fa;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+  background: rgba(30, 42, 34, 0.95);
+  border-color: var(--border-iron);
+  transform: translateX(2px);
 }
 
-.btn-npc-action.action-danger {
-  border-color: #ef4444;
+.btn-npc-action:active {
+  transform: translateX(0);
 }
-.btn-npc-action.action-danger:hover {
-  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+
+.btn-npc-action:focus-visible {
+  outline: 1px solid var(--border-gold-bright);
+  outline-offset: 1px;
+}
+
+.npc-action-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.npc-action-title {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.npc-action-meta {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.npc-action-chevron {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  opacity: 0.7;
+  transition: color 0.12s ease, opacity 0.12s ease;
+}
+
+.btn-npc-action:hover .npc-action-chevron {
+  color: var(--text-gold);
+  opacity: 1;
+}
+
+/* Variants — border accent only (cheap) */
+.btn-npc-action.is-gold {
+  border-color: rgba(180, 83, 9, 0.55);
+}
+
+.btn-npc-action.is-gold:hover {
+  border-color: var(--border-gold-bright);
+  background: rgba(40, 28, 12, 0.55);
+}
+
+.btn-npc-action.is-gold .npc-action-title {
+  color: var(--text-gold);
+}
+
+.btn-npc-action.is-danger {
+  border-color: rgba(185, 28, 28, 0.55);
+}
+
+.btn-npc-action.is-danger:hover {
   border-color: #f87171;
+  background: rgba(50, 12, 12, 0.5);
 }
 
-.btn-npc-action.action-gold {
-  border-color: #d97706;
+.btn-npc-action.is-danger .npc-action-title {
+  color: #fecaca;
 }
-.btn-npc-action.action-gold:hover {
-  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
-  border-color: #fbbf24;
+
+.btn-npc-action.is-safe {
+  border-color: rgba(45, 90, 60, 0.55);
+}
+
+.btn-npc-action.is-safe:hover {
+  border-color: var(--accent-nature);
+  background: rgba(12, 32, 20, 0.5);
 }
 
 .btn-rpg-sell {
@@ -582,12 +708,26 @@
   font-size: 0.82rem;
   font-weight: 800;
   padding: 8px 12px;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
 .btn-rpg-sell:hover {
   background: linear-gradient(180deg, #d97706 0%, #92400e 100%);
 }
 
+@media (max-width: 520px) {
+  .npc-modal-body {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .npc-portrait-col {
+    width: auto;
+  }
+
+  .npc-dialogue-col {
+    width: 100%;
+  }
+}
