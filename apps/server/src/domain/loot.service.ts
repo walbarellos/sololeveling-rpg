@@ -25,10 +25,16 @@ export class LootService {
     const pool = RARITY_DROP_POOL[rarity];
     if (!pool || pool.length === 0) return null;
     if (enemyLevel !== undefined) {
-      const suitable = pool.filter((i) => i.minLevel <= enemyLevel);
+      // Itens utilizáveis no nível do monstro (margem de +2 para recompensas emocionantes)
+      const suitable = pool.filter((i) => i.minLevel <= enemyLevel + 2);
       if (suitable.length > 0) {
-        const idx = Math.floor(Math.random() * suitable.length);
-        return suitable[idx];
+        const maxLevel = Math.max(...suitable.map((i) => i.minLevel));
+        // Prioriza a faixa superior de nível (evita que monstros Lv 50+ dropem armas de recruta Lv 1)
+        const threshold = Math.max(1, Math.floor(maxLevel * 0.65));
+        const tierCandidates = suitable.filter((i) => i.minLevel >= threshold);
+        const candidates = tierCandidates.length > 0 ? tierCandidates : suitable;
+        const idx = Math.floor(Math.random() * candidates.length);
+        return candidates[idx];
       }
     }
     const idx = Math.floor(Math.random() * pool.length);

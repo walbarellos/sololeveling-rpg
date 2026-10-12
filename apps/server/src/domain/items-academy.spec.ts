@@ -66,13 +66,21 @@ describe("AcademyService (Hunter Academy Promotion Exam)", () => {
     careerStats: { ...DEFAULT_CAREER_STATS }
   });
 
-  it("fails promotion if level is below 8", () => {
+  it("allows lower level player to promote on merit if boss trophy and allocated stats are present", () => {
     const academy = new AcademyService();
     const p = makePlayer();
-    p.level = 7;
+    p.level = 5; // Nível baixo, mas matou o chefe e distribuiu atributos (estilo Solo Leveling)
+    p.attributes = { str: 20, agi: 15, vit: 10, int: 10 };
+    p.inventory = [
+      {
+        slotIndex: 0,
+        item: MASTER_ITEMS.trophy_goblin_boss_core,
+        quantity: 1
+      }
+    ];
     const res = academy.evaluatePromotion(p, "D");
-    expect(res.success).toBe(false);
-    expect(res.message).toContain("Nível insuficiente");
+    expect(res.success).toBe(true);
+    expect(res.newRank).toBe("D");
   });
 
   it("fails promotion if player has not allocated at least 15 attribute points", () => {

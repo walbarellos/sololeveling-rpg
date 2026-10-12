@@ -64,6 +64,7 @@ export class InventoryController {
 
   private selectedSlotIndex: number | null = null;
   private selectedEquipSlot: EquipmentSlotName | null = null;
+  public isQuickSellMode: boolean = false;
 
   constructor() {
     this.bindEvents();
@@ -78,6 +79,13 @@ export class InventoryController {
     this.inventoryModal?.classList.add("hidden");
     this.selectedSlotIndex = null;
     this.selectedEquipSlot = null;
+    if (this.isQuickSellMode) {
+      this.isQuickSellMode = false;
+      const btnToggle = document.querySelector<HTMLButtonElement>("#btn-toggle-quick-sell");
+      btnToggle?.classList.remove("active");
+      const alertEl = document.querySelector<HTMLDivElement>("#quick-sell-mode-alert");
+      alertEl?.classList.add("hidden");
+    }
   }
 
   public isOpen(): boolean {
@@ -108,9 +116,35 @@ export class InventoryController {
       });
     }
 
-    const btnSellJunk = document.querySelector<HTMLButtonElement>("#btn-sell-all-junk");
-    btnSellJunk?.addEventListener("click", () => {
+    // Toggle modo venda rápida (1-clique)
+    const btnToggleQuickSell = document.querySelector<HTMLButtonElement>("#btn-toggle-quick-sell");
+    const quickSellAlert = document.querySelector<HTMLDivElement>("#quick-sell-mode-alert");
+    btnToggleQuickSell?.addEventListener("click", () => {
+      this.isQuickSellMode = !this.isQuickSellMode;
+      btnToggleQuickSell.classList.toggle("active", this.isQuickSellMode);
+      quickSellAlert?.classList.toggle("hidden", !this.isQuickSellMode);
+      this.render();
+    });
+
+    // Botões de venda em lote por raridade
+    const btnSellCommon = document.querySelector<HTMLButtonElement>("#btn-sell-common");
+    btnSellCommon?.addEventListener("click", () => {
+      socket.emit(ClientEvents.SellAllJunkRequest, { maxRarity: "COMMON" });
+      this.selectedSlotIndex = null;
+      this.clearInspect();
+    });
+
+    const btnSellUncommon = document.querySelector<HTMLButtonElement>("#btn-sell-uncommon");
+    btnSellUncommon?.addEventListener("click", () => {
       socket.emit(ClientEvents.SellAllJunkRequest, { maxRarity: "UNCOMMON" });
+      this.selectedSlotIndex = null;
+      this.clearInspect();
+    });
+
+    const btnSellRare = document.querySelector<HTMLButtonElement>("#btn-sell-rare");
+    btnSellRare?.addEventListener("click", () => {
+      socket.emit(ClientEvents.SellAllJunkRequest, { maxRarity: "RARE" });
+      this.selectedSlotIndex = null;
       this.clearInspect();
     });
   }
@@ -118,7 +152,7 @@ export class InventoryController {
   public render() {
     const goldEl = document.querySelector<HTMLSpanElement>("#inv-gold-display");
     if (goldEl && gameState.lastMe) {
-      goldEl.textContent = `💰 ${(gameState.lastMe.gold ?? 0).toLocaleString()} OURO`;
+      goldEl.innerHTML = `<span style="color: #f59e0b; margin-right: 4px;">[G]</span> ${(gameState.lastMe.gold ?? 0).toLocaleString()} OURO`;
     }
 
     this.renderPaperdoll();
@@ -200,12 +234,22 @@ export class InventoryController {
   private renderGrid() {
     if (!this.invGridSlots) return;
     this.invGridSlots.innerHTML = "";
+    this.invGridSlots.classList.toggle("quick-sell-active", this.isQuickSellMode);
 
     const inventory = gameState.inventory;
     const occupiedCount = inventory.length;
 
     if (this.invCapacityCounter) {
       this.invCapacityCounter.textContent = `${occupiedCount} / 24 OCUPADOS`;
+    }
+
+    // Auto-clear inspect if selected slot was sold or removed
+    if (this.selectedSlotIndex !== null) {
+      const stillExists = inventory.some((s) => s.slotIndex === this.selectedSlotIndex);
+      if (!stillExists) {
+        this.selectedSlotIndex = null;
+        this.clearInspect();
+      }
     }
 
     const equippedIds = new Set(
@@ -226,8 +270,12 @@ export class InventoryController {
         const isEquipped = equippedIds.has(item.id);
         const isLocked = me ? me.level < item.minLevel : false;
         const rarityClass = this.getRarityClass(item.rarity);
+        const canSell = !isEquipped && item.type !== "TROPHY";
+        const goldVal = getItemGoldValue(item) * slot.quantity;
+        const sellHint = canSell ? ` · [Botão Direito / Shift+Clique]: Vender (+${goldVal} G)` : "";
+
         slotEl.className = `inv-slot ${rarityClass} ${isSelected ? "selected" : ""} ${isEquipped ? "equipped" : ""} ${isLocked ? "level-locked" : ""}`;
-        slotEl.title = `${item.name} (${ITEM_RARITY_COLORS[item.rarity].name})${isLocked ? ` · Requer Lv ${item.minLevel}` : ""}`;
+        slotEl.title = `${item.name} (${ITEM_RARITY_COLORS[item.rarity].name})${isLocked ? ` · Requer Lv ${item.minLevel}` : ""}${sellHint}`;
 
         let qtyHtml = "";
         if (slot.quantity > 1) {
@@ -247,7 +295,29 @@ export class InventoryController {
           ${qtyHtml}
         `;
 
-        slotEl.addEventListener("click", () => {
+        // Atalho: Botão Direito vende instantaneamente
+        slotEl.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          if (canSell) {
+            socket.emit(ClientEvents.SellItemRequest, { slotIndex: i });
+            if (this.selectedSlotIndex === i) {
+              this.selectedSlotIndex = null;
+              this.clearInspect();
+            }
+          }
+        });
+
+        // Clique: Se estiver no Modo Venda Rápida ou Shift+Clique, vende imediatamente
+        slotEl.addEventListener("click", (e) => {
+          if (canSell && (e.shiftKey || this.isQuickSellMode)) {
+            socket.emit(ClientEvents.SellItemRequest, { slotIndex: i });
+            if (this.selectedSlotIndex === i) {
+              this.selectedSlotIndex = null;
+              this.clearInspect();
+            }
+            return;
+          }
+
           this.selectedSlotIndex = i;
           this.selectedEquipSlot = null;
           this.render();

@@ -26,26 +26,17 @@ import { gameState, getMyPlayer } from "../state/game-state";
 import { hudController } from "../ui/hud.controller";
 import { npcController } from "../ui/npc.controller";
 import { renderDungeonTerrain } from "../terrain";
+import {
+  WorldObjectsManager,
+  type WorldPortal,
+  type WorldShrineDef
+} from "./world-objects.manager";
 
 const STEP_INTERVAL_MS = 215; // > STEP_COOLDOWN_MS do servidor (200) para não tomar TOO_FAST
 const PREFERS_REDUCED_MOTION = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-export interface WorldPortal {
-  x: number;
-  y: number;
-  label: string;
-  zoneId: ZoneTeleportRequest["zoneId"];
-  minRank?: HunterRank;
-  color: string;
-  tint?: number;
-}
+export type { WorldPortal, WorldShrineDef };
 
-export interface WorldShrineDef {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-}
 
 type Goal =
   | { type: "enemy"; id: string }
@@ -78,14 +69,7 @@ export class WorldScene extends Phaser.Scene {
   private awaiting: { sequence: number; at: number } | null = null;
   private hover: TileCoord | null = null;
   private isFollowingPlayer = false;
-
-  private portalObjects: Phaser.GameObjects.GameObject[] = [];
-  private npcObjects: Phaser.GameObjects.Container[] = [];
-  private currentPortals: WorldPortal[] = [];
-  private lastPortalStepAt = 0;
-  private shrineObjects: Phaser.GameObjects.GameObject[] = [];
-  private currentShrines: WorldShrineDef[] = [];
-  private lastShrineInteractAt = 0;
+  private objectsManager!: WorldObjectsManager;
 
   constructor() {
     super("world");
@@ -96,6 +80,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create() {
+    this.objectsManager = new WorldObjectsManager(this);
     const ts = gameState.tileSize || 48;
     buildTextures(this, ts);
     this.textures.each((tex: Phaser.Textures.Texture) => {
@@ -224,235 +209,27 @@ export class WorldScene extends Phaser.Scene {
   }
 
   public rebuildWorldObjects() {
-    for (const obj of this.portalObjects) obj.destroy();
-    this.portalObjects = [];
-    for (const cont of this.npcObjects) cont.destroy();
-    this.npcObjects = [];
-    for (const obj of this.shrineObjects) obj.destroy();
-    this.shrineObjects = [];
-
-    const ts = gameState.tileSize || 48;
-    const wId = gameState.worldId;
-
-    if (wId === "GATE_D") {
-      this.currentPortals = [
-        { x: 3, y: 4, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
-        { x: 41, y: 6, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#fb7185", tint: 0xf43f5e }
-      ];
-      this.currentShrines = [
-        { id: "shrine_d1", name: "Altar de Rubi do Átrio", x: 3, y: 15 },
-        { id: "shrine_d2", name: "Fonte de Mana de Latão", x: 22, y: 5 }
-      ];
-    } else if (wId === "GATE_C") {
-      this.currentPortals = [
-        { x: 3, y: 4, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
-        { x: 45, y: 6, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#38bdf8", tint: 0x38bdf8 }
-      ];
-      this.currentShrines = [
-        { id: "shrine_c1", name: "Monólito de Permafrost", x: 4, y: 18 },
-        { id: "shrine_c2", name: "Fonte Glacial de Niflheim", x: 28, y: 6 }
-      ];
-    } else if (wId === "GATE_B") {
-      this.currentPortals = [
-        { x: 4, y: 4, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
-        { x: 49, y: 7, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#a855f7", tint: 0xa855f7 }
-      ];
-      this.currentShrines = [
-        { id: "shrine_b1", name: "Obelisco das Almas", x: 5, y: 20 },
-        { id: "shrine_b2", name: "Cripta de Mana Espectral", x: 32, y: 7 }
-      ];
-    } else if (wId === "GATE_A") {
-      this.currentPortals = [
-        { x: 4, y: 5, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
-        { x: 53, y: 8, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#f97316", tint: 0xf97316 }
-      ];
-      this.currentShrines = [
-        { id: "shrine_a1", name: "Fonte de Fogo Vivo", x: 5, y: 22 },
-        { id: "shrine_a2", name: "Altar Vulcânico de Obsidiana", x: 34, y: 8 }
-      ];
-    } else if (wId === "GATE_S") {
-      this.currentPortals = [
-        { x: 5, y: 5, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
-        { x: 57, y: 9, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#facc15", tint: 0xfacc15 }
-      ];
-      this.currentShrines = [
-        { id: "shrine_s1", name: "Altar Sagrado da Aurora", x: 6, y: 24 },
-        { id: "shrine_s2", name: "Pilar dos Mandamentos Divinos", x: 38, y: 9 }
-      ];
-    } else if (wId === "GATE_SS") {
-      this.currentPortals = [
-        { x: 5, y: 5, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
-        { x: 61, y: 9, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#ec4899", tint: 0xec4899 }
-      ];
-      this.currentShrines = [
-        { id: "shrine_ss1", name: "Fóton Cósmico de Cura", x: 6, y: 26 },
-        { id: "shrine_ss2", name: "Nebulosa Astral de Mana", x: 42, y: 10 }
-      ];
-    } else if (wId === "GATE_SSS") {
-      this.currentPortals = [
-        { x: 6, y: 5, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
-        { x: 65, y: 10, label: "PORTAL SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#8b5cf6", tint: 0x8b5cf6 }
-      ];
-      this.currentShrines = [
-        { id: "shrine_sss1", name: "Chama Eterna do Soberano", x: 7, y: 28 },
-        { id: "shrine_sss2", name: "Altar da Morte Suprema", x: 46, y: 11 }
-      ];
-    } else {
-      this.currentPortals = [
-        { x: 2, y: 2, label: "GATE E", zoneId: "RETURN_GATE_E", color: "#7dd3fc" },
-        { x: 5, y: 2, label: "GATE D", zoneId: "ENTER_GATE_D", minRank: "D", color: "#c4b5fd", tint: 0xa78bfa },
-        { x: 46, y: 7, label: "RETORNO SANTUÁRIO", zoneId: "RETURN_GATE_E", color: "#7dd3fc" }
-      ];
-      this.currentShrines = [
-        { id: "shrine_e1", name: "Fonte de Mana do Santuário", x: 2, y: 4 },
-        { id: "shrine_e2", name: "Altar das Sombras", x: 38, y: 15 }
-      ];
-
-      // Spawn dos NPCs no Santuário Seguro do Gate E
-      for (const npc of WORLD_NPCS) {
-        const px = npc.position.x * ts + ts / 2;
-        const py = npc.position.y * ts + ts / 2;
-        const tokenKey = TEX.token(npc.portrait as any);
-
-        const cont = this.add.container(px, py).setDepth(20);
-        const spr = this.add.image(0, 0, tokenKey).setDisplaySize(ts * 0.85, ts * 0.85);
-
-        const badge = this.add
-          .text(0, -ts * 0.65, `[NPC] ${npc.name}`, {
-            fontSize: "9px",
-            fontFamily: "'Rajdhani', sans-serif",
-            fontStyle: "bold",
-            color: "#38bdf8",
-            backgroundColor: "#030712dd",
-            padding: { x: 4, y: 1 }
-          })
-          .setOrigin(0.5);
-
-        cont.add([spr, badge]);
-
-        if (!PREFERS_REDUCED_MOTION) {
-          this.tweens.add({
-            targets: spr,
-            y: { from: -1, to: 1 },
-            duration: 1200,
-            yoyo: true,
-            repeat: -1,
-            ease: "Sine.easeInOut"
-          });
-        }
-        this.npcObjects.push(cont);
-      }
-    }
-
-    // Criação dos portais visuais
-    for (const portal of this.currentPortals) {
-      const px = portal.x * ts + ts / 2;
-      const py = portal.y * ts + ts / 2;
-      const spr = this.add
-        .image(px, py, TEX.portal)
-        .setDepth(1)
-        .setAlpha(0.95)
-        .setDisplaySize(ts, ts);
-      if (portal.tint) spr.setTint(portal.tint);
-
-      const label = this.add
-        .text(px, py + ts * 0.5, portal.label, {
-          fontSize: "9px",
-          color: portal.color,
-          stroke: "#020617",
-          strokeThickness: 3
-        })
-        .setOrigin(0.5)
-        .setDepth(1);
-
-      this.portalObjects.push(spr, label);
-
-      if (!PREFERS_REDUCED_MOTION) {
-        this.tweens.add({ targets: spr, angle: 360, duration: 9000, repeat: -1 });
-        this.tweens.add({
-          targets: spr,
-          scale: { from: 0.94, to: 1.06 },
-          yoyo: true,
-          duration: 1400,
-          repeat: -1,
-          ease: "Sine.easeInOut"
-        });
-      }
-    }
-
-    // Criação dos Altares de Restauração visuais
-    for (const shrine of this.currentShrines) {
-      const px = shrine.x * ts + ts / 2;
-      const py = shrine.y * ts + ts / 2;
-      const spr = this.add
-        .image(px, py, TEX.shrine)
-        .setDepth(2)
-        .setDisplaySize(ts, ts);
-
-      const label = this.add
-        .text(px, py - ts * 0.55, shrine.name, {
-          fontSize: "8.5px",
-          fontFamily: "'Rajdhani', sans-serif",
-          fontStyle: "bold",
-          color: "#38bdf8",
-          backgroundColor: "#030712cc",
-          padding: { x: 4, y: 1 }
-        })
-        .setOrigin(0.5)
-        .setDepth(2);
-
-      this.shrineObjects.push(spr, label);
-
-      if (!PREFERS_REDUCED_MOTION) {
-        this.tweens.add({
-          targets: spr,
-          y: { from: py - 1, to: py + 1 },
-          duration: 1600,
-          yoyo: true,
-          repeat: -1,
-          ease: "Sine.easeInOut"
-        });
-      }
-    }
+    this.objectsManager.rebuildWorldObjects(PREFERS_REDUCED_MOTION);
   }
 
   public adjacentPortals(): WorldPortal[] {
-    const me = getMyPlayer();
-    if (!me) return [];
-    return this.currentPortals.filter((p) => chebyshev(me.position, p) <= 1);
+    return this.objectsManager.adjacentPortals();
   }
 
   public adjacentShrines(): WorldShrineDef[] {
-    const me = getMyPlayer();
-    if (!me) return [];
-    return this.currentShrines.filter((s) => chebyshev(me.position, s) <= 1);
+    return this.objectsManager.adjacentShrines();
+  }
+
+  public adjacentNpcs(): NpcDefinition[] {
+    return this.objectsManager.adjacentNpcs();
   }
 
   public activatePortal(portal: WorldPortal) {
-    const me = getMyPlayer();
-    if (!me || me.inBattle || gameState.currentBattle) return;
-    const now = Date.now();
-    if (now - this.lastPortalStepAt < 1000) return;
-    this.lastPortalStepAt = now;
-    this.cancelPursuit();
-
-    if (portal.minRank && !isRankAllowed(me.rank, portal.minRank)) {
-      hudController.setStatus(`Acesso negado: Requer Rank ${portal.minRank} ou superior! Realize seu exame com o Inspetor Baek.`);
-      return;
-    }
-    hudController.setStatus(`Sintonizando portal dimensional [${portal.label}]…`);
-    socket.emit(ClientEvents.ZoneTeleportRequest, { zoneId: portal.zoneId });
+    this.objectsManager.activatePortal(portal, () => this.cancelPursuit());
   }
 
   public activateShrine(shrine: WorldShrineDef) {
-    const me = getMyPlayer();
-    if (!me || me.inBattle || gameState.currentBattle) return;
-    const now = Date.now();
-    if (now - this.lastShrineInteractAt < 1000) return;
-    this.lastShrineInteractAt = now;
-    this.cancelPursuit();
-    hudController.setStatus(`Canalizando energia sagrada no [${shrine.name}]…`);
-    socket.emit(ClientEvents.ShrineInteractRequest);
+    this.objectsManager.activateShrine(shrine, () => this.cancelPursuit());
   }
 
   private updateZoneDisplay(x: number, y: number) {
@@ -891,14 +668,6 @@ export class WorldScene extends Phaser.Scene {
     return true;
   }
 
-  public adjacentNpcs(): NpcDefinition[] {
-    const me = getMyPlayer();
-    if (!me) return [];
-    return (WORLD_NPCS as NpcDefinition[])
-      .filter((n) => chebyshev(me.position, n.position) <= 1)
-      .sort((a, b) => manhattan(me.position, a.position) - manhattan(me.position, b.position));
-  }
-
   public adjacentEnemies() {
     const me = getMyPlayer();
     if (!me) return [];
@@ -994,7 +763,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // 3. Portais dimensionais
-    const clickedPortal = this.currentPortals.find((p) => p.x === tileX && p.y === tileY);
+    const clickedPortal = this.objectsManager.currentPortals.find((p) => p.x === tileX && p.y === tileY);
     if (clickedPortal) {
       if (chebyshev(me.position, clickedPortal) <= 1) {
         this.activatePortal(clickedPortal);
@@ -1006,7 +775,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // 4. Altares de Restauração
-    const clickedShrine = this.currentShrines.find((s) => s.x === tileX && s.y === tileY);
+    const clickedShrine = this.objectsManager.currentShrines.find((s) => s.x === tileX && s.y === tileY);
     if (clickedShrine) {
       if (chebyshev(me.position, clickedShrine) <= 1) {
         this.activateShrine(clickedShrine);

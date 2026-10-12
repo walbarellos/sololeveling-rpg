@@ -63,7 +63,16 @@
   pointer-events: none;
 }
 
-.sidebar-rank-tag { position: absolute; bottom: 4px; left: 4px; z-index: 2; }
+.sidebar-rank-tag {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  z-index: 2;
+  font-size: 0.76rem;
+  padding: 3px 10px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85);
+}
 .sidebar-hunter-info { text-align: center; }
 
 .sidebar-hunter-name {

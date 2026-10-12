@@ -194,6 +194,156 @@
   color: #94a3b8;
 }
 
+/* Barra de Venda Rápida & Lote */
+.inventory-quick-sell-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: #080d1a;
+  padding: 6px 10px;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+}
+
+.btn-quick-sell-toggle {
+  background: #1e1b4b;
+  color: #c7d2fe;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 4px;
+  border: 1px solid #4338ca;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-quick-sell-toggle:hover {
+  background: #312e81;
+  border-color: #6366f1;
+  color: #ffffff;
+}
+
+.btn-quick-sell-toggle.active {
+  background: #991b1b !important;
+  color: #fef08a !important;
+  border-color: #f87171 !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  animation: pulse-quick-sell 1.5s infinite;
+}
+
+@keyframes pulse-quick-sell {
+  0%, 100% {
+    border-color: #f87171;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    border-color: #ef4444;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.85);
+  }
+}
+
+.bulk-sell-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bulk-sell-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.05em;
+  margin-right: 2px;
+}
+
+.btn-bulk-sell {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 4px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.btn-bulk-common {
+  background: #1e293b;
+  color: #cbd5e1;
+  border: 1px solid #334155;
+}
+
+.btn-bulk-common:hover {
+  background: #334155;
+  border-color: #94a3b8;
+  color: #ffffff;
+}
+
+.btn-bulk-uncommon {
+  background: #064e3b;
+  color: #a7f3d0;
+  border: 1px solid #059669;
+}
+
+.btn-bulk-uncommon:hover {
+  background: #047857;
+  border-color: #34d399;
+  color: #ffffff;
+}
+
+.btn-bulk-rare {
+  background: #1e3a8a;
+  color: #bfdbfe;
+  border: 1px solid #2563eb;
+}
+
+.btn-bulk-rare:hover {
+  background: #1d4ed8;
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+.quick-sell-mode-alert {
+  background: rgba(153, 27, 27, 0.25);
+  border: 1px dashed #ef4444;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fca5a5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inv-shortcuts-footer {
+  font-size: 0.66rem;
+  color: #64748b;
+  text-align: center;
+  padding: 2px 0;
+}
+
+.inv-shortcuts-footer strong {
+  color: #f59e0b;
+}
+
+.inventory-grid-24.quick-sell-active .inv-slot:not(.empty):not(.equipped) {
+  cursor: crosshair;
+  border-color: #ef444466;
+}
+
+.inventory-grid-24.quick-sell-active .inv-slot:not(.empty):not(.equipped):hover {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.7) !important;
+}
+
+
 .inventory-grid-24 {
   display: grid;
   grid-template-columns: repeat(6, 1fr);

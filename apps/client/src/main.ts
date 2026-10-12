@@ -22,8 +22,12 @@ import { inventoryController } from "./ui/inventory.controller";
 import { missionsController } from "./ui/missions.controller";
 import { modalsController } from "./ui/modals.controller";
 import { profileController } from "./ui/profile.controller";
-import { npcController } from "./ui/npc.controller";
 import "./style.css";
+
+(window as any).gameState = gameState;
+(window as any).academyController = academyController;
+(window as any).inventoryController = inventoryController;
+(window as any).socket = socket;
 
 let worldScene: WorldScene | null = null;
 const getWorldScene = (): WorldScene | null => {
@@ -142,9 +146,16 @@ socket.on(ServerEvents.Snapshot, (raw: unknown) => {
 
   const me = gameState.world.players.find((p) => p.id === gameState.myPlayerId);
   if (me) {
+    const prevRank = gameState.lastMe?.rank;
     gameState.lastMe = me;
     if (battleController.pending === 0) {
       hudController.applyHud(me);
+    }
+    if (profileController.profileModal && !profileController.profileModal.classList.contains("hidden")) {
+      profileController.updateProfileModal();
+    }
+    if (prevRank && prevRank !== me.rank) {
+      getWorldScene()?.rebuildWorldObjects();
     }
   }
   getWorldScene()?.rebuildTerrain();
@@ -171,6 +182,7 @@ socket.on(ServerEvents.RankPromotionResult, (raw: unknown) => {
   if (!parsed.success) return;
   academyController.renderPromotionResult(parsed.data);
   hudController.setStatus(parsed.data.message);
+  getWorldScene()?.rebuildWorldObjects();
 });
 
 socket.on(ServerEvents.GateClearAnnouncement, (raw: unknown) => {
@@ -188,7 +200,7 @@ socket.on(ServerEvents.GateResetAnnouncement, (data: { message?: string }) => {
 });
 
 socket.on(ServerEvents.ShrineInteractResult, (data: { message?: string }) => {
-  const msg = data?.message ?? "✨ Vitalidade e mana restauradas no Altar Ancestral!";
+  const msg = data?.message ?? "[ALTAR] Vitalidade e mana restauradas no Altar Ancestral!";
   hudController.setStatus(msg);
 });
 

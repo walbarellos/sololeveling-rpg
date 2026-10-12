@@ -518,16 +518,36 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
   },
 
   // =========================================================================
-  // ARMAS EXPANDIDAS DE ALTO NÍVEL (Lv 30 a 200)
+  // ARMAS EXPANDIDAS DE ALTO NÍVEL (Lv 12 a 200)
   // =========================================================================
+  weapon_crimson_blade: {
+    id: "weapon_crimson_blade",
+    name: "Lâmina de Aço Carmesim",
+    description: "Forjada do minério denso da Cidadela Carmesim do Gate D.",
+    type: "WEAPON",
+    rarity: "RARE",
+    minLevel: 12,
+    stats: { bonusHp: 50, bonusMp: 20, bonusPhysicalAtk: 32, bonusMagicalAtk: 15, bonusCritChance: 0.08, bonusDodgeChance: 0.03, bonusBlockChance: 0 },
+    icon: "sword_goblin"
+  },
+  weapon_brass_cleaver: {
+    id: "weapon_brass_cleaver",
+    name: "Cutelo de Latão Rúnico",
+    description: "Pesado e afiado, infundido com runas explosivas do Gate D.",
+    type: "WEAPON",
+    rarity: "EPIC",
+    minLevel: 14,
+    stats: { bonusHp: 75, bonusMp: 25, bonusPhysicalAtk: 42, bonusMagicalAtk: 18, bonusCritChance: 0.10, bonusDodgeChance: 0.02, bonusBlockChance: 0.04 },
+    icon: "blade_dark"
+  },
   weapon_frost_dagger: {
     id: "weapon_frost_dagger",
     name: "Adaga Glacial de Niflheim",
     description: "Forjada do permafrost eterno do Gate C. Congela os pontos vitais do alvo.",
     type: "WEAPON",
     rarity: "RARE",
-    minLevel: 30,
-    stats: { bonusHp: 60, bonusMp: 40, bonusPhysicalAtk: 45, bonusMagicalAtk: 30, bonusCritChance: 0.08, bonusDodgeChance: 0.04, bonusBlockChance: 0 },
+    minLevel: 20,
+    stats: { bonusHp: 60, bonusMp: 40, bonusPhysicalAtk: 48, bonusMagicalAtk: 32, bonusCritChance: 0.09, bonusDodgeChance: 0.04, bonusBlockChance: 0 },
     icon: "blade_cosmic"
   },
   weapon_glacial_scythe: {
@@ -536,8 +556,8 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Arma lendária da Rainha Frostbite. Cada corte liberta lâminas gélidas cortantes.",
     type: "WEAPON",
     rarity: "EPIC",
-    minLevel: 45,
-    stats: { bonusHp: 110, bonusMp: 80, bonusPhysicalAtk: 75, bonusMagicalAtk: 65, bonusCritChance: 0.12, bonusDodgeChance: 0.05, bonusBlockChance: 0.02 },
+    minLevel: 24,
+    stats: { bonusHp: 110, bonusMp: 80, bonusPhysicalAtk: 78, bonusMagicalAtk: 68, bonusCritChance: 0.13, bonusDodgeChance: 0.05, bonusBlockChance: 0.02 },
     icon: "sword_goblin"
   },
   weapon_shadow_reaper_daggers: {
@@ -546,8 +566,8 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Par de punhais necróticos extraídos do Arquilorde do Gate B.",
     type: "WEAPON",
     rarity: "EPIC",
-    minLevel: 70,
-    stats: { bonusHp: 160, bonusMp: 100, bonusPhysicalAtk: 120, bonusMagicalAtk: 80, bonusCritChance: 0.16, bonusDodgeChance: 0.08, bonusBlockChance: 0 },
+    minLevel: 34,
+    stats: { bonusHp: 160, bonusMp: 100, bonusPhysicalAtk: 125, bonusMagicalAtk: 85, bonusCritChance: 0.16, bonusDodgeChance: 0.08, bonusBlockChance: 0 },
     icon: "blade_dark"
   },
   weapon_dragon_slayer_greatsword: {
@@ -556,8 +576,8 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Lâmina titânica forjada em obsidiana vulcânica, banhada no sangue de Ignis.",
     type: "WEAPON",
     rarity: "LEGENDARY",
-    minLevel: 100,
-    stats: { bonusHp: 280, bonusMp: 120, bonusPhysicalAtk: 210, bonusMagicalAtk: 90, bonusCritChance: 0.15, bonusDodgeChance: 0, bonusBlockChance: 0.12 },
+    minLevel: 54,
+    stats: { bonusHp: 280, bonusMp: 120, bonusPhysicalAtk: 215, bonusMagicalAtk: 95, bonusCritChance: 0.16, bonusDodgeChance: 0, bonusBlockChance: 0.12 },
     icon: "sword_immortal"
   },
   weapon_kamish_wrath_daggers: {
@@ -566,8 +586,8 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "As famosas dagas forjadas a partir da presa mais afiada da Calamidade Kamish.",
     type: "WEAPON",
     rarity: "IMMORTAL",
-    minLevel: 135,
-    stats: { bonusHp: 450, bonusMp: 250, bonusPhysicalAtk: 340, bonusMagicalAtk: 180, bonusCritChance: 0.24, bonusDodgeChance: 0.12, bonusBlockChance: 0.05 },
+    minLevel: 80,
+    stats: { bonusHp: 450, bonusMp: 250, bonusPhysicalAtk: 345, bonusMagicalAtk: 185, bonusCritChance: 0.24, bonusDodgeChance: 0.12, bonusBlockChance: 0.05 },
     icon: "blade_cosmic"
   },
   weapon_cosmic_annihilator_staff: {
@@ -576,9 +596,19 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Catalisador do tecido espacial do Gate SS que dobra a gravidade e o éter estelar.",
     type: "WEAPON",
     rarity: "COSMIC",
-    minLevel: 170,
-    stats: { bonusHp: 650, bonusMp: 600, bonusPhysicalAtk: 240, bonusMagicalAtk: 460, bonusCritChance: 0.26, bonusDodgeChance: 0.10, bonusBlockChance: 0.06 },
+    minLevel: 115,
+    stats: { bonusHp: 650, bonusMp: 600, bonusPhysicalAtk: 245, bonusMagicalAtk: 465, bonusCritChance: 0.26, bonusDodgeChance: 0.10, bonusBlockChance: 0.06 },
     icon: "blade_cosmic"
+  },
+  weapon_shadow_commander_blade: {
+    id: "weapon_shadow_commander_blade",
+    name: "Lâmina do Comandante Igris",
+    description: "Espada longa de aço negro imbuída com o juramento de lealdade eterno do Comandante.",
+    type: "WEAPON",
+    rarity: "IMMORTAL",
+    minLevel: 150,
+    stats: { bonusHp: 850, bonusMp: 450, bonusPhysicalAtk: 480, bonusMagicalAtk: 280, bonusCritChance: 0.28, bonusDodgeChance: 0.12, bonusBlockChance: 0.10 },
+    icon: "blade_dark"
   },
   weapon_shadow_sovereign_blade: {
     id: "weapon_shadow_sovereign_blade",
@@ -592,15 +622,25 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
   },
 
   // =========================================================================
-  // ARMADURAS EXPANDIDAS DE ALTO NÍVEL (Lv 30 a 200)
+  // ARMADURAS EXPANDIDAS DE ALTO NÍVEL (Lv 12 a 200)
   // =========================================================================
+  armor_crimson_cuirass: {
+    id: "armor_crimson_cuirass",
+    name: "Couraça de Aço Carmesim",
+    description: "Blindagem peitoral forjada para os soldados veteranos da Cidadela do Gate D.",
+    type: "ARMOR",
+    rarity: "RARE",
+    minLevel: 12,
+    stats: { bonusHp: 120, bonusMp: 30, bonusPhysicalAtk: 8, bonusMagicalAtk: 5, bonusCritChance: 0.02, bonusDodgeChance: 0.02, bonusBlockChance: 0.08 },
+    icon: "cuirass_blood"
+  },
   armor_frost_mail: {
     id: "armor_frost_mail",
     name: "Cota de Malha Glacial",
     description: "Armadura acolchoada com peles de yeti e escamas gélidas de Niflheim.",
     type: "ARMOR",
     rarity: "RARE",
-    minLevel: 30,
+    minLevel: 20,
     stats: { bonusHp: 180, bonusMp: 60, bonusPhysicalAtk: 10, bonusMagicalAtk: 10, bonusCritChance: 0.02, bonusDodgeChance: 0.03, bonusBlockChance: 0.06 },
     icon: "cuirass_blood"
   },
@@ -610,7 +650,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Armadura maciça de permafrost que dissipa impactos físicos com estilhaços congelantes.",
     type: "ARMOR",
     rarity: "EPIC",
-    minLevel: 45,
+    minLevel: 24,
     stats: { bonusHp: 320, bonusMp: 100, bonusPhysicalAtk: 15, bonusMagicalAtk: 20, bonusCritChance: 0.03, bonusDodgeChance: 0.04, bonusBlockChance: 0.10 },
     icon: "cuirass_blood"
   },
@@ -620,7 +660,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Carapaça negra ultrarresistente dos monstros superiores da Necrópole.",
     type: "ARMOR",
     rarity: "EPIC",
-    minLevel: 70,
+    minLevel: 34,
     stats: { bonusHp: 580, bonusMp: 180, bonusPhysicalAtk: 25, bonusMagicalAtk: 30, bonusCritChance: 0.04, bonusDodgeChance: 0.08, bonusBlockChance: 0.12 },
     icon: "robe_cosmic"
   },
@@ -630,7 +670,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Escamas de dragão vermelho impermeáveis ao fogo e capazes de deflectir ataques maciços.",
     type: "ARMOR",
     rarity: "LEGENDARY",
-    minLevel: 100,
+    minLevel: 54,
     stats: { bonusHp: 950, bonusMp: 280, bonusPhysicalAtk: 40, bonusMagicalAtk: 40, bonusCritChance: 0.06, bonusDodgeChance: 0.06, bonusBlockChance: 0.18 },
     icon: "cuirass_blood"
   },
@@ -640,7 +680,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Placas douradas esculpidas com as tábuas da Lei do Templo dos Deuses.",
     type: "ARMOR",
     rarity: "IMMORTAL",
-    minLevel: 135,
+    minLevel: 80,
     stats: { bonusHp: 1600, bonusMp: 480, bonusPhysicalAtk: 65, bonusMagicalAtk: 75, bonusCritChance: 0.08, bonusDodgeChance: 0.10, bonusBlockChance: 0.22 },
     icon: "cuirass_blood"
   },
@@ -650,7 +690,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Matéria condensada de estrelas em colapso. Concede invulnerabilidade temporária a golpes críticos.",
     type: "ARMOR",
     rarity: "COSMIC",
-    minLevel: 170,
+    minLevel: 115,
     stats: { bonusHp: 2700, bonusMp: 800, bonusPhysicalAtk: 90, bonusMagicalAtk: 120, bonusCritChance: 0.10, bonusDodgeChance: 0.14, bonusBlockChance: 0.26 },
     icon: "robe_cosmic"
   },
@@ -666,7 +706,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
   },
 
   // =========================================================================
-  // AMULETOS E ANÉIS EXPANDIDOS DE ALTO NÍVEL (Lv 30 a 200)
+  // AMULETOS E ANÉIS EXPANDIDOS DE ALTO NÍVEL (Lv 20 a 200)
   // =========================================================================
   amulet_frost_crystal: {
     id: "amulet_frost_crystal",
@@ -674,7 +714,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Canaliza o frio extremo estabilizando a regeneração de mana e mente.",
     type: "AMULET",
     rarity: "EPIC",
-    minLevel: 45,
+    minLevel: 20,
     stats: { bonusHp: 150, bonusMp: 120, bonusPhysicalAtk: 18, bonusMagicalAtk: 28, bonusCritChance: 0.05, bonusDodgeChance: 0.04, bonusBlockChance: 0.02 },
     icon: "amulet_copper"
   },
@@ -684,7 +724,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Garante frieza letal e mira precisa em combates prolongados.",
     type: "RING",
     rarity: "EPIC",
-    minLevel: 45,
+    minLevel: 20,
     stats: { bonusHp: 120, bonusMp: 80, bonusPhysicalAtk: 22, bonusMagicalAtk: 18, bonusCritChance: 0.08, bonusDodgeChance: 0.05, bonusBlockChance: 0.02 },
     icon: "ring_silver"
   },
@@ -694,7 +734,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Visão necromântica que antecipa ataques e perfura barreiras arcanas.",
     type: "AMULET",
     rarity: "LEGENDARY",
-    minLevel: 70,
+    minLevel: 36,
     stats: { bonusHp: 260, bonusMp: 220, bonusPhysicalAtk: 35, bonusMagicalAtk: 55, bonusCritChance: 0.08, bonusDodgeChance: 0.06, bonusBlockChance: 0.04 },
     icon: "amulet_green"
   },
@@ -704,7 +744,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Transborda energia escura, amplificando o dano de acertos críticos.",
     type: "RING",
     rarity: "LEGENDARY",
-    minLevel: 70,
+    minLevel: 36,
     stats: { bonusHp: 220, bonusMp: 160, bonusPhysicalAtk: 45, bonusMagicalAtk: 35, bonusCritChance: 0.12, bonusDodgeChance: 0.06, bonusBlockChance: 0.03 },
     icon: "ring_shadow"
   },
@@ -714,7 +754,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Pedra vulcânica ardente que pulsa no ritmo de um coração de dragão vivo.",
     type: "AMULET",
     rarity: "IMMORTAL",
-    minLevel: 100,
+    minLevel: 56,
     stats: { bonusHp: 480, bonusMp: 340, bonusPhysicalAtk: 70, bonusMagicalAtk: 70, bonusCritChance: 0.10, bonusDodgeChance: 0.08, bonusBlockChance: 0.06 },
     icon: "amulet_gold"
   },
@@ -724,7 +764,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Cada golpe do portador incinera a defesa do oponente.",
     type: "RING",
     rarity: "IMMORTAL",
-    minLevel: 100,
+    minLevel: 56,
     stats: { bonusHp: 380, bonusMp: 240, bonusPhysicalAtk: 85, bonusMagicalAtk: 50, bonusCritChance: 0.15, bonusDodgeChance: 0.08, bonusBlockChance: 0.05 },
     icon: "ring_gold"
   },
@@ -734,7 +774,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Fragmento do monolito central do Templo Secreto. Concede vigor semi-divino.",
     type: "AMULET",
     rarity: "IMMORTAL",
-    minLevel: 135,
+    minLevel: 82,
     stats: { bonusHp: 800, bonusMp: 550, bonusPhysicalAtk: 110, bonusMagicalAtk: 130, bonusCritChance: 0.12, bonusDodgeChance: 0.10, bonusBlockChance: 0.08 },
     icon: "amulet_gold"
   },
@@ -744,7 +784,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Símbolo dos mandamentos que punem quem ousa desafiar o soberano.",
     type: "RING",
     rarity: "IMMORTAL",
-    minLevel: 135,
+    minLevel: 82,
     stats: { bonusHp: 650, bonusMp: 420, bonusPhysicalAtk: 135, bonusMagicalAtk: 90, bonusCritChance: 0.18, bonusDodgeChance: 0.10, bonusBlockChance: 0.07 },
     icon: "ring_gold"
   },
@@ -754,7 +794,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Condensado de pura gravidade estelar do Devorador de Mundos.",
     type: "AMULET",
     rarity: "COSMIC",
-    minLevel: 170,
+    minLevel: 118,
     stats: { bonusHp: 1350, bonusMp: 900, bonusPhysicalAtk: 180, bonusMagicalAtk: 220, bonusCritChance: 0.16, bonusDodgeChance: 0.14, bonusBlockChance: 0.10 },
     icon: "amulet_gold"
   },
@@ -764,7 +804,7 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     description: "Cria micro-distorções de espaço acelerando o dano de ataque a níveis astronômicos.",
     type: "RING",
     rarity: "COSMIC",
-    minLevel: 170,
+    minLevel: 118,
     stats: { bonusHp: 1100, bonusMp: 700, bonusPhysicalAtk: 220, bonusMagicalAtk: 160, bonusCritChance: 0.24, bonusDodgeChance: 0.14, bonusBlockChance: 0.08 },
     icon: "ring_shadow"
   },

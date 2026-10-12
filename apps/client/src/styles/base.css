@@ -201,25 +201,226 @@ body {
   font-weight: 600;
 }
 
-/* Rank Tags (E a S) */
+/* ==========================================================================
+   HUNTER RANK BADGES (E a SSS+) - DESIGN DE ALTO IMPACTO GAMER & VAIDADE
+   ========================================================================== */
 .rank-tag {
-  font-family: var(--font-display);
-  font-size: 0.68rem;
+  font-family: var(--font-display, 'Rajdhani', sans-serif);
+  font-size: 0.72rem;
   font-weight: 900;
-  padding: 1px 6px;
-  border-radius: 2px;
-  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.25s ease;
+  user-select: none;
+  box-sizing: border-box;
 }
-.rank-e { background: #064e3b; color: #a7f3d0; border: 1px solid #10b981; }
-.rank-d { background: #0c4a6e; color: #bae6fd; border: 1px solid #0284c7; }
-.rank-c { background: #581c87; color: #e9d5ff; border: 1px solid #9333ea; }
-.rank-b { background: #7c2d12; color: #fed7aa; border: 1px solid #ea580c; }
-.rank-a { background: #831843; color: #fbcfe8; border: 1px solid #db2777; }
-.rank-s { background: #713f12; color: #fef08a; border: 1px solid #eab308; box-shadow: 0 0 8px rgba(234, 179, 8, 0.4); }
-.rank-ss { background: #4c0519; color: #fecdd3; border: 1px solid #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
-.rank-sss { background: #2e0854; color: #e0e7ff; border: 1px solid #a855f7; box-shadow: 0 0 12px rgba(168, 85, 247, 0.6); }
-.rank-sss\+, .rank-sss-plus { background: #022c22; color: #67e8f9; border: 1px solid #06b6d4; box-shadow: 0 0 14px rgba(6, 182, 212, 0.7); text-shadow: 0 0 6px #22d3ee; }
+
+/* RANK E — Ferro & Cinzas (Novato) */
+.rank-e {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #94a3b8;
+  border: 1px solid #475569;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* RANK D — Cobre & Esmeralda (Despertado) */
+.rank-d {
+  background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+  color: #6ee7b7;
+  border: 1px solid #10b981;
+  text-shadow: 0 0 4px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(110, 231, 183, 0.2);
+}
+
+/* RANK C — Aço Cobalto & Safira Glacial (Veterano) */
+.rank-c {
+  background: linear-gradient(135deg, #075985 0%, #082f49 100%);
+  color: #7dd3fc;
+  border: 1px solid #0284c7;
+  text-shadow: 0 0 5px rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 8px rgba(2, 132, 199, 0.35), inset 0 1px 0 rgba(125, 211, 252, 0.25);
+}
+
+/* RANK B — Ametista Imperial & Púrpura Real (Elite de Assalto) */
+.rank-b {
+  background: linear-gradient(135deg, #581c87 0%, #2e1065 100%);
+  color: #e9d5ff;
+  border: 1px solid #a855f7;
+  text-shadow: 0 0 6px rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.45), inset 0 1px 0 rgba(233, 213, 255, 0.3);
+}
+
+/* RANK A — Rubi Flamejante & Carmesim Vulcânico (Alta Classe com Pulso Incandescente) */
+.rank-a {
+  background: linear-gradient(135deg, #991b1b 0%, #450a0a 100%);
+  color: #fff1f2;
+  border: 1px solid #f43f5e;
+  text-shadow: 0 0 6px rgba(244, 63, 94, 0.8), 0 0 12px rgba(225, 29, 72, 0.5);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.6), inset 0 0 6px rgba(255, 100, 100, 0.3);
+  animation: rank-a-pulse 2s infinite ease-in-out;
+}
+
+@keyframes rank-a-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.5), inset 0 0 4px rgba(255, 100, 100, 0.25);
+    border-color: #f43f5e;
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.85), 0 0 24px rgba(225, 29, 72, 0.4), inset 0 0 8px rgba(255, 180, 180, 0.5);
+    border-color: #fda4af;
+  }
+}
+
+/* RANK S — Ouro Soberano dos Monarcas (Vaidade Extrema & Shimmer Dourado) */
+.rank-s {
+  background: linear-gradient(135deg, #b45309 0%, #78350f 40%, #451a03 100%);
+  color: #ffffff;
+  border: 1.5px solid #facc15;
+  text-shadow: 0 0 6px rgba(250, 204, 21, 0.9), 0 0 14px rgba(234, 179, 8, 0.6), 0 1px 2px #000;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.75), inset 0 0 8px rgba(254, 240, 138, 0.45);
+  position: relative;
+  overflow: hidden;
+  animation: rank-s-glow 2.5s infinite ease-in-out;
+}
+
+.rank-s::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -70%;
+  width: 45%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0.15) 70%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  animation: rank-shimmer-sweep 2.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+@keyframes rank-s-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(250, 204, 21, 0.6), inset 0 0 6px rgba(254, 240, 138, 0.35);
+    border-color: #facc15;
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(250, 204, 21, 0.95), 0 0 30px rgba(234, 179, 8, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.6);
+    border-color: #fef08a;
+  }
+}
+
+/* RANK SS — Transcendência Cósmica / Fenda Celestial (Bicolor Neon & Star Glow) */
+.rank-ss {
+  background: linear-gradient(135deg, #831843 0%, #4c0519 45%, #1e1b4b 100%);
+  color: #ffffff;
+  border: 1.5px solid #ec4899;
+  text-shadow: 0 0 8px #f472b6, 0 0 16px #ec4899, 0 0 24px #a855f7;
+  box-shadow: 0 0 18px rgba(236, 72, 153, 0.8), 0 0 28px rgba(139, 92, 246, 0.4), inset 0 0 8px rgba(244, 114, 182, 0.5);
+  position: relative;
+  overflow: hidden;
+  animation: rank-ss-void 2.2s infinite ease-in-out;
+}
+
+.rank-ss::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -70%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(244, 114, 182, 0.35) 30%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(168, 85, 247, 0.35) 70%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  animation: rank-shimmer-sweep 2.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+@keyframes rank-ss-void {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(236, 72, 153, 0.7), 0 0 24px rgba(139, 92, 246, 0.35);
+    border-color: #ec4899;
+  }
+  50% {
+    box-shadow: 0 0 26px rgba(236, 72, 153, 0.95), 0 0 38px rgba(168, 85, 247, 0.65), inset 0 0 12px rgba(255, 255, 255, 0.7);
+    border-color: #f472b6;
+  }
+}
+
+/* RANK SSS / SSS+ — Monarca Supremo das Sombras (O Ápice da Vaidade e Cosmético) */
+.rank-sss,
+.rank-sss\+,
+.rank-sss-plus {
+  background: linear-gradient(135deg, #020617 0%, #1e1b4b 30%, #312e81 60%, #0891b2 100%);
+  color: #ffffff;
+  border: 1.5px solid #22d3ee;
+  text-shadow: 0 0 8px #22d3ee, 0 0 18px #06b6d4, 0 0 28px #818cf8, 0 0 2px #fff;
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.95), 0 0 38px rgba(99, 102, 241, 0.75), inset 0 0 12px rgba(255, 255, 255, 0.8);
+  position: relative;
+  overflow: hidden;
+  animation: rank-sss-monarch 1.8s infinite ease-in-out;
+  letter-spacing: 0.16em;
+}
+
+.rank-sss::after,
+.rank-sss\+::after,
+.rank-sss-plus::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -70%;
+  width: 55%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(34, 211, 238, 0.45) 25%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(167, 139, 250, 0.45) 75%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  animation: rank-shimmer-sweep 1.7s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+@keyframes rank-sss-monarch {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.85), 0 0 34px rgba(99, 102, 241, 0.65), inset 0 0 8px rgba(255, 255, 255, 0.6);
+    border-color: #22d3ee;
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(34, 211, 238, 1), 0 0 50px rgba(99, 102, 241, 0.9), inset 0 0 16px rgba(255, 255, 255, 0.95);
+    border-color: #67e8f9;
+  }
+}
+
+@keyframes rank-shimmer-sweep {
+  0% {
+    left: -70%;
+  }
+  60%, 100% {
+    left: 170%;
+  }
+}
 
 /* RODAPÉ CLÁSSICO */
 .rpg-footer {

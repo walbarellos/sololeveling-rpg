@@ -32,6 +32,7 @@ import {
   ResetGateRequestSchema,
   MerchantBuyRequestSchema,
   ClaimLostTrophyRequestSchema,
+  DevSetLevelRequestSchema,
   type ServerErrorCode,
   type ServerError
 } from "@rpg/contracts";
@@ -511,6 +512,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       mpRestored: result.mpRestored ?? 0
     });
     this.broadcastSnapshot();
+  }
+
+  @SubscribeMessage(ClientEvents.DevSetLevelRequest)
+  handleDevSetLevel(@ConnectedSocket() client: Socket, @MessageBody() body: unknown) {
+    const parsed = DevSetLevelRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.sendError(client, "INVALID_PAYLOAD", "Nível inválido.");
+    }
+    const result = this.game.devSetLevel(this.pid(client), parsed.data.level, parsed.data.rank);
+    if (result.success) {
+      this.broadcastSnapshot();
+    }
   }
 
   private broadcastSnapshot() {

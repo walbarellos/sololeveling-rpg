@@ -68,7 +68,7 @@
             <div class="sidebar-portrait-frame">
               <img id="sidebar-portrait" class="sidebar-portrait-img" src="/assets/portraits/healer.png" alt="Retrato do Hunter" />
               <div class="sidebar-portrait-overlay"></div>
-              <span id="sidebar-hunter-rank" class="sidebar-rank-tag rank-e">RANK E</span>
+              <span id="sidebar-hunter-rank" class="rank-tag sidebar-rank-tag rank-e">RANK E</span>
             </div>
 
             <div class="sidebar-hunter-info">
@@ -443,6 +443,13 @@
                 <span class="profile-box-label">RANK ATUAL:</span>
                 <span id="profile-rank-display" class="rank-tag rank-e">RANK E</span>
               </div>
+              <div class="profile-dev-lategame-box" style="margin-top: 10px; background: #0b1120; border: 1px solid #1e293b; border-radius: 4px; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; letter-spacing: 0.05em; text-align: center;">[TESTE DE LATEGAME]</span>
+                <div style="display: flex; gap: 6px;">
+                  <button id="btn-dev-lvl-50" type="button" style="flex: 1; background: #1e1b4b; border: 1px solid #6366f1; color: #c7d2fe; font-size: 0.68rem; font-weight: 700; padding: 5px 2px; border-radius: 3px; cursor: pointer;" title="Ajusta o personagem para Nível 50 (Rank B)">LVL 50 (B)</button>
+                  <button id="btn-dev-lvl-100" type="button" style="flex: 1; background: #78350f; border: 1px solid #f59e0b; color: #fef08a; font-size: 0.68rem; font-weight: 700; padding: 5px 2px; border-radius: 3px; cursor: pointer;" title="Ajusta o personagem para Nível 100 (Rank S)">LVL 100 (S)</button>
+                </div>
+              </div>
             </div>
 
             <div class="profile-right-col">
@@ -716,15 +723,43 @@
               <div class="inventory-grid-header">
                 <div style="display: flex; gap: 10px; align-items: center;">
                   <span class="inv-grid-title">GRADE DE ITENS</span>
-                  <span id="inv-gold-display" style="color: #fbbf24; font-weight: 700; font-size: 0.85rem; background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid #d9770666;">💰 0 OURO</span>
+                  <span id="inv-gold-display" style="color: #fbbf24; font-weight: 700; font-size: 0.85rem; background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid #d9770666;"><span style="color: #f59e0b; margin-right: 4px;">[G]</span> 0 OURO</span>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                  <button id="btn-sell-all-junk" type="button" style="background: #991b1b; color: #fef08a; font-weight: 700; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; border: 1px solid #f8717188; cursor: pointer;" title="Vender todos os itens comuns e incomuns do inventário por ouro">LIMPAR COMUNS ($)</button>
                   <span id="inv-capacity-counter" class="inv-capacity">0 / 24 OCUPADOS</span>
                 </div>
               </div>
+
+              <!-- BARRA DE VENDA RÁPIDA & AÇÕES EM LOTE -->
+              <div class="inventory-quick-sell-bar">
+                <button id="btn-toggle-quick-sell" type="button" class="btn-quick-sell-toggle" title="Ativa o modo de 1-clique: clique com botão esquerdo em qualquer item para vendê-lo instantaneamente!">
+                  <span style="color: #f59e0b; margin-right: 3px;">[🔨]</span> MODO VENDA RÁPIDA
+                </button>
+                <div class="bulk-sell-group">
+                  <span class="bulk-sell-label">LOTE:</span>
+                  <button id="btn-sell-common" type="button" class="btn-bulk-sell btn-bulk-common" title="Vende todos os itens COMUNS da mochila por ouro">
+                    COMUNS
+                  </button>
+                  <button id="btn-sell-uncommon" type="button" class="btn-bulk-sell btn-bulk-uncommon" title="Vende todos os itens COMUNS e INCOMUNS da mochila por ouro">
+                    ATÉ INCOMUNS
+                  </button>
+                  <button id="btn-sell-rare" type="button" class="btn-bulk-sell btn-bulk-rare" title="Vende todos os itens até RAROS da mochila por ouro">
+                    ATÉ RAROS
+                  </button>
+                </div>
+              </div>
+
+              <!-- BANNER DE AVISO DO MODO VENDA RÁPIDA (OCULTO POR PADRÃO) -->
+              <div id="quick-sell-mode-alert" class="quick-sell-mode-alert hidden">
+                <span style="color: #ef4444; font-weight: 800;">[!]</span> MODO VENDA RÁPIDA ATIVO: Clique com botão esquerdo em qualquer item para vendê-lo instantaneamente!
+              </div>
+
               <div id="inventory-grid-slots" class="inventory-grid-24">
                 <!-- 24 slots gerados via JS -->
+              </div>
+
+              <div class="inv-shortcuts-footer">
+                <span>Atalho: <strong>Botão Direito</strong> ou <strong>Shift + Clique</strong> no item vende na hora sem abrir painel!</span>
               </div>
             </div>
 
@@ -747,18 +782,18 @@
             <div class="modal-title-group">
               <span class="modal-tag">[ASSOCIAÇÃO DE CAÇADORES · DIVISÃO DE TREINAMENTO]</span>
               <h2 class="modal-title">ACADEMIA HUNTER: MANUAL DE DESPERTAR & COMBATE</h2>
-              <span class="modal-subtitle">Instruções para caçadores novatos ascenderem do Rank E ao Rank D</span>
+              <span id="academy-modal-subtitle" class="modal-subtitle">Diretrizes de Qualificação perante a Associação de Caçadores</span>
             </div>
             <button id="btn-academy-close" class="btn-modal-close" title="Fechar" type="button">FECHAR [X]</button>
           </div>
 
           <div class="academy-body">
-            <!-- PAINEL OFICIAL DE EXAME DE ASCENSÃO (RANK D) -->
+            <!-- PAINEL OFICIAL DE EXAME DE ASCENSÃO DINÂMICO -->
             <article class="academy-article academy-exam-panel">
               <div class="exam-panel-header">
                 <span class="exam-badge">HOMOLOGAÇÃO MILITAR</span>
-                <h3 class="article-title">PROVA OFICIAL DE ASCENSÃO — RANK D</h3>
-                <span class="exam-subtitle">Exame de Qualificação perante a Associação de Caçadores</span>
+                <h3 id="academy-exam-title" class="article-title">PROVA OFICIAL DE ASCENSÃO</h3>
+                <span id="academy-exam-subtitle" class="exam-subtitle">Exame de Qualificação perante a Associação de Caçadores</span>
               </div>
               <div id="academy-exam-status" class="exam-status-box">
                 <!-- Checklist preenchido dinamicamente via JS -->
@@ -769,25 +804,12 @@
                 </button>
               </div>
             </article>
-            <!-- ARTIGO 1: COMO SUBIR DE RANK -->
-            <article class="academy-article">
-              <h3 class="article-title">1. COMO ASCENDER DO RANK E PARA O RANK D</h3>
-              <p class="article-text">
-                Todo caçador recém-desperto é classificado como <strong>Rank E</strong>. Seus atributos e nível evoluem através de confrontos na Masmorra e missões periódicas da Associação.
-              </p>
-              <div class="academy-callout">
-                <div class="callout-heading">A REGRA DO CAP DE NÍVEL (RANK CAP):</div>
-                <p>
-                  No Rank E, seu nível máximo é <strong>Nível 12</strong>. Ao atingir o Lv 12, todo o EXP excedente fica retido e acumulado. O caçador <strong>não subirá para o Lv 13</strong> até ser aprovado na Prova de Despertar.
-                </p>
-              </div>
-              <ul class="academy-steps">
-                <li><strong>Passo 1:</strong> Evolua do Nível 1 ao 12 derrotando monstros e cumprindo missões na Associação.</li>
-                <li><strong>Passo 2:</strong> Acesse a <em>Prova de Rank E</em>: uma masmorra especial contra o <strong>Chefe Goblin</strong>.</li>
-                <li><strong>Passo 3:</strong> Na Prova, a fuga é bloqueada. Ao vencer o chefe, a Associação homologa sua ascensão para <strong>Rank D</strong>.</li>
-                <li><strong>Benefícios do Rank D:</strong> Cap de nível expandido até o <strong>Nível 25</strong>, acesso a missões longas de 1 hora e novas masmorras.</li>
-              </ul>
+
+            <!-- ARTIGO 1: GUIA DINÂMICO DE ASCENSÃO BASEADO NO RANK DO CAÇADOR -->
+            <article id="academy-dynamic-guide" class="academy-article">
+              <!-- Renderizado dinamicamente pelo AcademyController -->
             </article>
+
 
             <!-- ARTIGO 2: SISTEMA DE COMBATE EM TURNOS -->
             <article class="academy-article">

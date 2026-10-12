@@ -104,6 +104,18 @@ export class ProfileController {
       hudController.updateClassVisuals(hClass);
       this.classSelect?.blur();
     });
+
+    const btnDev50 = document.querySelector<HTMLButtonElement>("#btn-dev-lvl-50");
+    btnDev50?.addEventListener("click", () => {
+      socket.emit(ClientEvents.DevSetLevelRequest, { level: 50, rank: "B" });
+      hudController.setStatus("Personagem ajustado para Nível 50 (Rank B)!");
+    });
+
+    const btnDev100 = document.querySelector<HTMLButtonElement>("#btn-dev-lvl-100");
+    btnDev100?.addEventListener("click", () => {
+      socket.emit(ClientEvents.DevSetLevelRequest, { level: 100, rank: "S" });
+      hudController.setStatus("Personagem ajustado para Nível 100 (Rank S)!");
+    });
   }
 
   public getRemainingPoints(): number {
@@ -229,7 +241,7 @@ export class ProfileController {
     if (this.profileClassDisplay) this.profileClassDisplay.textContent = CLASS_TITLES[me.hunterClass];
     if (this.profileRankDisplay) {
       this.profileRankDisplay.textContent = `RANK ${me.rank}`;
-      this.profileRankDisplay.className = `rank-tag rank-${me.rank.toLowerCase()}`;
+      this.profileRankDisplay.className = `rank-tag rank-${me.rank.toLowerCase().replace("+", "-plus")}`;
     }
     if (this.profileLevelVal) this.profileLevelVal.textContent = `Lv ${me.level}`;
     if (this.profileExpVal) this.profileExpVal.textContent = `${me.exp} / ${me.expToNext} (Cap: Lv ${me.levelCap})`;

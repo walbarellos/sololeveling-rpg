@@ -1,9 +1,16 @@
 import {
+  getNextHunterRank,
   RANK_EXAM_REQUIREMENTS,
   type HunterRank,
-  type RankPromotionResult
+  type InventoryState,
+  type PlayerSnapshot,
+  type RankPromotionResult,
+  type ServerErrorCode
 } from "@rpg/contracts";
 import type { PlayerEntity } from "./player.repository";
+import type { InventoryService } from "./inventory.service";
+import type { LootService } from "./loot.service";
+import { MASTER_ITEMS } from "./items.data";
 
 export class AcademyService {
   /**
@@ -72,6 +79,66 @@ export class AcademyService {
       message: `PARABÉNS, CAÇADOR! Sua promoção para RANK ${targetRank} foi homologada pelo Diretor da Academia. Teto de nível expandido para Lv ${requirement.unlockedLevelCap} e +${requirement.rewardStatPoints} pontos de atributos concedidos!`,
       unlockedLevelCap: requirement.unlockedLevelCap,
       rewardStatPoints: requirement.rewardStatPoints
+    };
+  }
+
+  /**
+   * Permite reaver troféus de chefes abatidos anteriormente caso o jogador os tenha perdido.
+   */
+  claimLostTrophy(
+    player: PlayerEntity,
+    trophyId: string | undefined,
+    inventoryService: InventoryService,
+    lootService: LootService,
+    toSnapshot: (p: PlayerEntity) => PlayerSnapshot,
+    nextSeq: () => number,
+    savePlayer: (p: PlayerEntity) => void
+  ): { success: boolean; state?: InventoryState; player?: PlayerSnapshot; message?: string; error?: ServerErrorCode } {
+    let finalTrophyId: string = trophyId ?? "";
+    if (!finalTrophyId || !MASTER_ITEMS[finalTrophyId]) {
+      const nextRank = getNextHunterRank(player.rank);
+      const req = nextRank ? RANK_EXAM_REQUIREMENTS[nextRank] : null;
+      finalTrophyId = req?.requiredTrophyItemId ?? "trophy_goblin_boss_core";
+    }
+
+    const trophyDef = MASTER_ITEMS[finalTrophyId];
+    if (!trophyDef || trophyDef.type !== "TROPHY") return { success: false, error: "ITEM_NOT_FOUND" };
+
+    if (!player.inventory) player.inventory = [];
+    const alreadyHas = player.inventory.some((s) => s.item.id === finalTrophyId);
+    if (alreadyHas) {
+      return {
+        success: true,
+        state: inventoryService.getInventoryState(player),
+        player: toSnapshot(player),
+        message: `Você já possui o troféu oficial [${trophyDef.name}] em seu inventário!`
+      };
+    }
+
+    const canClaim =
+      (player.careerStats && player.careerStats.gateBossesSlain > 0) ||
+      (player.unclaimedTrophies && player.unclaimedTrophies.length > 0) ||
+      player.level >= 8;
+
+    if (!canClaim) {
+      return { success: false, error: "ACADEMY_REQUIREMENTS_UNMET" };
+    }
+
+    const added = lootService.addItemToInventory(player.inventory, trophyDef);
+    if (!added) return { success: false, error: "CANNOT_EQUIP" };
+
+    if (player.unclaimedTrophies) {
+      player.unclaimedTrophies = player.unclaimedTrophies.filter((id) => id !== finalTrophyId);
+    }
+
+    player.sequence = nextSeq();
+    savePlayer(player);
+
+    return {
+      success: true,
+      state: inventoryService.getInventoryState(player),
+      player: toSnapshot(player),
+      message: `Troféu militar oficial [${trophyDef.name}] recuperado com sucesso pelo Inspetor Baek!`
     };
   }
 }

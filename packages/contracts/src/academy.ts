@@ -3,8 +3,9 @@ import { HunterRankSchema, type HunterRank } from "./base";
 
 export const RankExamRequirementSchema = z.object({
   targetRank: HunterRankSchema,
-  minLevel: z.number().int().positive(),
-  minAllocatedStats: z.number().int().positive(),
+  minLevel: z.number().int().nonnegative().default(1),
+  recommendedLevel: z.number().int().positive().optional(),
+  minAllocatedStats: z.number().int().nonnegative(),
   requiredTrophyItemId: z.string(),
   trophyName: z.string(),
   rewardStatPoints: z.number().int().positive(),
@@ -25,7 +26,8 @@ export function getNextHunterRank(currentRank: HunterRank): HunterRank | null {
 export const RANK_EXAM_REQUIREMENTS: Readonly<Partial<Record<HunterRank, RankExamRequirement>>> = {
   D: {
     targetRank: "D",
-    minLevel: 8,
+    minLevel: 1,
+    recommendedLevel: 8,
     minAllocatedStats: 15,
     requiredTrophyItemId: "trophy_goblin_boss_core",
     trophyName: "Núcleo de Mana do Chefe Goblin",
@@ -35,7 +37,8 @@ export const RANK_EXAM_REQUIREMENTS: Readonly<Partial<Record<HunterRank, RankExa
   },
   C: {
     targetRank: "C",
-    minLevel: 15,
+    minLevel: 1,
+    recommendedLevel: 15,
     minAllocatedStats: 30,
     requiredTrophyItemId: "trophy_crimson_heart",
     trophyName: "Coração da Cidadela Carmesim",
@@ -45,7 +48,8 @@ export const RANK_EXAM_REQUIREMENTS: Readonly<Partial<Record<HunterRank, RankExa
   },
   B: {
     targetRank: "B",
-    minLevel: 25,
+    minLevel: 1,
+    recommendedLevel: 25,
     minAllocatedStats: 50,
     requiredTrophyItemId: "trophy_frost_queen_crystal",
     trophyName: "Cristal do Coração da Rainha do Gelo",
@@ -55,7 +59,8 @@ export const RANK_EXAM_REQUIREMENTS: Readonly<Partial<Record<HunterRank, RankExa
   },
   A: {
     targetRank: "A",
-    minLevel: 45,
+    minLevel: 1,
+    recommendedLevel: 45,
     minAllocatedStats: 75,
     requiredTrophyItemId: "trophy_shadow_lich_skull",
     trophyName: "Crânio do Arquilorde Necromante",
@@ -65,7 +70,8 @@ export const RANK_EXAM_REQUIREMENTS: Readonly<Partial<Record<HunterRank, RankExa
   },
   S: {
     targetRank: "S",
-    minLevel: 65,
+    minLevel: 1,
+    recommendedLevel: 65,
     minAllocatedStats: 100,
     requiredTrophyItemId: "trophy_dragon_heart",
     trophyName: "Coração Vulcânico do Dragão Ignis",
@@ -75,7 +81,8 @@ export const RANK_EXAM_REQUIREMENTS: Readonly<Partial<Record<HunterRank, RankExa
   },
   SS: {
     targetRank: "SS",
-    minLevel: 95,
+    minLevel: 1,
+    recommendedLevel: 95,
     minAllocatedStats: 130,
     requiredTrophyItemId: "trophy_god_statue_fragment",
     trophyName: "Fragmento Sagrado da Estátua de Deus",
@@ -85,7 +92,8 @@ export const RANK_EXAM_REQUIREMENTS: Readonly<Partial<Record<HunterRank, RankExa
   },
   SSS: {
     targetRank: "SSS",
-    minLevel: 125,
+    minLevel: 1,
+    recommendedLevel: 125,
     minAllocatedStats: 160,
     requiredTrophyItemId: "trophy_cosmic_core",
     trophyName: "Núcleo da Calamidade Cósmica",
@@ -95,7 +103,8 @@ export const RANK_EXAM_REQUIREMENTS: Readonly<Partial<Record<HunterRank, RankExa
   },
   "SSS+": {
     targetRank: "SSS+",
-    minLevel: 155,
+    minLevel: 1,
+    recommendedLevel: 155,
     minAllocatedStats: 200,
     requiredTrophyItemId: "trophy_shadow_sovereign_crown",
     trophyName: "Coroa do Monarca das Sombras",

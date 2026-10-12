@@ -86,7 +86,7 @@ export class HudController {
     }
     if (this.hunterRankBadge) {
       this.hunterRankBadge.textContent = `RANK ${me.rank}`;
-      this.hunterRankBadge.className = `rank-tag rank-${me.rank.toLowerCase()}`;
+      this.hunterRankBadge.className = `rank-tag rank-${me.rank.toLowerCase().replace("+", "-plus")}`;
     }
 
     const classSelect = document.querySelector<HTMLSelectElement>("#class-select");
@@ -115,7 +115,7 @@ export class HudController {
     if (this.sidebarHunterClass) this.sidebarHunterClass.textContent = CLASS_TITLES[me.hunterClass];
     if (this.sidebarHunterRank) {
       this.sidebarHunterRank.textContent = `RANK ${me.rank}`;
-      this.sidebarHunterRank.className = `sidebar-rank-tag rank-${me.rank.toLowerCase()}`;
+      this.sidebarHunterRank.className = `rank-tag sidebar-rank-tag rank-${me.rank.toLowerCase().replace("+", "-plus")}`;
     }
     if (this.sidebarHunterLevel) this.sidebarHunterLevel.textContent = `Lv ${me.level}`;
     if (this.sidebarLevelCapText) {

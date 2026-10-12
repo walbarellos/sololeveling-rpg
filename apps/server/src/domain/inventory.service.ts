@@ -13,6 +13,17 @@ import type { LootService } from "./loot.service";
 import { DEFAULT_CAREER_STATS, DEFAULT_EQUIPMENT, type PlayerEntity } from "./player.repository";
 import { calculatePlayerMaxHp, calculatePlayerMaxMp, calculatePlayerStats } from "./skills.data";
 
+const RARITY_WEIGHT: Record<ItemRarity, number> = {
+  COMMON: 1,
+  UNCOMMON: 2,
+  RARE: 3,
+  EPIC: 4,
+  LEGENDARY: 5,
+  IMMORTAL: 6,
+  COSMIC: 7,
+  DIVINE: 8
+};
+
 export class InventoryService {
   constructor(private readonly lootService: LootService) {}
 
@@ -191,14 +202,15 @@ export class InventoryService {
     maxRarity: ItemRarity = "UNCOMMON"
   ): { success: boolean; goldEarned: number; itemsSold: number; state: InventoryState } {
     const inv = player.inventory ?? [];
-    const allowedRarities = maxRarity === "COMMON" ? ["COMMON"] : ["COMMON", "UNCOMMON"];
+    const maxWeight = RARITY_WEIGHT[maxRarity] ?? 2;
 
     let totalGold = 0;
     let soldCount = 0;
     const remaining: InventorySlot[] = [];
 
     for (const slot of inv) {
-      if (slot.item.type !== "TROPHY" && allowedRarities.includes(slot.item.rarity)) {
+      const slotWeight = RARITY_WEIGHT[slot.item.rarity] ?? 1;
+      if (slot.item.type !== "TROPHY" && slotWeight <= maxWeight) {
         totalGold += getItemGoldValue(slot.item) * slot.quantity;
         soldCount += slot.quantity;
       } else {
@@ -212,3 +224,4 @@ export class InventoryService {
     return { success: true, goldEarned: totalGold, itemsSold: soldCount, state: this.getInventoryState(player) };
   }
 }
+

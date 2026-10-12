@@ -63,6 +63,12 @@ import {
   GATE_D_SPAWN,
   GATE_D_WORLD
 } from "./worlds";
+import { BattleEngineService } from "./battle-engine.service";
+import { TeleportService } from "./teleport.service";
+import {
+  DEFAULT_OBSTACLES,
+  createInitialEnemies
+} from "./enemies.data";
 
 export const GRID_WIDTH = 48;
 export const GRID_HEIGHT = 28;
@@ -73,146 +79,26 @@ export const PLAYER_ATTACK_DAMAGE = 30;
 /** Respawn lazy: o monstro volta a ficar vivo na próxima leitura do mundo após este intervalo. */
 export const ENEMY_RESPAWN_MS = 18_000;
 
-export interface MobTemplate {
-  name: string;
-  rank: HunterRank;
-  baseHp: number;
-  baseMp: number;
-  /** Tema visual do bioma: nature | larva | space | hell | swamp | crypt | frost */
-  theme: string;
-}
+/** Valores de demonstração (apenas fora de NODE_ENV=test): Nível 100 Rank S para teste de lategame! */
+const DEMO_LEVEL = 100;
+const DEMO_RANK: HunterRank = "S";
+const DEMO_EXP = 1000;
+const DEMO_STAT_POINTS = 450;
+const DEMO_GOLD = 100_000;
 
-/** Valores de demonstração (apenas fora de NODE_ENV=test): nível suficiente para encarar o chefe. */
-const DEMO_LEVEL = 9;
-const DEMO_EXP = 500;
-const DEMO_STAT_POINTS = 40;
-
-/** Amostra de itens de todas as raridades (armas e armaduras) + 1 amuleto e 1 anel, para inspeção visual. */
+/** Amostra de itens épicos, lendários e imortais para teste imediato de lategame. */
 const DEMO_SHOWCASE_ITEMS: readonly ItemDefinition[] = [
-  ...Object.values(MASTER_ITEMS).filter((i) => i.type === "WEAPON" || i.type === "ARMOR"),
-  MASTER_ITEMS.amulet_solar_core,
-  MASTER_ITEMS.ring_infinite_stars
-];
-
-export const MOB_TEMPLATES: Record<string, MobTemplate> = {
-  slime: { name: "Dungeon Slime", rank: "E", baseHp: 60, baseMp: 10, theme: "swamp" },
-  larva: { name: "Cave Larva", rank: "E", baseHp: 48, baseMp: 6, theme: "larva" },
-  goblin: { name: "Gate Goblin", rank: "E", baseHp: 68, baseMp: 14, theme: "crypt" },
-  sprout: { name: "Thorn Sprout", rank: "E", baseHp: 52, baseMp: 18, theme: "nature" },
-  wolf: { name: "Shadow Wolf", rank: "D", baseHp: 83, baseMp: 21, theme: "crypt" },
-  ember: { name: "Ember Imp", rank: "D", baseHp: 72, baseMp: 30, theme: "hell" },
-  voidling: { name: "Voidling", rank: "D", baseHp: 78, baseMp: 35, theme: "space" },
-  frostbat: { name: "Frost Bat", rank: "D", baseHp: 70, baseMp: 22, theme: "frost" },
-  hellhound: { name: "Hell Hound", rank: "C", baseHp: 115, baseMp: 28, theme: "hell" },
-  starspawn: { name: "Starspawn", rank: "C", baseHp: 105, baseMp: 42, theme: "space" },
-  boss: { name: "Chefe Goblin do Gate", rank: "C", baseHp: 220, baseMp: 50, theme: "crypt" },
-  ashguard: { name: "Guarda de Cinzas", rank: "D", baseHp: 120, baseMp: 24, theme: "crimson" },
-  brasshound: { name: "Cão de Latão", rank: "D", baseHp: 140, baseMp: 18, theme: "brass" },
-  runeblade: { name: "Lâmina Rúnica", rank: "D", baseHp: 128, baseMp: 40, theme: "rune" },
-
-  // GATE C — Fenda Glacial de Niflheim
-  frostwolf: { name: "Lobo Glacial", rank: "C", baseHp: 160, baseMp: 30, theme: "frost" },
-  frostgolem: { name: "Golem de Permafrost", rank: "C", baseHp: 220, baseMp: 20, theme: "frost" },
-  icespecter: { name: "Espectro da Nevasca", rank: "C", baseHp: 175, baseMp: 55, theme: "frost" },
-
-  // GATE B — Necrópole das Sombras
-  deathknight: { name: "Cavaleiro da Morte", rank: "B", baseHp: 280, baseMp: 40, theme: "crypt" },
-  ghoul_lord: { name: "Lorde Carniçal", rank: "B", baseHp: 320, baseMp: 30, theme: "swamp" },
-  shadowlich: { name: "Lich Sombrio", rank: "B", baseHp: 250, baseMp: 90, theme: "space" },
-
-  // GATE A — Calamidade Vulcânica
-  magma_drake: { name: "Draconiano de Magma", rank: "A", baseHp: 440, baseMp: 60, theme: "hell" },
-  fire_behemoth: { name: "Behemoth Vulcânico", rank: "A", baseHp: 520, baseMp: 45, theme: "hell" },
-  flame_serpent: { name: "Serpente das Cinzas", rank: "A", baseHp: 410, baseMp: 80, theme: "hell" },
-
-  // GATE S — Templo dos Deuses Antigos
-  temple_guardian: { name: "Guardião de Pedra do Templo", rank: "S", baseHp: 680, baseMp: 80, theme: "crypt" },
-  winged_executioner: { name: "Carrasco Alado", rank: "S", baseHp: 750, baseMp: 90, theme: "nature" },
-  ruin_priest: { name: "Alto Sacerdote da Ruína", rank: "S", baseHp: 620, baseMp: 150, theme: "space" },
-
-  // GATE SS — Fenda Cósmica
-  stareater: { name: "Devorador de Estrelas", rank: "SS", baseHp: 1050, baseMp: 120, theme: "space" },
-  void_abomination: { name: "Abominação do Vácuo", rank: "SS", baseHp: 1200, baseMp: 140, theme: "space" },
-
-  // GATE SSS — Trono do Monarca das Sombras
-  shadow_commander: { name: "Comandante das Sombras Igris", rank: "SSS", baseHp: 1600, baseMp: 200, theme: "crypt" },
-  shadow_beru: { name: "Lorde das Sombras Beru", rank: "SSS", baseHp: 1850, baseMp: 220, theme: "larva" },
-  shadow_bellion: { name: "General Supremo Bellion", rank: "SSS+", baseHp: 2200, baseMp: 250, theme: "crypt" }
-};
-
-export function createEnemyInstance(
-  id: string,
-  templateKey: keyof typeof MOB_TEMPLATES,
-  level: number,
-  position: TileCoord,
-  worldId: WorldId = "GATE_E"
-): EnemySnapshot {
-  const template = MOB_TEMPLATES[templateKey];
-  const mult = statMult(level);
-  const hp = Math.round(template.baseHp * mult);
-  const mp = Math.round(template.baseMp * mult);
-  return {
-    id,
-    name: template.name,
-    rank: template.rank,
-    level,
-    position,
-    hp,
-    maxHp: hp,
-    mp,
-    maxMp: mp,
-    alive: true,
-    worldId
-  };
-}
-
-export const DEFAULT_OBSTACLES: readonly TileCoord[] = [
-  // --- SALA 1: Santuário do Gate (0..15, 0..13) ---
-  // Pilares interiores (preserva teste no pilar (5, 3))
-  { x: 5, y: 3 }, { x: 5, y: 4 }, { x: 5, y: 5 },
-  { x: 9, y: 2 }, { x: 10, y: 2 },
-  { x: 9, y: 9 }, { x: 10, y: 9 },
-  // Muralha leste dividindo Sala 1 e Sala 2 (passagem aberta em y=5,6,7)
-  { x: 15, y: 0 }, { x: 15, y: 1 }, { x: 15, y: 2 }, { x: 15, y: 3 }, { x: 15, y: 4 },
-  { x: 15, y: 8 }, { x: 15, y: 9 }, { x: 15, y: 10 }, { x: 15, y: 11 }, { x: 15, y: 12 }, { x: 15, y: 13 },
-  // Muralha sul dividindo Sala 1 e Sala 3 (passagem aberta em x=6,7,8)
-  { x: 0, y: 13 }, { x: 1, y: 13 }, { x: 2, y: 13 }, { x: 3, y: 13 }, { x: 4, y: 13 }, { x: 5, y: 13 },
-  { x: 9, y: 13 }, { x: 10, y: 13 }, { x: 11, y: 13 }, { x: 12, y: 13 }, { x: 13, y: 13 }, { x: 14, y: 13 },
-
-  // --- SALA 2: Catacumbas Esquecidas (16..31, 0..13) ---
-  // Pilares de pedra das catacumbas
-  { x: 20, y: 3 }, { x: 21, y: 3 }, { x: 26, y: 3 }, { x: 27, y: 3 },
-  { x: 20, y: 9 }, { x: 21, y: 9 }, { x: 26, y: 9 }, { x: 27, y: 9 },
-  // Muralha sul dividindo Sala 2 e Sala 4 (passagem aberta em x=23,24,25)
-  { x: 16, y: 13 }, { x: 17, y: 13 }, { x: 18, y: 13 }, { x: 19, y: 13 }, { x: 20, y: 13 }, { x: 21, y: 13 }, { x: 22, y: 13 },
-  { x: 26, y: 13 }, { x: 27, y: 13 }, { x: 28, y: 13 }, { x: 29, y: 13 }, { x: 30, y: 13 }, { x: 31, y: 13 },
-  // Muralha leste dividindo Sala 2 e Sala 5 (A Sala Final) (passagem aberta em y=5,6,7)
-  { x: 31, y: 0 }, { x: 31, y: 1 }, { x: 31, y: 2 }, { x: 31, y: 3 }, { x: 31, y: 4 },
-  { x: 31, y: 8 }, { x: 31, y: 9 }, { x: 31, y: 10 }, { x: 31, y: 11 }, { x: 31, y: 12 },
-
-  // --- SALA 3: Fenda Vulcânica / Covil das Feras (0..15, 14..27) ---
-  // Formações rochosas vulcânicas
-  { x: 4, y: 18 }, { x: 5, y: 18 },
-  { x: 10, y: 23 }, { x: 11, y: 23 },
-  // Muralha leste dividindo Sala 3 e Sala 4 (passagem aberta em y=20,21,22)
-  { x: 15, y: 14 }, { x: 15, y: 15 }, { x: 15, y: 16 }, { x: 15, y: 17 }, { x: 15, y: 18 }, { x: 15, y: 19 },
-  { x: 15, y: 23 }, { x: 15, y: 24 }, { x: 15, y: 25 }, { x: 15, y: 26 }, { x: 15, y: 27 },
-
-  // --- SALA 4: Abismo Dimensional / Câmara Cósmica (16..31, 14..27) ---
-  // Monolitos arcanos
-  { x: 21, y: 17 }, { x: 22, y: 17 }, { x: 27, y: 17 }, { x: 28, y: 17 },
-  { x: 21, y: 23 }, { x: 22, y: 23 }, { x: 27, y: 23 }, { x: 28, y: 23 },
-  // Muralha leste dividindo Sala 4 e Sala 5 (passagem aberta em y=20,21,22)
-  { x: 31, y: 14 }, { x: 31, y: 15 }, { x: 31, y: 16 }, { x: 31, y: 17 }, { x: 31, y: 18 }, { x: 31, y: 19 },
-  { x: 31, y: 23 }, { x: 31, y: 24 }, { x: 31, y: 25 }, { x: 31, y: 26 }, { x: 31, y: 27 },
-
-  // --- SALA 5: A Sala Final / Câmara do Chefe do Gate (32..47, 0..27) ---
-  // Pilares colossais da sala do trono do chefe
-  { x: 36, y: 7 }, { x: 37, y: 7 }, { x: 36, y: 8 }, { x: 37, y: 8 },
-  { x: 36, y: 19 }, { x: 37, y: 19 }, { x: 36, y: 20 }, { x: 37, y: 20 },
-  { x: 43, y: 7 }, { x: 44, y: 7 }, { x: 43, y: 8 }, { x: 44, y: 8 },
-  { x: 43, y: 19 }, { x: 44, y: 19 }, { x: 43, y: 20 }, { x: 44, y: 20 }
-];
+  MASTER_ITEMS.weapon_dragon_slayer_greatsword,
+  MASTER_ITEMS.weapon_kamish_wrath_daggers,
+  MASTER_ITEMS.weapon_glacial_scythe,
+  MASTER_ITEMS.weapon_frost_dagger,
+  MASTER_ITEMS.armor_dragon_scale_armor,
+  MASTER_ITEMS.armor_monarch_sanctum_cuirass,
+  MASTER_ITEMS.amulet_dragon_heart_gem,
+  MASTER_ITEMS.ring_ignis_fury,
+  MASTER_ITEMS.potion_red,
+  MASTER_ITEMS.potion_blue
+].filter(Boolean);
 
 export type StepResult =
   | { success: true; player: PlayerSnapshot }
@@ -225,97 +111,19 @@ export type AttackResult =
 @Injectable()
 export class GameService {
   private readonly obstacleSet = new Set<string>();
-  private readonly enemies = new Map<string, EnemySnapshot>([
-    // SALA 1: Santuário do Gate (Entrada & Treinamento Rank E, Lv 1–3)
-    ["slime-1", createEnemyInstance("slime-1", "slime", 1, { x: 7, y: 4 })],
-    ["slime-2", createEnemyInstance("slime-2", "slime", 1, { x: 10, y: 3 })],
-    ["larva-1", createEnemyInstance("larva-1", "larva", 1, { x: 3, y: 8 })],
-    ["sprout-1", createEnemyInstance("sprout-1", "sprout", 2, { x: 12, y: 10 })],
-
-    // SALA 2: Catacumbas Esquecidas (Rank E/D, Lv 3–5)
-    ["goblin-1", createEnemyInstance("goblin-1", "goblin", 3, { x: 22, y: 5 })],
-    ["goblin-2", createEnemyInstance("goblin-2", "goblin", 3, { x: 28, y: 6 })],
-    ["larva-2", createEnemyInstance("larva-2", "larva", 2, { x: 18, y: 10 })],
-    ["frostbat-1", createEnemyInstance("frostbat-1", "frostbat", 4, { x: 25, y: 11 })],
-
-    // SALA 3: Fenda Vulcânica / Covil das Feras (Rank D, Lv 5–7)
-    ["wolf-1", createEnemyInstance("wolf-1", "wolf", 5, { x: 6, y: 20 })],
-    ["ember-1", createEnemyInstance("ember-1", "ember", 5, { x: 12, y: 22 })],
-    ["wolf-2", createEnemyInstance("wolf-2", "wolf", 6, { x: 4, y: 25 })],
-
-    // SALA 4: Abismo Dimensional / Câmara Cósmica (Rank D/C, Lv 7–9)
-    ["voidling-1", createEnemyInstance("voidling-1", "voidling", 6, { x: 22, y: 19 })],
-    ["hellhound-1", createEnemyInstance("hellhound-1", "hellhound", 8, { x: 26, y: 23 })],
-    ["starspawn-1", createEnemyInstance("starspawn-1", "starspawn", 9, { x: 29, y: 17 })],
-
-    // SALA 5: A Sala Final / Câmara do Chefe do Gate (Rank C, Lv 10 Boss gerenciado pelo BossService)
-    ["hellhound-2", createEnemyInstance("hellhound-2", "hellhound", 8, { x: 38, y: 11 })],
-    ["starspawn-2", createEnemyInstance("starspawn-2", "starspawn", 9, { x: 38, y: 16 })],
-
-    // GATE D — Cidadela Carmesim (mapa próprio, níveis 12–15, superior ao chefe lv 10 do Gate E)
-    ["ash-1", createEnemyInstance("ash-1", "ashguard", 12, { x: 15, y: 9 }, "GATE_D")],
-    ["ash-2", createEnemyInstance("ash-2", "ashguard", 13, { x: 16, y: 13 }, "GATE_D")],
-    ["brass-1", createEnemyInstance("brass-1", "brasshound", 14, { x: 19, y: 8 }, "GATE_D")],
-    ["rune-1", createEnemyInstance("rune-1", "runeblade", 14, { x: 25, y: 9 }, "GATE_D")],
-    ["rune-2", createEnemyInstance("rune-2", "runeblade", 15, { x: 27, y: 13 }, "GATE_D")],
-
-    // GATE C — Fenda Glacial de Niflheim (Rank C, Lv 20–26)
-    ["frostwolf-1", createEnemyInstance("frostwolf-1", "frostwolf", 20, { x: 18, y: 10 }, "GATE_C")],
-    ["frostwolf-2", createEnemyInstance("frostwolf-2", "frostwolf", 21, { x: 22, y: 14 }, "GATE_C")],
-    ["frostgolem-1", createEnemyInstance("frostgolem-1", "frostgolem", 24, { x: 28, y: 11 }, "GATE_C")],
-    ["icespecter-1", createEnemyInstance("icespecter-1", "icespecter", 26, { x: 35, y: 13 }, "GATE_C")],
-
-    // GATE B — Necrópole das Sombras (Rank B, Lv 34–45)
-    ["deathknight-1", createEnemyInstance("deathknight-1", "deathknight", 34, { x: 20, y: 12 }, "GATE_B")],
-    ["ghoul-1", createEnemyInstance("ghoul-1", "ghoul_lord", 38, { x: 25, y: 16 }, "GATE_B")],
-    ["deathknight-2", createEnemyInstance("deathknight-2", "deathknight", 40, { x: 31, y: 10 }, "GATE_B")],
-    ["shadowlich-1", createEnemyInstance("shadowlich-1", "shadowlich", 45, { x: 38, y: 14 }, "GATE_B")],
-
-    // GATE A — Calamidade Vulcânica (Rank A, Lv 54–70)
-    ["magma-1", createEnemyInstance("magma-1", "magma_drake", 54, { x: 22, y: 12 }, "GATE_A")],
-    ["behemoth-1", createEnemyInstance("behemoth-1", "fire_behemoth", 60, { x: 28, y: 17 }, "GATE_A")],
-    ["flame-1", createEnemyInstance("flame-1", "flame_serpent", 65, { x: 35, y: 11 }, "GATE_A")],
-    ["magma-2", createEnemyInstance("magma-2", "magma_drake", 70, { x: 42, y: 15 }, "GATE_A")],
-
-    // GATE S — Templo dos Deuses Antigos (Rank S, Lv 82–105)
-    ["guardian-1", createEnemyInstance("guardian-1", "temple_guardian", 82, { x: 24, y: 13 }, "GATE_S")],
-    ["winged-1", createEnemyInstance("winged-1", "winged_executioner", 90, { x: 31, y: 18 }, "GATE_S")],
-    ["ruin-1", createEnemyInstance("ruin-1", "ruin_priest", 100, { x: 39, y: 12 }, "GATE_S")],
-    ["guardian-2", createEnemyInstance("guardian-2", "temple_guardian", 105, { x: 46, y: 16 }, "GATE_S")],
-
-    // GATE SS — Fenda Cósmica (Rank SS, Lv 118–135)
-    ["stareater-1", createEnemyInstance("stareater-1", "stareater", 118, { x: 26, y: 14 }, "GATE_SS")],
-    ["void-abom-1", createEnemyInstance("void-abom-1", "void_abomination", 126, { x: 34, y: 20 }, "GATE_SS")],
-    ["stareater-2", createEnemyInstance("stareater-2", "stareater", 135, { x: 46, y: 13 }, "GATE_SS")],
-
-    // GATE SSS — Trono do Monarca das Sombras (Rank SSS/SSS+, Lv 150–175)
-    ["igris-1", createEnemyInstance("igris-1", "shadow_commander", 152, { x: 28, y: 15 }, "GATE_SSS")],
-    ["beru-1", createEnemyInstance("beru-1", "shadow_beru", 164, { x: 38, y: 21 }, "GATE_SSS")],
-    ["bellion-1", createEnemyInstance("bellion-1", "shadow_bellion", 175, { x: 50, y: 14 }, "GATE_SSS")]
-  ]);
-  private readonly activeBattles = new Map<string, BattleSession>();
+  private readonly enemies = new Map<string, EnemySnapshot>(createInitialEnemies());
   private readonly online = new Set<string>();
   private readonly diedAt = new Map<string, number>();
   private sequence = 0;
-  private battleCounter = 0;
 
   private readonly lootService = new LootService();
   private readonly academyService = new AcademyService();
   public readonly bossService = new BossService();
   private readonly missionsService: MissionsService;
   private readonly inventoryService: InventoryService;
-  private readonly worlds: Record<
-    WorldId,
-    {
-      id: WorldId;
-      style: WorldStyle;
-      width: number;
-      height: number;
-      spawn: TileCoord;
-      obstacles: readonly TileCoord[];
-      obstacleSet: Set<string>;
-    }
-  >;
+  public readonly battleEngineService: BattleEngineService;
+  public readonly teleportService: TeleportService;
+  private readonly worlds: Record<WorldId, { id: WorldId; style: WorldStyle; width: number; height: number; spawn: TileCoord; obstacles: readonly TileCoord[]; obstacleSet: Set<string> }>;
 
   constructor(
     @Optional() @Inject(CLOCK) private readonly clock: Clock = new SystemClock(),
@@ -325,6 +133,25 @@ export class GameService {
   ) {
     this.missionsService = new MissionsService(this.lootService);
     this.inventoryService = new InventoryService(this.lootService);
+    this.battleEngineService = new BattleEngineService({
+      playerRepository: this.playerRepository,
+      bossService: this.bossService,
+      lootService: this.lootService,
+      inventoryService: this.inventoryService,
+      enemies: this.enemies,
+      killEnemy: (enemy) => this.killEnemy(enemy),
+      reviveEnemies: () => this.reviveEnemies(),
+      spawnOf: (player) => this.spawnOf(player),
+      grantExp: (player, session) => this.grantExp(player, session),
+      nextSequence: () => ++this.sequence
+    });
+    this.teleportService = new TeleportService(
+      this.playerRepository,
+      this.clock,
+      this.bossService,
+      (player) => this.toSnapshot(player),
+      () => ++this.sequence
+    );
     for (const obs of DEFAULT_OBSTACLES) {
       this.obstacleSet.add(`${obs.x},${obs.y}`);
     }
@@ -356,6 +183,10 @@ export class GameService {
     };
   }
 
+  get activeBattles() {
+    return this.battleEngineService.activeBattles;
+  }
+
   get dimensions() {
     return this.dimensionsFor("GATE_E");
   }
@@ -380,7 +211,7 @@ export class GameService {
     if (existing) {
       // Reconexão (F5, aba nova): batalha em andamento é abandonada, o resto do estado persiste.
       if (existing.activeBattleId) {
-        this.activeBattles.delete(existing.activeBattleId);
+        this.battleEngineService.activeBattles.delete(existing.activeBattleId);
         existing.inBattle = false;
         existing.activeBattleId = undefined;
       }
@@ -418,6 +249,12 @@ export class GameService {
           existing.level = DEMO_LEVEL;
           existing.exp = DEMO_EXP;
         }
+        if (!isRankAllowed(existing.rank, DEMO_RANK)) {
+          existing.rank = DEMO_RANK;
+        }
+        if ((existing.gold ?? 0) < DEMO_GOLD) {
+          existing.gold = DEMO_GOLD;
+        }
         for (const item of DEMO_SHOWCASE_ITEMS) {
           if (!existing.inventory.some((s) => s.item.id === item.id)) {
             this.lootService.addItemToInventory(existing.inventory, item);
@@ -436,6 +273,7 @@ export class GameService {
     const defaultClass: HunterClass = "BATTLE_HEALER";
     const isTest = process.env.NODE_ENV === "test";
     const initialLevel = isTest ? 1 : DEMO_LEVEL;
+    const initialRank = isTest ? "E" : DEMO_RANK;
     const initialExp = isTest ? 0 : DEMO_EXP;
     const initialPoints = isTest ? STARTING_STAT_POINTS : DEMO_STAT_POINTS;
     const initialHp = calculatePlayerMaxHp(defaultClass, initialLevel, DEFAULT_PLAYER_ATTRIBUTES.vit);
@@ -451,7 +289,7 @@ export class GameService {
     const newPlayer: PlayerEntity = {
       id,
       name: `Hunter-${id.slice(0, 4)}`,
-      rank: "E",
+      rank: initialRank,
       hunterClass: defaultClass,
       level: initialLevel,
       exp: initialExp,
@@ -472,7 +310,7 @@ export class GameService {
       inventory,
       equipment: { ...DEFAULT_EQUIPMENT },
       careerStats: { ...DEFAULT_CAREER_STATS },
-      gold: isTest ? 0 : 250,
+      gold: isTest ? 0 : DEMO_GOLD,
       unclaimedTrophies: []
     };
 
@@ -480,11 +318,25 @@ export class GameService {
     return this.toSnapshot(newPlayer);
   }
 
+  devSetLevel(playerId: string, targetLevel: number, targetRank?: HunterRank): { success: boolean; player?: PlayerSnapshot } {
+    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
+    if (!player) return { success: false };
+    player.level = targetLevel;
+    player.rank = targetRank ?? (targetLevel >= 120 ? "SS" : targetLevel >= 80 ? "S" : targetLevel >= 50 ? "B" : targetLevel >= 25 ? "C" : "D");
+    player.unallocatedStatPoints = Math.max(player.unallocatedStatPoints, targetLevel * 4);
+    this.recomputeMaxStats(player);
+    player.hp = player.maxHp;
+    player.mp = player.maxMp;
+    player.sequence = ++this.sequence;
+    this.playerRepository.save(player);
+    return { success: true, player: this.toSnapshot(player) };
+  }
+
   disconnect(id: string) {
     this.online.delete(id);
     const player = this.playerRepository.findById(id) as PlayerEntity | null;
     if (player && player.activeBattleId) {
-      this.activeBattles.delete(player.activeBattleId);
+      this.battleEngineService.activeBattles.delete(player.activeBattleId);
       player.inBattle = false;
       player.activeBattleId = undefined;
       this.playerRepository.save(player);
@@ -513,16 +365,16 @@ export class GameService {
     this.reviveEnemies();
 
     if (player.inBattle) {
-      if (!player.activeBattleId || !this.activeBattles.has(player.activeBattleId)) {
+      if (!player.activeBattleId || !this.battleEngineService.activeBattles.has(player.activeBattleId)) {
         player.inBattle = false;
         player.activeBattleId = undefined;
         this.playerRepository.save(player);
       } else {
-        const session = this.activeBattles.get(player.activeBattleId);
+        const session = this.battleEngineService.activeBattles.get(player.activeBattleId);
         if (session && session.finished) {
           player.inBattle = false;
           player.activeBattleId = undefined;
-          this.activeBattles.delete(session.battleId);
+          this.battleEngineService.activeBattles.delete(session.battleId);
           this.playerRepository.save(player);
         } else {
           return { success: false, error: "ALREADY_IN_BATTLE" };
@@ -566,76 +418,15 @@ export class GameService {
 
   getActiveBattleForPlayer(playerId: string): BattleSnapshot | null {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
-    if (!player || !player.inBattle || !player.activeBattleId) return null;
-    const session = this.activeBattles.get(player.activeBattleId);
-    if (!session || session.finished) return null;
-    return session.toSnapshot();
+    if (!player) return null;
+    return this.battleEngineService.getActiveBattle(player);
   }
 
   startBattle(
     playerId: string,
     targetEnemyId: string
   ): { success: boolean; battle?: BattleSnapshot; error?: ServerErrorCode } {
-    this.reviveEnemies();
-    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
-    let enemy = this.enemies.get(targetEnemyId);
-
-    if (!enemy) {
-      const boss = this.bossService.getBoss(targetEnemyId);
-      if (boss && boss.alive) {
-        enemy = {
-          id: boss.id,
-          name: boss.name,
-          rank: boss.rank,
-          level: boss.level,
-          position: { ...boss.position },
-          hp: boss.currentHp,
-          maxHp: boss.maxHp,
-          mp: 100,
-          maxMp: 100,
-          alive: boss.alive,
-          worldId: boss.worldId
-        };
-      }
-    }
-
-    if (!player || !enemy || !enemy.alive) {
-      return { success: false, error: "TARGET_UNAVAILABLE" };
-    }
-
-    if ((enemy.worldId ?? "GATE_E") !== (player.worldId ?? "GATE_E")) {
-      return { success: false, error: "TARGET_UNAVAILABLE" };
-    }
-
-    if (player.inBattle) {
-      if (player.activeBattleId && this.activeBattles.has(player.activeBattleId)) {
-        const existingSession = this.activeBattles.get(player.activeBattleId)!;
-        if (!existingSession.finished) {
-          return { success: true, battle: existingSession.toSnapshot() };
-        }
-      }
-      player.inBattle = false;
-      player.activeBattleId = undefined;
-      this.playerRepository.save(player);
-    }
-
-    // Proximity check: Chebyshev distance <= 1
-    const dx = Math.abs(player.position.x - enemy.position.x);
-    const dy = Math.abs(player.position.y - enemy.position.y);
-    if (Math.max(dx, dy) > 1) {
-      return { success: false, error: "TOO_FAR" };
-    }
-
-    const battleId = `battle-${++this.battleCounter}`;
-    const session = new BattleSession(battleId, player, enemy);
-    this.activeBattles.set(battleId, session);
-
-    player.inBattle = true;
-    player.activeBattleId = battleId;
-    player.sequence = ++this.sequence;
-    this.playerRepository.save(player);
-
-    return { success: true, battle: session.toSnapshot() };
+    return this.battleEngineService.startBattle(playerId, targetEnemyId);
   }
 
   executeBattleAction(
@@ -648,25 +439,7 @@ export class GameService {
     announcement?: GateClearAnnouncement;
     error?: ServerErrorCode;
   } {
-    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
-    const session = this.activeBattles.get(battleId);
-
-    if (!player || !session || session.player.id !== playerId) {
-      return { success: false, error: "BATTLE_NOT_FOUND" };
-    }
-
-    const result = session.executeAction(actionId);
-    if (!result.success) {
-      return { success: false, error: result.error as ServerErrorCode };
-    }
-
-    let announcement: GateClearAnnouncement | undefined;
-    if (session.finished) {
-      const endRes = this.resolveBattleEnd(player, session);
-      announcement = endRes.announcement;
-    }
-
-    return { success: true, battle: session.toSnapshot(), announcement };
+    return this.battleEngineService.executeBattleAction(playerId, battleId, actionId);
   }
 
   useCombatConsumable(
@@ -679,214 +452,14 @@ export class GameService {
     inventoryState?: InventoryState;
     error?: ServerErrorCode;
   } {
-    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
-    const session = this.activeBattles.get(battleId);
-
-    if (!player || !session || session.player.id !== playerId) {
-      return { success: false, error: "BATTLE_NOT_FOUND" };
-    }
-
-    const result = this.inventoryService.useCombatConsumable(player, session, itemId);
-    if (!result.success) {
-      return { success: false, error: result.error };
-    }
-
-    if (session.finished) {
-      this.resolveBattleEnd(player, session);
-    } else {
-      this.playerRepository.save(player);
-    }
-
-    return {
-      success: true,
-      snapshot: session.toSnapshot(),
-      inventoryState: this.inventoryService.getInventoryState(player)
-    };
+    return this.battleEngineService.useCombatConsumable(playerId, battleId, itemId);
   }
 
   fleeBattle(
     playerId: string,
     battleId: string
   ): { success: boolean; battle?: BattleSnapshot; error?: ServerErrorCode } {
-    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
-    const session = this.activeBattles.get(battleId);
-
-    if (!player || !session || session.player.id !== playerId) {
-      return { success: false, error: "BATTLE_NOT_FOUND" };
-    }
-
-    session.flee();
-    this.resolveBattleEnd(player, session);
-
-    return { success: true, battle: session.toSnapshot() };
-  }
-
-  private resolveBattleEnd(
-    player: PlayerEntity,
-    session: BattleSession
-  ): { announcement?: GateClearAnnouncement } {
-    player.inBattle = false;
-    player.activeBattleId = undefined;
-    let announcement: GateClearAnnouncement | undefined;
-
-    const kill = (): void => {
-      const enemy = this.enemies.get(session.enemy.id);
-      if (enemy) this.killEnemy(enemy);
-    };
-
-    if (!player.careerStats) {
-      player.careerStats = { ...DEFAULT_CAREER_STATS };
-    }
-    player.careerStats.criticalHitsDealt += session.turnCareerCounters.crits;
-    player.careerStats.attacksDodged += session.turnCareerCounters.dodges;
-    player.careerStats.attacksBlocked += session.turnCareerCounters.blocks;
-
-    const droppedItems: ItemDefinition[] = [];
-    const giveItem = (item: ItemDefinition): void => {
-      if (!player.inventory || !player.careerStats) return;
-      if (this.lootService.addItemToInventory(player.inventory, item)) {
-        this.lootService.recordItemDrop(player.careerStats, item);
-        droppedItems.push(item);
-      }
-    };
-
-    if (session.result === "VICTORY") {
-      if (this.bossService.isBoss(session.enemy.id)) {
-        const bossRes = this.bossService.updateBossHp(session.enemy.id, 0);
-        if (bossRes.defeated && bossRes.announcement) {
-          announcement = {
-            ...bossRes.announcement,
-            slayerName: player.name
-          };
-        }
-        player.careerStats.gateBossesSlain += 1;
-
-        if (player.inventory) {
-          let bossTrophy = MASTER_ITEMS.trophy_goblin_boss_core;
-          if (session.enemy.id === "boss_goblin_warlord") {
-            bossTrophy = MASTER_ITEMS.trophy_orc_warlord;
-          } else if (session.enemy.id === "boss_shadow_wolf") {
-            bossTrophy = MASTER_ITEMS.trophy_shadow_wolf_fang;
-          } else if (session.enemy.id === "boss-1") {
-            bossTrophy = MASTER_ITEMS.trophy_fire_gate_core;
-          } else if (session.enemy.id === "boss_brass_gargoyle") {
-            bossTrophy = MASTER_ITEMS.trophy_brass_gargoyle;
-          } else if (session.enemy.id === "boss_crimson_sentinel") {
-            bossTrophy = MASTER_ITEMS.trophy_crimson_heart;
-          } else if (session.enemy.id === "boss_frost_giant") {
-            bossTrophy = MASTER_ITEMS.trophy_frost_giant;
-          } else if (session.enemy.id === "boss_frost_queen") {
-            bossTrophy = MASTER_ITEMS.trophy_frost_queen_crystal;
-          } else if (session.enemy.id === "boss_death_knight") {
-            bossTrophy = MASTER_ITEMS.trophy_death_knight;
-          } else if (session.enemy.id === "boss_shadow_lich") {
-            bossTrophy = MASTER_ITEMS.trophy_shadow_lich_skull;
-          } else if (session.enemy.id === "boss_volcanic_behemoth") {
-            bossTrophy = MASTER_ITEMS.trophy_volcanic_behemoth;
-          } else if (session.enemy.id === "boss_dragon_ignis") {
-            bossTrophy = MASTER_ITEMS.trophy_dragon_heart;
-          } else if (session.enemy.id === "boss_god_statue_high_priest") {
-            bossTrophy = MASTER_ITEMS.trophy_god_statue_high_priest;
-          } else if (session.enemy.id === "boss_god_statue") {
-            bossTrophy = MASTER_ITEMS.trophy_god_statue_fragment;
-          } else if (session.enemy.id === "boss_astral_herald") {
-            bossTrophy = MASTER_ITEMS.trophy_astral_herald;
-          } else if (session.enemy.id === "boss_cosmic_avatar") {
-            bossTrophy = MASTER_ITEMS.trophy_cosmic_core;
-          } else if (session.enemy.id === "boss_igris_red_knight") {
-            bossTrophy = MASTER_ITEMS.trophy_igris_blade;
-          } else if (session.enemy.id === "boss_shadow_monarch") {
-            bossTrophy = MASTER_ITEMS.trophy_shadow_sovereign_crown;
-          } else if (session.enemy.id === "worldboss_kamish") {
-            bossTrophy = MASTER_ITEMS.trophy_kamish_wrath;
-          }
-
-          if (this.lootService.addItemToInventory(player.inventory, bossTrophy)) {
-            this.lootService.recordItemDrop(player.careerStats, bossTrophy);
-            droppedItems.push(bossTrophy);
-          } else {
-            if (!player.unclaimedTrophies) player.unclaimedTrophies = [];
-            player.unclaimedTrophies.push(bossTrophy.id);
-            session.log.push(
-              `[MOCHILA CHEIA] ${bossTrophy.name} foi retido em custódia com o Inspetor Baek na Associação!`
-            );
-          }
-
-          if (session.enemy.id === "boss-1" && !player.inventory.some((s) => s.item.id === "trophy_goblin_boss_core")) {
-            giveItem(MASTER_ITEMS.trophy_goblin_boss_core);
-          }
-
-          const bossLoot = this.lootService.rollMonsterDrop(session.enemy.level, true);
-          if (bossLoot) giveItem(bossLoot);
-        }
-      } else {
-        kill();
-        player.careerStats.regularMonstersSlain += 1;
-
-        if (player.inventory) {
-          const mobLoot = this.lootService.rollMonsterDrop(session.enemy.level, false);
-          if (mobLoot) giveItem(mobLoot);
-        }
-      }
-      player.hp = Math.max(1, session.player.hp);
-      player.mp = Math.max(0, session.player.mp);
-    } else if (session.result === "DEFEAT") {
-      if (this.bossService.isBoss(session.enemy.id)) {
-        this.bossService.updateBossHp(session.enemy.id, session.enemy.hp);
-      }
-      player.position = { ...this.spawnOf(player) };
-      player.hp = player.maxHp;
-      player.mp = player.maxMp;
-    } else if (session.result === "DRAW") {
-      if (session.drawReason === "TURN_LIMIT" || (session.player.hp > 0 && session.enemy.hp > 0)) {
-        if (this.bossService.isBoss(session.enemy.id)) {
-          this.bossService.updateBossHp(session.enemy.id, session.enemy.hp);
-        } else {
-          const enemy = this.enemies.get(session.enemy.id);
-          if (enemy) enemy.hp = Math.max(1, session.enemy.hp);
-        }
-        player.hp = Math.max(1, session.player.hp);
-        player.mp = Math.max(0, session.player.mp);
-      } else {
-        if (this.bossService.isBoss(session.enemy.id)) {
-          this.bossService.updateBossHp(session.enemy.id, 0);
-        } else {
-          kill();
-        }
-        player.position = { ...this.spawnOf(player) };
-        player.hp = Math.floor(player.maxHp * 0.5);
-        player.mp = Math.floor(player.maxMp * 0.5);
-      }
-    } else if (session.result === "FLED") {
-      if (this.bossService.isBoss(session.enemy.id)) {
-        this.bossService.updateBossHp(session.enemy.id, session.enemy.hp);
-      }
-      player.hp = Math.max(1, session.player.hp);
-      player.mp = Math.max(0, session.player.mp);
-    }
-
-    if (session.rewardExp > 0) {
-      this.grantExp(player, session);
-    } else if (session.result === "VICTORY") {
-      session.rewards = {
-        expGained: 0,
-        levelBefore: player.level,
-        levelAfter: player.level,
-        expBefore: player.exp,
-        expAfter: player.exp,
-        capped: true,
-        levelCap: RANK_CAP[player.rank]
-      };
-    }
-    if (droppedItems.length > 0 && session.rewards) {
-      session.rewards.drops = droppedItems.map((i) => ({ ...i }));
-    }
-
-    player.sequence = ++this.sequence;
-    this.playerRepository.save(player);
-    this.activeBattles.delete(session.battleId);
-
-    return { announcement };
+    return this.battleEngineService.fleeBattle(playerId, battleId);
   }
 
   private grantExp(player: PlayerEntity, session: BattleSession): void {
@@ -1182,74 +755,7 @@ export class GameService {
     playerId: string,
     zoneId: ZoneTeleportRequest["zoneId"]
   ): { success: boolean; player?: PlayerSnapshot; error?: ServerErrorCode } {
-    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
-    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
-    if (player.inBattle) return { success: false, error: "ALREADY_IN_BATTLE" };
-
-    if (zoneId === "RETURN_GATE_E") {
-      player.worldId = "GATE_E";
-      player.position = { x: 2, y: 2 };
-      player.lastStepAt = this.clock.nowMs();
-      player.sequence = ++this.sequence;
-      this.playerRepository.save(player);
-      return { success: true, player: this.toSnapshot(player) };
-    }
-
-    const gateTargetMap: Partial<Record<ZoneTeleportRequest["zoneId"], { worldId: WorldId; minRank: HunterRank }>> = {
-      ENTER_GATE_D: { worldId: "GATE_D", minRank: "D" },
-      ENTER_GATE_C: { worldId: "GATE_C", minRank: "C" },
-      ENTER_GATE_B: { worldId: "GATE_B", minRank: "B" },
-      ENTER_GATE_A: { worldId: "GATE_A", minRank: "A" },
-      ENTER_GATE_S: { worldId: "GATE_S", minRank: "S" },
-      ENTER_GATE_SS: { worldId: "GATE_SS", minRank: "SS" },
-      ENTER_GATE_SSS: { worldId: "GATE_SSS", minRank: "SSS" }
-    };
-
-    const gateTarget = gateTargetMap[zoneId];
-    if (gateTarget) {
-      if (!isRankAllowed(player.rank, gateTarget.minRank)) {
-        return { success: false, error: "ZONE_LOCKED" };
-      }
-      const worldGeo = ALL_GATE_WORLDS[gateTarget.worldId];
-      player.worldId = gateTarget.worldId;
-      player.position = { ...(worldGeo?.spawn ?? { x: 3, y: 9 }) };
-      player.lastStepAt = this.clock.nowMs();
-      player.sequence = ++this.sequence;
-      this.playerRepository.save(player);
-      return { success: true, player: this.toSnapshot(player) };
-    }
-
-    player.worldId = "GATE_E";
-    const zoneMinRank: Record<string, HunterRank> = {
-      SANTUARIO: "E",
-      CATACUMBAS: "E",
-      COVIL: "D",
-      ABISMO: "D",
-      CHAMBER: "C"
-    };
-
-    const minRank = zoneMinRank[zoneId] ?? "E";
-    if (!isRankAllowed(player.rank, minRank)) {
-      return { success: false, error: "ZONE_LOCKED" };
-    }
-
-    const zoneCoords: Record<string, TileCoord> = {
-      SANTUARIO: { x: 2, y: 2 },
-      CATACUMBAS: { x: 18, y: 5 },
-      COVIL: { x: 6, y: 21 },
-      ABISMO: { x: 22, y: 20 },
-      CHAMBER: { x: 38, y: 13 }
-    };
-
-    const targetPos = zoneCoords[zoneId];
-    if (!targetPos) return { success: false, error: "ZONE_NOT_FOUND" };
-
-    player.position = { ...targetPos };
-    player.lastStepAt = this.clock.nowMs();
-    player.sequence = ++this.sequence;
-    this.playerRepository.save(player);
-
-    return { success: true, player: this.toSnapshot(player) };
+    return this.teleportService.teleportPlayerToZone(playerId, zoneId);
   }
 
   interactWithShrine(playerId: string): {
@@ -1260,34 +766,7 @@ export class GameService {
     player?: PlayerSnapshot;
     error?: ServerErrorCode;
   } {
-    const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
-    if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
-    if (player.inBattle) return { success: false, error: "ALREADY_IN_BATTLE" };
-
-    const worldId = player.worldId ?? "GATE_E";
-    const shrines = ALL_GATE_WORLDS[worldId]?.shrines ?? [];
-    const nearby = shrines.find(
-      (s) => Math.max(Math.abs(player.position.x - s.x), Math.abs(player.position.y - s.y)) <= 2
-    );
-
-    if (!nearby) {
-      return { success: false, error: "TOO_FAR" };
-    }
-
-    const hpRestored = player.maxHp - player.hp;
-    const mpRestored = player.maxMp - player.mp;
-    player.hp = player.maxHp;
-    player.mp = player.maxMp;
-    player.sequence = ++this.sequence;
-    this.playerRepository.save(player);
-
-    return {
-      success: true,
-      message: `✨ Você meditou no [${nearby.name}]. Vitalidade e mana completamente restauradas!`,
-      hpRestored,
-      mpRestored,
-      player: this.toSnapshot(player)
-    };
+    return this.teleportService.interactWithShrine(playerId);
   }
 
   resetGate(
@@ -1355,52 +834,15 @@ export class GameService {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     if (!player) return { success: false, error: "TARGET_UNAVAILABLE" };
 
-    let finalTrophyId: string = trophyId ?? "";
-    if (!finalTrophyId || !MASTER_ITEMS[finalTrophyId]) {
-      const nextRank = getNextHunterRank(player.rank);
-      const req = nextRank ? RANK_EXAM_REQUIREMENTS[nextRank] : null;
-      finalTrophyId = req?.requiredTrophyItemId ?? "trophy_goblin_boss_core";
-    }
-
-    const trophyDef = MASTER_ITEMS[finalTrophyId];
-    if (!trophyDef || trophyDef.type !== "TROPHY") return { success: false, error: "ITEM_NOT_FOUND" };
-
-    if (!player.inventory) player.inventory = [];
-    const alreadyHas = player.inventory.some((s) => s.item.id === finalTrophyId);
-    if (alreadyHas) {
-      return {
-        success: true,
-        state: this.inventoryService.getInventoryState(player),
-        player: this.toSnapshot(player),
-        message: `Você já possui o troféu oficial [${trophyDef.name}] em seu inventário!`
-      };
-    }
-
-    const canClaim =
-      (player.careerStats && player.careerStats.gateBossesSlain > 0) ||
-      (player.unclaimedTrophies && player.unclaimedTrophies.length > 0) ||
-      player.level >= 8;
-
-    if (!canClaim) {
-      return { success: false, error: "ACADEMY_REQUIREMENTS_UNMET" };
-    }
-
-    const added = this.lootService.addItemToInventory(player.inventory, trophyDef);
-    if (!added) return { success: false, error: "CANNOT_EQUIP" };
-
-    if (player.unclaimedTrophies) {
-      player.unclaimedTrophies = player.unclaimedTrophies.filter((id) => id !== finalTrophyId);
-    }
-
-    player.sequence = ++this.sequence;
-    this.playerRepository.save(player);
-
-    return {
-      success: true,
-      state: this.inventoryService.getInventoryState(player),
-      player: this.toSnapshot(player),
-      message: `Troféu militar oficial [${trophyDef.name}] recuperado com sucesso pelo Inspetor Baek!`
-    };
+    return this.academyService.claimLostTrophy(
+      player,
+      trophyId,
+      this.inventoryService,
+      this.lootService,
+      (p) => this.toSnapshot(p),
+      () => ++this.sequence,
+      (p) => this.playerRepository.save(p)
+    );
   }
 
   allocateStats(

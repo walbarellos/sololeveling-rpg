@@ -413,7 +413,8 @@ describe("missões estilo Naruto Game (contratos)", () => {
       const req = RANK_EXAM_REQUIREMENTS["D"];
       expect(req).toBeDefined();
       expect(req?.targetRank).toBe("D");
-      expect(req?.minLevel).toBe(8);
+      expect(req?.minLevel).toBe(1);
+      expect(req?.recommendedLevel).toBe(8);
       expect(req?.requiredTrophyItemId).toBe("trophy_goblin_boss_core");
 
       expect(RankPromotionRequestSchema.safeParse({ targetRank: "D" }).success).toBe(true);

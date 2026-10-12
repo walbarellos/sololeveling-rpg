@@ -288,7 +288,7 @@ export const WORLD_NPCS: readonly NpcDefinition[] = [
     title: "Associação de Caçadores",
     role: "ACADEMY",
     portrait: "director",
-    position: { x: 3, y: 3 },
+    position: { x: 2, y: 5 },
     dialogue: "Saudações, Caçador. Sou o Inspetor Baek da Associação. Homologo promoções de Rank militar e restituo troféus de abolição extraviados em combate."
   },
   {
@@ -297,7 +297,7 @@ export const WORLD_NPCS: readonly NpcDefinition[] = [
     title: "Mercado Negro & Suprimentos",
     role: "MERCHANT",
     portrait: "healer",
-    position: { x: 1, y: 3 },
+    position: { x: 2, y: 8 },
     dialogue: "Bem-vindo ao bazar tático! Compro qualquer equipamento e espólio por ouro vivo, e vendo elixires para manter você respirando."
   },
   {
@@ -306,8 +306,8 @@ export const WORLD_NPCS: readonly NpcDefinition[] = [
     title: "Mestre de Portais e Fendas",
     role: "GATEKEEPER",
     portrait: "warrior",
-    position: { x: 3, y: 1 },
-    dialogue: "Gerencio as coordenadas dimensionais dos Gates. O Gate E possui 5 setores até a Câmara do Chefe. A Fenda da Aurora leva à Cidadela Carmesim (Gate Rank D) para caçadores promovidos."
+    position: { x: 10, y: 3 },
+    dialogue: "Gerencio as coordenadas dimensionais dos Gates. O Gate E possui 5 setores até a Câmara do Chefe. Fale comigo para sintonizar qualquer Fenda Dimensional já desbloqueada!"
   }
 ];
 
@@ -357,6 +357,12 @@ export type ClaimLostTrophyRequest = z.infer<typeof ClaimLostTrophyRequestSchema
 export const ResetGateRequestSchema = z.object({}).default({});
 export type ResetGateRequest = z.infer<typeof ResetGateRequestSchema>;
 
+export const DevSetLevelRequestSchema = z.object({
+  level: z.number().int().min(1).max(200),
+  rank: HunterRankSchema.optional()
+});
+export type DevSetLevelRequest = z.infer<typeof DevSetLevelRequestSchema>;
+
 /** Stable transport event names. Keep event payloads versioned as the game evolves. */
 export const ClientEvents = {
   StepRequest: "game:step",
@@ -383,7 +389,8 @@ export const ClientEvents = {
   ResetGateRequest: "game:gate:reset",
   MerchantBuyRequest: "game:merchant:buy",
   ClaimLostTrophyRequest: "game:academy:claim-trophy",
-  ShrineInteractRequest: "game:shrine:interact"
+  ShrineInteractRequest: "game:shrine:interact",
+  DevSetLevelRequest: "game:dev:set-level"
 } as const;
 
 export const ServerEvents = {
