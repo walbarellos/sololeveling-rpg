@@ -318,12 +318,26 @@ export class GameService {
     return this.toSnapshot(newPlayer);
   }
 
-  devSetLevel(playerId: string, targetLevel: number, targetRank?: HunterRank): { success: boolean; player?: PlayerSnapshot } {
+  devSetLevel(
+    playerId: string,
+    opts: { level?: number; targetRank?: HunterRank; addStatPoints?: number; addGold?: number }
+  ): { success: boolean; player?: PlayerSnapshot } {
     const player = this.playerRepository.findById(playerId) as PlayerEntity | null;
     if (!player) return { success: false };
-    player.level = targetLevel;
-    player.rank = targetRank ?? (targetLevel >= 120 ? "SS" : targetLevel >= 80 ? "S" : targetLevel >= 50 ? "B" : targetLevel >= 25 ? "C" : "D");
-    player.unallocatedStatPoints = Math.max(player.unallocatedStatPoints, targetLevel * 4);
+    if (opts.level !== undefined) {
+      player.level = opts.level;
+      player.rank = opts.targetRank ?? (opts.level >= 180 ? "SSS+" : opts.level >= 140 ? "SSS" : opts.level >= 115 ? "SS" : opts.level >= 80 ? "S" : opts.level >= 50 ? "B" : opts.level >= 25 ? "C" : "D");
+      player.unallocatedStatPoints = Math.max(player.unallocatedStatPoints, opts.level * 4);
+    }
+    if (opts.targetRank && opts.level === undefined) {
+      player.rank = opts.targetRank;
+    }
+    if (opts.addStatPoints) {
+      player.unallocatedStatPoints = (player.unallocatedStatPoints ?? 0) + opts.addStatPoints;
+    }
+    if (opts.addGold) {
+      player.gold = (player.gold ?? 0) + opts.addGold;
+    }
     this.recomputeMaxStats(player);
     player.hp = player.maxHp;
     player.mp = player.maxMp;

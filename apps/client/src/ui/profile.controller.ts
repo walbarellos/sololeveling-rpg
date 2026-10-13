@@ -59,11 +59,13 @@ export class ProfileController {
   public readonly btnDecInt = document.querySelector<HTMLButtonElement>("#btn-dec-int");
   public readonly btnIncInt = document.querySelector<HTMLButtonElement>("#btn-inc-int");
 
+  public readonly btnAutoStats = document.querySelector<HTMLButtonElement>("#btn-auto-stats");
   public readonly btnResetStats = document.querySelector<HTMLButtonElement>("#btn-reset-stats");
   public readonly btnConfirmStats = document.querySelector<HTMLButtonElement>("#btn-confirm-stats");
   public readonly classSelect = document.querySelector<HTMLSelectElement>("#class-select");
 
   public pendingStats = { str: 0, agi: 0, vit: 0, int: 0 };
+  public allocationStep: number | "MAX" = 1;
 
   constructor() {
     this.bindEvents();
@@ -78,6 +80,16 @@ export class ProfileController {
     this.btnDecVit?.addEventListener("click", () => this.adjustStat("vit", -1));
     this.btnIncInt?.addEventListener("click", () => this.adjustStat("int", 1));
     this.btnDecInt?.addEventListener("click", () => this.adjustStat("int", -1));
+
+    // Passo de alocação de atributos (1x, 5x, 10x, 50x, MAX)
+    document.querySelector("#btn-stat-step-1")?.addEventListener("click", () => this.setAllocationStep(1));
+    document.querySelector("#btn-stat-step-5")?.addEventListener("click", () => this.setAllocationStep(5));
+    document.querySelector("#btn-stat-step-10")?.addEventListener("click", () => this.setAllocationStep(10));
+    document.querySelector("#btn-stat-step-50")?.addEventListener("click", () => this.setAllocationStep(50));
+    document.querySelector("#btn-stat-step-max")?.addEventListener("click", () => this.setAllocationStep("MAX"));
+
+    // Distribuição Inteligente por Classe (Build Recomendada em 1 clique)
+    this.btnAutoStats?.addEventListener("click", () => this.autoAllocateClassBuild());
 
     this.btnResetStats?.addEventListener("click", () => {
       this.pendingStats = { str: 0, agi: 0, vit: 0, int: 0 };
@@ -105,17 +117,55 @@ export class ProfileController {
       this.classSelect?.blur();
     });
 
-    const btnDev50 = document.querySelector<HTMLButtonElement>("#btn-dev-lvl-50");
-    btnDev50?.addEventListener("click", () => {
-      socket.emit(ClientEvents.DevSetLevelRequest, { level: 50, rank: "B" });
-      hudController.setStatus("Personagem ajustado para Nível 50 (Rank B)!");
-    });
+    // Console Dev Lategame & Cheats de Teste
+    const devLevels: Array<{ id: string; level: number; rank: "D" | "B" | "A" | "S" | "SS" | "SSS+" }> = [
+      { id: "#btn-dev-lvl-25", level: 25, rank: "D" },
+      { id: "#btn-dev-lvl-50", level: 50, rank: "B" },
+      { id: "#btn-dev-lvl-75", level: 75, rank: "A" },
+      { id: "#btn-dev-lvl-100", level: 100, rank: "S" },
+      { id: "#btn-dev-lvl-150", level: 150, rank: "SS" },
+      { id: "#btn-dev-lvl-200", level: 200, rank: "SSS+" }
+    ];
 
-    const btnDev100 = document.querySelector<HTMLButtonElement>("#btn-dev-lvl-100");
-    btnDev100?.addEventListener("click", () => {
-      socket.emit(ClientEvents.DevSetLevelRequest, { level: 100, rank: "S" });
-      hudController.setStatus("Personagem ajustado para Nível 100 (Rank S)!");
+    for (const dl of devLevels) {
+      document.querySelector(dl.id)?.addEventListener("click", () => {
+        socket.emit(ClientEvents.DevSetLevelRequest, { level: dl.level, rank: dl.rank });
+        hudController.setStatus(`Personagem ajustado para Nível ${dl.level} (Rank ${dl.rank})!`);
+      });
+    }
+
+    const devPoints: Array<{ id: string; pts: number }> = [
+      { id: "#btn-dev-pts-50", pts: 50 },
+      { id: "#btn-dev-pts-100", pts: 100 },
+      { id: "#btn-dev-pts-500", pts: 500 }
+    ];
+
+    for (const dp of devPoints) {
+      document.querySelector(dp.id)?.addEventListener("click", () => {
+        socket.emit(ClientEvents.DevSetLevelRequest, { addStatPoints: dp.pts });
+        hudController.setStatus(`Injetados +${dp.pts} pontos de atributos!`);
+      });
+    }
+
+    document.querySelector("#btn-dev-gold-100k")?.addEventListener("click", () => {
+      socket.emit(ClientEvents.DevSetLevelRequest, { addGold: 100000 });
+      hudController.setStatus("Injetados +100.000 de Ouro ao inventário!");
     });
+  }
+
+  public setAllocationStep(step: number | "MAX") {
+    this.allocationStep = step;
+    const stepMap: Record<string, string> = {
+      "1": "#btn-stat-step-1",
+      "5": "#btn-stat-step-5",
+      "10": "#btn-stat-step-10",
+      "50": "#btn-stat-step-50",
+      "MAX": "#btn-stat-step-max"
+    };
+    for (const [key, selector] of Object.entries(stepMap)) {
+      const el = document.querySelector<HTMLButtonElement>(selector);
+      el?.classList.toggle("active", String(step) === key);
+    }
   }
 
   public getRemainingPoints(): number {
@@ -123,17 +173,68 @@ export class ProfileController {
     return Math.max(0, (gameState.lastMe?.unallocatedStatPoints ?? 0) - totalPending);
   }
 
-  public adjustStat(stat: "str" | "agi" | "vit" | "int", delta: number) {
-    if (delta > 0) {
-      if (this.getRemainingPoints() > 0) {
-        this.pendingStats[stat]++;
-      }
-    } else if (delta < 0) {
-      if (this.pendingStats[stat] > 0) {
-        this.pendingStats[stat]--;
-      }
+  public adjustStat(stat: "str" | "agi" | "vit" | "int", direction: 1 | -1) {
+    const remaining = this.getRemainingPoints();
+    const step = this.allocationStep;
+
+    if (direction > 0) {
+      if (remaining <= 0) return;
+      const toAdd = step === "MAX" ? remaining : Math.min(step, remaining);
+      this.pendingStats[stat] += toAdd;
+    } else {
+      if (this.pendingStats[stat] <= 0) return;
+      const toSub = step === "MAX" ? this.pendingStats[stat] : Math.min(step, this.pendingStats[stat]);
+      this.pendingStats[stat] -= toSub;
     }
     this.updateStatDistributionUI();
+  }
+
+  public autoAllocateClassBuild() {
+    const me = gameState.lastMe;
+    if (!me) return;
+    const remaining = this.getRemainingPoints();
+    if (remaining <= 0) return;
+
+    let strPts = 0;
+    let agiPts = 0;
+    let vitPts = 0;
+    let intPts = 0;
+
+    switch (me.hunterClass) {
+      case "WARRIOR":
+        strPts = Math.floor(remaining * 0.50);
+        vitPts = Math.floor(remaining * 0.35);
+        agiPts = Math.floor(remaining * 0.15);
+        strPts += (remaining - (strPts + vitPts + agiPts));
+        break;
+      case "ASSASSIN":
+        agiPts = Math.floor(remaining * 0.60);
+        strPts = Math.floor(remaining * 0.30);
+        vitPts = Math.floor(remaining * 0.10);
+        agiPts += (remaining - (strPts + agiPts + vitPts));
+        break;
+      case "MAGE":
+        intPts = Math.floor(remaining * 0.75);
+        vitPts = Math.floor(remaining * 0.20);
+        agiPts = Math.floor(remaining * 0.05);
+        intPts += (remaining - (strPts + agiPts + vitPts + intPts));
+        break;
+      case "BATTLE_HEALER":
+      default:
+        intPts = Math.floor(remaining * 0.55);
+        vitPts = Math.floor(remaining * 0.30);
+        strPts = Math.floor(remaining * 0.15);
+        intPts += (remaining - (strPts + agiPts + vitPts + intPts));
+        break;
+    }
+
+    this.pendingStats.str += strPts;
+    this.pendingStats.agi += agiPts;
+    this.pendingStats.vit += vitPts;
+    this.pendingStats.int += intPts;
+
+    this.updateStatDistributionUI();
+    hudController.setStatus(`Build recomendada para ${CLASS_TITLES[me.hunterClass]} calculada! Clique em Confirmar.`);
   }
 
   public updateStatDistributionUI() {
@@ -169,6 +270,7 @@ export class ProfileController {
 
     if (this.btnResetStats) this.btnResetStats.disabled = totalPending <= 0;
     if (this.btnConfirmStats) this.btnConfirmStats.disabled = totalPending <= 0;
+    if (this.btnAutoStats) this.btnAutoStats.disabled = remaining <= 0;
 
     // Pré-visualização de atributos derivados
     if (me.stats) {

@@ -443,11 +443,32 @@
                 <span class="profile-box-label">RANK ATUAL:</span>
                 <span id="profile-rank-display" class="rank-tag rank-e">RANK E</span>
               </div>
-              <div class="profile-dev-lategame-box" style="margin-top: 10px; background: #0b1120; border: 1px solid #1e293b; border-radius: 4px; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
-                <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; letter-spacing: 0.05em; text-align: center;">[TESTE DE LATEGAME]</span>
-                <div style="display: flex; gap: 6px;">
-                  <button id="btn-dev-lvl-50" type="button" style="flex: 1; background: #1e1b4b; border: 1px solid #6366f1; color: #c7d2fe; font-size: 0.68rem; font-weight: 700; padding: 5px 2px; border-radius: 3px; cursor: pointer;" title="Ajusta o personagem para Nível 50 (Rank B)">LVL 50 (B)</button>
-                  <button id="btn-dev-lvl-100" type="button" style="flex: 1; background: #78350f; border: 1px solid #f59e0b; color: #fef08a; font-size: 0.68rem; font-weight: 700; padding: 5px 2px; border-radius: 3px; cursor: pointer;" title="Ajusta o personagem para Nível 100 (Rank S)">LVL 100 (S)</button>
+              <div class="profile-dev-lategame-box" style="margin-top: 10px; background: #0b1120; border: 1px solid #1e293b; border-radius: 4px; padding: 8px; display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 0.65rem; font-weight: 800; color: #f59e0b; letter-spacing: 0.05em; text-align: center;">[CONSOLE DE TESTES &amp; CHEAT]</span>
+                <div class="dev-cheat-section">
+                  <span class="dev-cheat-title">Nível &amp; Rank:</span>
+                  <div class="dev-cheat-grid">
+                    <button id="btn-dev-lvl-25" class="btn-dev-chip btn-dev-lvl" type="button" title="Ajusta para Nível 25 (Rank D)">LV 25 · D</button>
+                    <button id="btn-dev-lvl-50" class="btn-dev-chip btn-dev-lvl" type="button" title="Ajusta para Nível 50 (Rank B)">LV 50 · B</button>
+                    <button id="btn-dev-lvl-75" class="btn-dev-chip btn-dev-lvl" type="button" title="Ajusta para Nível 75 (Rank A)">LV 75 · A</button>
+                    <button id="btn-dev-lvl-100" class="btn-dev-chip btn-dev-lvl" type="button" title="Ajusta para Nível 100 (Rank S)">LV 100 · S</button>
+                    <button id="btn-dev-lvl-150" class="btn-dev-chip btn-dev-lvl" type="button" title="Ajusta para Nível 150 (Rank SS)">LV 150 · SS</button>
+                    <button id="btn-dev-lvl-200" class="btn-dev-chip btn-dev-lvl" type="button" title="Ajusta para Nível 200 (Rank SSS+)">LV 200 · SSS+</button>
+                  </div>
+                </div>
+                <div class="dev-cheat-section">
+                  <span class="dev-cheat-title">Injetar Pontos de Atributo:</span>
+                  <div class="dev-cheat-grid">
+                    <button id="btn-dev-pts-50" class="btn-dev-chip btn-dev-pts" type="button" title="Adiciona 50 pontos">+50 PTS</button>
+                    <button id="btn-dev-pts-100" class="btn-dev-chip btn-dev-pts" type="button" title="Adiciona 100 pontos">+100 PTS</button>
+                    <button id="btn-dev-pts-500" class="btn-dev-chip btn-dev-pts" type="button" title="Adiciona 500 pontos">+500 PTS</button>
+                  </div>
+                </div>
+                <div class="dev-cheat-section">
+                  <span class="dev-cheat-title">Economia:</span>
+                  <div class="dev-cheat-grid">
+                    <button id="btn-dev-gold-100k" class="btn-dev-chip btn-dev-gold" type="button" title="Adiciona 100.000 de ouro">+100.000 OURO</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -479,9 +500,19 @@
               <div class="profile-section stat-distribution-section">
                 <div class="profile-section-heading stat-distrib-heading">
                   <span class="heading-title">DISTRIBUIÇÃO DE ATRIBUTOS</span>
-                  <div class="unallocated-badge-plate">
-                    <span class="unallocated-label">PONTOS DISPONÍVEIS:</span>
-                    <span id="profile-unallocated-pts" class="unallocated-val">0</span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="stat-step-bar" title="Multiplicador de pontos por clique">
+                      <span class="stat-step-label">PASSO:</span>
+                      <button id="btn-stat-step-1" class="btn-stat-step active" type="button">1x</button>
+                      <button id="btn-stat-step-5" class="btn-stat-step" type="button">5x</button>
+                      <button id="btn-stat-step-10" class="btn-stat-step" type="button">10x</button>
+                      <button id="btn-stat-step-50" class="btn-stat-step" type="button">50x</button>
+                      <button id="btn-stat-step-max" class="btn-stat-step" type="button">MAX</button>
+                    </div>
+                    <div class="unallocated-badge-plate">
+                      <span class="unallocated-label">DISPONÍVEIS:</span>
+                      <span id="profile-unallocated-pts" class="unallocated-val">0</span>
+                    </div>
                   </div>
                 </div>
 
@@ -556,6 +587,9 @@
                 </div>
 
                 <div class="stat-distrib-actions">
+                  <button id="btn-auto-stats" class="btn-stat-auto" type="button" title="Distribui automaticamente todos os pontos de acordo com a especialização da sua classe">
+                    BUILD RECOMENDADA (CLASSE)
+                  </button>
                   <button id="btn-reset-stats" class="btn-stat-reset" type="button" disabled>
                     REDEFINIR
                   </button>

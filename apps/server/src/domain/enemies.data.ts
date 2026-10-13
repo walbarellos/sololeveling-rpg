@@ -45,20 +45,32 @@ export const MOB_TEMPLATES: Record<string, MobTemplate> = {
   magma_drake: { name: "Draconiano de Magma", rank: "A", baseHp: 440, baseMp: 60, theme: "hell" },
   fire_behemoth: { name: "Behemoth Vulcânico", rank: "A", baseHp: 520, baseMp: 45, theme: "hell" },
   flame_serpent: { name: "Serpente das Cinzas", rank: "A", baseHp: 410, baseMp: 80, theme: "hell" },
+  cinder_berserker: { name: "Berserker das Cinzas", rank: "A", baseHp: 480, baseMp: 50, theme: "hell" },
+  inferno_gargoyle: { name: "Gárgula de Magma Ardente", rank: "A", baseHp: 460, baseMp: 70, theme: "hell" },
+  pyro_demon: { name: "Demônio do Abismo de Fogo", rank: "A", baseHp: 550, baseMp: 85, theme: "hell" },
 
-  // GATE S — Templo dos Deuses Antigos
+  // GATE S — Templo dos Deuses Antigos (Double Dungeon)
   temple_guardian: { name: "Guardião de Pedra do Templo", rank: "S", baseHp: 680, baseMp: 80, theme: "crypt" },
-  winged_executioner: { name: "Carrasco Alado", rank: "S", baseHp: 750, baseMp: 90, theme: "nature" },
+  winged_executioner: { name: "Carrasco Alado dos Mandamentos", rank: "S", baseHp: 750, baseMp: 90, theme: "nature" },
   ruin_priest: { name: "Alto Sacerdote da Ruína", rank: "S", baseHp: 620, baseMp: 150, theme: "space" },
+  stone_centurion: { name: "Centurião dos Mandamentos", rank: "S", baseHp: 720, baseMp: 100, theme: "crypt" },
+  divine_arbiter: { name: "Árbitro do Deus de Pedra", rank: "S", baseHp: 800, baseMp: 140, theme: "space" },
+  fallen_colossus: { name: "Colosso Pétreo Guardião", rank: "S", baseHp: 880, baseMp: 80, theme: "crypt" },
 
-  // GATE SS — Fenda Cósmica
+  // GATE SS — Fenda Cósmica (Void Cataclysm)
   stareater: { name: "Devorador de Estrelas", rank: "SS", baseHp: 1050, baseMp: 120, theme: "space" },
-  void_abomination: { name: "Abominação do Vácuo", rank: "SS", baseHp: 1200, baseMp: 140, theme: "space" },
+  void_abomination: { name: "Abominação do Vácuo Astral", rank: "SS", baseHp: 1200, baseMp: 140, theme: "space" },
+  cosmic_phantom: { name: "Fantasma da Singularidade", rank: "SS", baseHp: 1100, baseMp: 160, theme: "space" },
+  stellar_reaper: { name: "Ceifador de Quasares", rank: "SS", baseHp: 1250, baseMp: 180, theme: "space" },
+  astral_colossus: { name: "Titã da Matéria Escura", rank: "SS", baseHp: 1400, baseMp: 150, theme: "space" },
 
-  // GATE SSS — Trono do Monarca das Sombras
+  // GATE SSS — Trono do Monarca das Sombras (Apex Dungeon)
   shadow_commander: { name: "Comandante das Sombras Igris", rank: "SSS", baseHp: 1600, baseMp: 200, theme: "crypt" },
-  shadow_beru: { name: "Lorde das Sombras Beru", rank: "SSS", baseHp: 1850, baseMp: 220, theme: "larva" },
-  shadow_bellion: { name: "General Supremo Bellion", rank: "SSS+", baseHp: 2200, baseMp: 250, theme: "crypt" }
+  shadow_beru: { name: "Lorde das Sombras Beru (Rei Formiga)", rank: "SSS", baseHp: 1850, baseMp: 220, theme: "larva" },
+  shadow_iron: { name: "Titã das Sombras Iron", rank: "SSS", baseHp: 1750, baseMp: 180, theme: "crypt" },
+  shadow_bellion: { name: "General Supremo Bellion", rank: "SSS+", baseHp: 2200, baseMp: 250, theme: "crypt" },
+  shadow_kamish: { name: "Dragão das Sombras Kamish", rank: "SSS+", baseHp: 2500, baseMp: 300, theme: "hell" },
+  monarch_avatar: { name: "Avatar Eterno de Ashborn", rank: "SSS+", baseHp: 2900, baseMp: 400, theme: "space" }
 };
 
 export function createEnemyInstance(
@@ -173,26 +185,35 @@ export function createInitialEnemies(): [string, EnemySnapshot][] {
     ["deathknight-2", createEnemyInstance("deathknight-2", "deathknight", 40, { x: 31, y: 10 }, "GATE_B")],
     ["shadowlich-1", createEnemyInstance("shadowlich-1", "shadowlich", 45, { x: 38, y: 14 }, "GATE_B")],
 
-    // GATE A — Calamidade Vulcânica (Rank A, Lv 54–70)
+    // GATE A — Calamidade Vulcânica (Rank A, Lv 54–75)
     ["magma-1", createEnemyInstance("magma-1", "magma_drake", 54, { x: 22, y: 12 }, "GATE_A")],
     ["behemoth-1", createEnemyInstance("behemoth-1", "fire_behemoth", 60, { x: 28, y: 17 }, "GATE_A")],
     ["flame-1", createEnemyInstance("flame-1", "flame_serpent", 65, { x: 35, y: 11 }, "GATE_A")],
-    ["magma-2", createEnemyInstance("magma-2", "magma_drake", 70, { x: 42, y: 15 }, "GATE_A")],
+    ["cinder-1", createEnemyInstance("cinder-1", "cinder_berserker", 68, { x: 38, y: 15 }, "GATE_A")],
+    ["gargoyle-1", createEnemyInstance("gargoyle-1", "inferno_gargoyle", 72, { x: 44, y: 12 }, "GATE_A")],
+    ["pyro-1", createEnemyInstance("pyro-1", "pyro_demon", 75, { x: 48, y: 16 }, "GATE_A")],
 
-    // GATE S — Templo dos Deuses Antigos (Rank S, Lv 82–105)
+    // GATE S — Templo dos Deuses Antigos (Rank S, Lv 82–110)
     ["guardian-1", createEnemyInstance("guardian-1", "temple_guardian", 82, { x: 24, y: 13 }, "GATE_S")],
-    ["winged-1", createEnemyInstance("winged-1", "winged_executioner", 90, { x: 31, y: 18 }, "GATE_S")],
-    ["ruin-1", createEnemyInstance("ruin-1", "ruin_priest", 100, { x: 39, y: 12 }, "GATE_S")],
-    ["guardian-2", createEnemyInstance("guardian-2", "temple_guardian", 105, { x: 46, y: 16 }, "GATE_S")],
+    ["winged-1", createEnemyInstance("winged-1", "winged_executioner", 88, { x: 31, y: 18 }, "GATE_S")],
+    ["ruin-1", createEnemyInstance("ruin-1", "ruin_priest", 94, { x: 37, y: 12 }, "GATE_S")],
+    ["centurion-1", createEnemyInstance("centurion-1", "stone_centurion", 98, { x: 42, y: 16 }, "GATE_S")],
+    ["arbiter-1", createEnemyInstance("arbiter-1", "divine_arbiter", 104, { x: 48, y: 13 }, "GATE_S")],
+    ["colossus-1", createEnemyInstance("colossus-1", "fallen_colossus", 110, { x: 53, y: 17 }, "GATE_S")],
 
-    // GATE SS — Fenda Cósmica (Rank SS, Lv 118–135)
+    // GATE SS — Fenda Cósmica (Rank SS, Lv 118–145)
     ["stareater-1", createEnemyInstance("stareater-1", "stareater", 118, { x: 26, y: 14 }, "GATE_SS")],
     ["void-abom-1", createEnemyInstance("void-abom-1", "void_abomination", 126, { x: 34, y: 20 }, "GATE_SS")],
-    ["stareater-2", createEnemyInstance("stareater-2", "stareater", 135, { x: 46, y: 13 }, "GATE_SS")],
+    ["phantom-1", createEnemyInstance("phantom-1", "cosmic_phantom", 132, { x: 40, y: 15 }, "GATE_SS")],
+    ["reaper-1", createEnemyInstance("reaper-1", "stellar_reaper", 138, { x: 46, y: 18 }, "GATE_SS")],
+    ["astral-1", createEnemyInstance("astral-1", "astral_colossus", 145, { x: 52, y: 14 }, "GATE_SS")],
 
-    // GATE SSS — Trono do Monarca das Sombras (Rank SSS/SSS+, Lv 150–175)
+    // GATE SSS — Trono do Monarca das Sombras (Rank SSS/SSS+, Lv 150–220)
     ["igris-1", createEnemyInstance("igris-1", "shadow_commander", 152, { x: 28, y: 15 }, "GATE_SSS")],
-    ["beru-1", createEnemyInstance("beru-1", "shadow_beru", 164, { x: 38, y: 21 }, "GATE_SSS")],
-    ["bellion-1", createEnemyInstance("bellion-1", "shadow_bellion", 175, { x: 50, y: 14 }, "GATE_SSS")]
+    ["iron-1", createEnemyInstance("iron-1", "shadow_iron", 158, { x: 34, y: 18 }, "GATE_SSS")],
+    ["beru-1", createEnemyInstance("beru-1", "shadow_beru", 165, { x: 40, y: 21 }, "GATE_SSS")],
+    ["bellion-1", createEnemyInstance("bellion-1", "shadow_bellion", 180, { x: 48, y: 14 }, "GATE_SSS")],
+    ["kamish-1", createEnemyInstance("kamish-1", "shadow_kamish", 195, { x: 54, y: 18 }, "GATE_SSS")],
+    ["ashborn-1", createEnemyInstance("ashborn-1", "monarch_avatar", 215, { x: 60, y: 15 }, "GATE_SSS")]
   ];
 }

@@ -75,7 +75,8 @@ export class BattleSession {
       stats: calculatePlayerStats(
         playerEntity.hunterClass,
         playerEntity.level,
-        playerEntity.attributes
+        playerEntity.attributes,
+        playerEntity.equipment
       )
     };
 
@@ -199,11 +200,26 @@ export class BattleSession {
     this.player.mp -= skillDef.mpCost;
 
     // --- PLAYER ACTION RESOLUTION ---
+    const config = CLASS_STATS[this.player.hunterClass] ?? CLASS_STATS.WARRIOR;
+    const mult = statMult(this.player.level);
     let playerDmg = skillDef.baseDamage;
     let isCrit = false;
     let isEnemyBlock = false;
 
     if (playerDmg > 0) {
+      const baseExpectedPhys = Math.round(config.basePhysicalAtk * mult);
+      const baseExpectedMag = Math.round(config.baseMagicalAtk * mult);
+      const bonusPhys = Math.max(0, (this.player.stats?.physicalAtk ?? baseExpectedPhys) - baseExpectedPhys);
+      const bonusMag = Math.max(0, (this.player.stats?.magicalAtk ?? baseExpectedMag) - baseExpectedMag);
+
+      const bonusDmg = skillDef.damageType === "MAGICAL"
+        ? Math.floor(bonusMag * 1.5)
+        : skillDef.damageType === "HOLY"
+        ? Math.floor(bonusMag * 0.9 + bonusPhys * 0.6)
+        : Math.floor(bonusPhys * 1.4);
+
+      playerDmg = skillDef.baseDamage + bonusDmg;
+
       const critChance = this.player.stats?.critChance ?? 0.15;
       const enemyDodgeChance = this.enemy.rank === "D" ? 0.12 : 0.06;
       const enemyBlockChance = 0.10;
@@ -258,7 +274,10 @@ export class BattleSession {
     }
 
     if (skillDef.healAmount > 0) {
-      const heal = Math.min(this.player.maxHp - this.player.hp, skillDef.healAmount);
+      const baseExpectedMag = Math.round(config.baseMagicalAtk * mult);
+      const bonusMag = Math.max(0, (this.player.stats?.magicalAtk ?? baseExpectedMag) - baseExpectedMag);
+      const scaledHeal = skillDef.healAmount + Math.floor(bonusMag * 0.8);
+      const heal = Math.min(this.player.maxHp - this.player.hp, scaledHeal);
       this.player.hp += heal;
       this.note(
         `[CURA] Canalização Sagrada! Você restaurou +${heal} de HP (Vida atual: ${this.player.hp}/${this.player.maxHp}).`,

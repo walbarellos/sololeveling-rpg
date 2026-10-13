@@ -358,8 +358,10 @@ export const ResetGateRequestSchema = z.object({}).default({});
 export type ResetGateRequest = z.infer<typeof ResetGateRequestSchema>;
 
 export const DevSetLevelRequestSchema = z.object({
-  level: z.number().int().min(1).max(200),
-  rank: HunterRankSchema.optional()
+  level: z.number().int().min(1).max(250).optional(),
+  rank: HunterRankSchema.optional(),
+  addStatPoints: z.number().int().optional(),
+  addGold: z.number().int().optional()
 });
 export type DevSetLevelRequest = z.infer<typeof DevSetLevelRequestSchema>;
 

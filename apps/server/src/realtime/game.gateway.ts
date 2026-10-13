@@ -520,9 +520,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!parsed.success) {
       return this.sendError(client, "INVALID_PAYLOAD", "Nível inválido.");
     }
-    const result = this.game.devSetLevel(this.pid(client), parsed.data.level, parsed.data.rank);
+    const result = this.game.devSetLevel(this.pid(client), {
+      level: parsed.data.level,
+      targetRank: parsed.data.rank,
+      addStatPoints: parsed.data.addStatPoints,
+      addGold: parsed.data.addGold
+    });
     if (result.success) {
       this.broadcastSnapshot();
+      client.emit(ServerEvents.InventoryState, this.game.getInventoryState(this.pid(client)));
     }
   }
 

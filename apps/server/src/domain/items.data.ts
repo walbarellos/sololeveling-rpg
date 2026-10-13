@@ -1,4 +1,5 @@
 import type { ItemDefinition, ItemRarity } from "@rpg/contracts";
+import { HIGH_TIER_ITEMS } from "./items-high-tier.data";
 
 export const MASTER_ITEMS: Record<string, ItemDefinition> = {
   // Consumíveis
@@ -923,6 +924,9 @@ export const MASTER_ITEMS: Record<string, ItemDefinition> = {
     icon: "trophy_core"
   }
 };
+
+// Incorpora catálogo de itens de alto nível
+Object.assign(MASTER_ITEMS, HIGH_TIER_ITEMS);
 
 export const RARITY_DROP_POOL: Record<ItemRarity, ItemDefinition[]> = {
   COMMON: [],
