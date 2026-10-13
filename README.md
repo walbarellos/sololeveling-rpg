@@ -13,7 +13,7 @@ Este repositório contém a fundação para um RPG browser-based 2D de mundo com
 
 ### 📁 Estrutura da Documentação
 
-A documentação está organizada em arquivos markdown separados na pasta `docs/`, cada um focado em um princípio ou padrão de projeto específico:
+A documentação está organizada em arquivos markdown separados na pasta `docs/`, cada um focado em um princípio ou padrão de projeto específico.
 
 #### Princípios OOP e Design Patterns
 
@@ -42,35 +42,12 @@ A documentação está organizada em arquivos markdown separados na pasta `docs/
 
 ### 🏗️ Arquitetura do Sistema
 
-```mermaid
-graph TD
-    subgraph Client ["Apresentação (React + Phaser)"]
-        direction TB
-        WSC ["WebSocket / Socket.IO"]
-        UI ["Interface do Usuário"]
-    end
+O sistema segue uma arquitetura em camadas com separação clara de responsabilidades:
 
-    subgraph Server ["Servidor (NestJS)"]
-        direction TB
-        GS ["GameService (Orquestração)"]
-        BES ["BattleEngineService (Combate)"]
-        PS ["PlayerRepository (Persistência)"]
-        CL ["Clock (Abstração)"]
-    end
-
-    subgraph Contracts ["Camada de Contratos (@rpg/contracts)"]
-        direction TB
-        ZOD ["Schemas Zod (Fonte de Verdade)"]
-        TYPES ["Types TypeScript"]
-    end
-
-    UI -->|requisições| WSC
-    WSC -->|validação| ZOD
-    ZOD --> GS
-    GS --> PS
-    GS --> CL
-    GS --> BES
-```
+- **Apresentação (React + Phaser)**: Responsável pela interface visual e interação do usuário
+- **Servidor (NestJS)**: Lógica de negócios, validação de regras de jogo, autoridade do servidor
+- **Camada de Contratos (@rpg/contracts)**: Schemas Zod como fonte de verdade, types TypeScript compartilhados
+- **Princípios Aplicados**: Abstração, Encapsulamento, Herança, Polimorfismo, Composição, SOLID, DRY, KISS, YAGNI
 
 ### 🔬 Análise de Princípios Aplicados
 
@@ -79,18 +56,24 @@ A documentação detalhada em `docs/principles/` inclui análise de:
 - **Abstração** - Interface `Clock`/`PlayerRepository`, Zod schemas como fonte de verdade
 - **Encapsulamento** - `private` em toda lógica crítica, `public` apenas API intencional
 - **Herança** - Uso limitado; preferência por composição (`BattleEngineDependencies`)
-- **Polimorfismo** - Através de interfaces + type discriminants
-- **Composição sobre Herança** - `BattleEngineDependencies`, `CLASS_STATS` registry
-- **SOLID** - SRP, OCP, LSP, ISP, DIP (com notas de conformidade ⭐ a ⭐⭐⭐⭐⭐)
-- **DRY, KISS, YAGNI** - Avaliação de conformidade e exemplos
+- **Polimorfismo** - Através de interfaces + type discriminants (`Clock`, `PlayerRepository`)
+- **Composição sobre Herança** - `BattleEngineDependencies`, `CLASS_STATS` registry, `SystemClock implements Clock`
+- **SOLID** - SRP (cada serviço foco único), OCP (nova classe = adicionar ao `CLASS_STATS`), LSP (`Clock` ↔ `SystemClock`), ISP (interfaces pequenas), DIP (injeção de dependência abstrata)
+- **DRY** - `statMult`, `expToNext`, `mobExp` usadas em todo o código
+- **KISS** - Regras diretas, códigos de erro enumerados, events versionados
+- **YAGNI** - Nenhuma feature antecipada; constants demo isolados; RNG plugável
 - **Design Patterns** - Repository, Strategy, DI, Service, Observer, Adapter, Facade
-- **Modularidade e Reutilização** - `packages/contracts/` isolado, functions puas compartilhadas
-- **Generics e Tipagem** - TypeScript strict, zero `any`, enumerações
-- **Imutabilidade** - Funções puras vs mutação controlada no game loop
-- **Lei de Demeter e Tell Don't Ask** - Conformidade e violações identificadas
-- **Sobrecarga, Classes Abstratas, Métodos Virtuais** - Análise de ausência/presença
-- **Alta Coesão** - Cada classe foco em domínio específico
-- **Baixo Acoplamento** - `contracts/` isolado, DI em todo lado
+- **Modularidade** - `packages/contracts/` isolado, workspaces separando concerns
+- **Reutilização** - Funções puas compartilhadas (`statMult`, `expToNext`, `mobExp`)
+- **Generics e Tipagem** - `Map<string, EnemySnapshot>`, TypeScript strict, zero `any`
+- **Imutabilidade** - Funções puras em `progression.ts`, `skills.data.ts`; mutação controlada no game loop
+- **Lei de Demeter** - Violões moderadas no client `world.scene.ts`; métodos seletores recomendados
+- **Tell Don't Ask** - Lógica internalizada em `battle-engine.service`; queries no client ainda presentes
+- **Sobrecarga** - Não utilizada; optional parameters no lugar de TypeScript overloads
+- **Classes Abstratas** - Não usadas; abstração via interfaces + classes concretas
+- **Métodos Virtuais** - Por polimorfismo de interface (não keyword `virtual` em TS)
+- **Alta Coesão** - Cada classe foco em domínio específico (battle, inventory, academy, etc.)
+- **Baixo Acoplamento** - `contracts/` isolado, interfaces para implementações, DI em todo lado
 
 ### 📄 FAQ - Perguntas Frequentes
 
@@ -100,6 +83,7 @@ Consulte `docs/FAQ.md` para respostas rápidas sobre:
 - Como me mover
 - Como funcionam as batalhas
 - O que são os Gates
+- Como salvamento funciona
 - Identidade no jogo
 - Próximos incrementos
 
@@ -109,7 +93,6 @@ Consulte `docs/FAQ.md` para respostas rápidas sobre:
 |---------|-------|
 | **Total de Princípios Analisados** | 37 |
 | **Arquivos de Documentação** | 19 (15 principles + index + FAQ) |
-| **Linhas de Código Analisadas** | ~4,000+ |
 | **Conformidade Média** | ~80% |
 | **Padrões de Projeto** | 7 patternes identificados |
 | **SOLID Components** | 5/5 principles aplicados |
@@ -162,9 +145,9 @@ A análise abrangeu os seguintes princípios fundamentais de engenharia de softw
 13. **Generics e Tipagem** - TypeScript strict, tipos parametrizados
 14. **Imutabilidade** - Funções puras vs mutação controlada
 15. **Lei de Demeter** - "Talk only to your immediate friends"
-15. **Tell Don't Ask** - Fazer o objeto agir, não perguntar dados
-16. **Sobrecarga/Sobrescrita** - Análise de absence/presence
-17. **Classes Abstratas** - Ausência deliberada (usar interfaces)
+16. **Tell Don't Ask** - Fazer o objeto agir, não perguntar dados
+17. **Sobrecarga/Sobrescrita** - Análise de absence/presence
+18. **Classes Abstratas** - Ausência deliberada (usar interfaces)
 18. **Métodos Virtuais** - Polimorfismo por interface implementation
 19. **Alta Coesão** - Cada classe foco em domínio específico
 20. **Baixo Acoplamento** - Contratos isolados, DI em todo lado
