@@ -1,19 +1,41 @@
+---
+title: "Princípio da Abstração"
+tags: ["abstraction", "interface", "design-patterns"]
+conformidade: "95"
+author: "Willian Albarello"
+date: "2026-10-12"
+---
 # Princípio da Abstração
 
-## Conceito
-Focar o que é essencial e esconder detalhes desnecessários. No código, abstração significa esconder a implementação complexa atrás de interfaces simples.
+## ✨ Resumo Rápido (3 linhas)
 
-## No Projeto
-- **Interface `Clock`** (`clock.ts`): abstração do tempo, permitindo substituir `SystemClock` por mocks em testes
-- **Interface `PlayerRepository`** (`player.repository.ts`): abstração para persistência de jogadores, permitindo `InMemoryPlayerRepository` ↔ PostgreSQL
-- **Zod schemas** (`packages/contracts/src/index.ts`): schemas como fonte de verdade de validação, tipos TypeScript inferidos automaticamente
+- **Conceito**: Foco em o que é essencial e esconder detalhes desnecessários.
+- **Conformidade**: ⭐⭐⭐⭐⭐ (95%).
+- **Evidência**: `clock.ts:3` - Interface `Clock` com `SystemClock`.
+
+## ## Abstração no Projeto
+
+- **Interface `Clock`** (`clock.ts:3-5`): abstração do tempo, permitindo substituir `SystemClock` por mocks em testes.
+- **Interface `PlayerRepository`** (`player.repository.ts:70-75`): abstração para persistência de jogadores, permitindo `InMemoryPlayerRepository` ↔ PostgreSQL.
+- **Zod schemas** (`packages/contracts/src/index.ts`): schemas como fonte de verdade de validação, tipos TypeScript inferidos automaticamente.
 
 ## Benefícios
-- Allows swapping implementations without changing high-level code
-- Enables testability through dependency inversion
-- Reduces complexity by hiding unnecessary details
+
+- Permite trocar implementações sem alterar código de alto nível.
+- Habilita testabilidade através de inversão de dependência.
+- Reduz complexidade ao esconder detalhes desnecessários.
 
 ## Referências
-- `apps/server/src/domain/clock.ts` - Interface + implementação
-- `apps/server/src/domain/player.repository.ts` - Interface + InMemory implementation
-- `packages/contracts/src/index.ts` - Todos os schemas Zod
+
+- `apps/server/src/domain/clock.ts` - Interface + implementação.
+- `apps/server/src/domain/player.repository.ts` - Interface + `InMemoryPlayerRepository`.
+- `packages/contracts/src/index.ts` - Todos os schemas Zod.
+---
+## 📌 Âncora de Navegação
+
+[[principio-abstracao]]
+
+### Referências Cruzadas
+
+- **SOLID: DIP** - Depende de abstrações, não de implementações.
+- **Conformidade**: 95% - alta padronização de interfaces.

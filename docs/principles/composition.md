@@ -1,39 +1,43 @@
+---
+title: "Composição sobre Herança"
+tags: ["composition", "inheritance", "design-patterns"]
+conformidade: "95"
+author: "Willian Albarello"
+date: "2026-10-12"
+---
 # Princípio da Composição sobre Herança
 
-## Conceito
-Preferir compor objetos usando objetos de outras classes, ao invés de herdar delas. Mais flexível e evita o acoplamento rígido da herança.
+## ✨ Resumo Rápido (3 linhas)
+
+- **Conceito**: Preferir compor objetos usando objetos de outras classes, ao invés de herdar delas.
+- **Conformidade**: ⭐⭐⭐⭐⭐ (95%).
+- **Evidência**: `battle-engine.service.ts:21-32` - `BattleEngineDependencies`.
 
 ## No Projeto
-- **`BattleEngineDependencies`** (`battle-engine.service.ts:21-32`): interface composindo 10 serviços injetados
-  ```typescript
-  interface BattleEngineDependencies {
-    playerRepository: PlayerRepository;
-    bossService: BossService;
-    lootService: LootService;
-    inventoryService: InventoryService;
-    enemies: Map<string, EnemySnapshot>;
-    killEnemy: (enemy) => void;
-    reviveEnemies: () => void;
-    spawnOf: (player) => {x, y};
-    grantExp: (player, session) => void;
-    nextSequence: () => number;
-  }
-  ```
-- **`GameService`** injeta `lootService`, `academyService`, `bossService`, `missionsService`, `inventoryService`
-- **`TeleportService`** recebe todas dependências via construtor
-- **`CLASS_STATS`** registry em vez de hierarquia `extends`
 
-## Padrões Usados
-- **Dependency Injection**: serviços injetados via construtor
-- **Strategy Pattern**: `RngFn` em `battle.session.ts:15`, trocável via `setRng(fn)`
+- **`BattleEngineDependencies`** (`battle-engine.service.ts:21-32`): interface composindo 10 serviços injetados.
+- **`CLASS_STATS`** registry (`skills.data.ts:29-210`): dicionário de configs de classe, não herança `Warrior extends Character`.
+- **HunterClass** usado como string/discriminant em vez de hierarchy de classes.
+- **SystemClock implements Clock** (`clock.ts:3-5`): composition de interface, não inheritance de behavior.
 
-## Filosofia
-- "Favor composição sobre herança" é um dos ADRs explícitos do projeto
-- Classes abstratas não usadas - abstração via interfaces + classes concretas
-- `SystemClock implements Clock` - composition de interface, não inheritance de behavior
+## Por que Composição sobre Herança?
+
+- **Flexibilidade**: pode trocar implementações via DI sem alterar código cliente.
+- **Evitar deep inheritance hierarchies**: facilita manutenção e testabilidade.
+- **Princípio ADR**: "Injeção de Clock abstraction" (ADR 8).
 
 ## Referências
+
 - `battle-engine.service.ts:21-32`
-- `game.service.ts:128-154`
+- `skills.data.ts:29-210`
 - `clock.ts:3-5`
-- `skills.data.ts:29-210` (CLASS_STATS registry)
+- `ADR 8` — "Injectable Clock abstraction"
+---
+## 📌 Âncora de Navegação
+
+[[principio-composicao-sobre-heranca]]
+
+### Referências Cruzadas
+
+- **SOLID: OCP** - Nova classe = adicionar ao `CLASS_STATS` sem modificar código existente.
+- **Conformidade**: 95% - preferência explícita no projeto.
