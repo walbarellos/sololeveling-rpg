@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { HunterRank } from "./base";
 
 export const ItemRaritySchema = z.enum([
   "COMMON",
@@ -12,15 +13,26 @@ export const ItemRaritySchema = z.enum([
 ]);
 export type ItemRarity = z.infer<typeof ItemRaritySchema>;
 
-export const ITEM_RARITY_COLORS: Record<ItemRarity, { hex: string; name: string; glow: string }> = {
-  COMMON: { hex: "#94a3b8", name: "Comum", glow: "rgba(148, 163, 184, 0.4)" },
-  UNCOMMON: { hex: "#22c55e", name: "Incomum", glow: "rgba(34, 197, 94, 0.5)" },
-  RARE: { hex: "#3b82f6", name: "Raro", glow: "rgba(59, 130, 246, 0.6)" },
-  EPIC: { hex: "#a855f7", name: "Épico", glow: "rgba(168, 85, 247, 0.7)" },
-  LEGENDARY: { hex: "#f59e0b", name: "Lendário", glow: "rgba(245, 158, 11, 0.85)" },
-  IMMORTAL: { hex: "#ef4444", name: "Imortal", glow: "rgba(239, 68, 68, 0.95)" },
-  COSMIC: { hex: "#ec4899", name: "Cósmico", glow: "rgba(236, 72, 153, 1)" },
-  DIVINE: { hex: "#fde047", name: "Divino", glow: "rgba(253, 224, 71, 1)" }
+export const ITEM_RARITY_COLORS: Record<ItemRarity, { hex: string; name: string; glow: string; rank: HunterRank }> = {
+  COMMON: { hex: "#94a3b8", name: "Comum", glow: "rgba(148, 163, 184, 0.4)", rank: "E" },
+  UNCOMMON: { hex: "#22c55e", name: "Incomum", glow: "rgba(34, 197, 94, 0.5)", rank: "D" },
+  RARE: { hex: "#38bdf8", name: "Raro", glow: "rgba(56, 189, 248, 0.6)", rank: "C" },
+  EPIC: { hex: "#a855f7", name: "Épico", glow: "rgba(168, 85, 247, 0.7)", rank: "B" },
+  LEGENDARY: { hex: "#f97316", name: "Lendário", glow: "rgba(249, 115, 22, 0.85)", rank: "A" },
+  IMMORTAL: { hex: "#f59e0b", name: "Imortal", glow: "rgba(245, 158, 11, 0.95)", rank: "S" },
+  COSMIC: { hex: "#ec4899", name: "Cósmico", glow: "rgba(236, 72, 153, 1)", rank: "SS" },
+  DIVINE: { hex: "#06b6d4", name: "Divino", glow: "rgba(6, 182, 212, 1)", rank: "SSS+" }
+};
+
+export const ITEM_RARITY_TO_RANK: Record<ItemRarity, HunterRank> = {
+  COMMON: "E",
+  UNCOMMON: "D",
+  RARE: "C",
+  EPIC: "B",
+  LEGENDARY: "A",
+  IMMORTAL: "S",
+  COSMIC: "SS",
+  DIVINE: "SSS+"
 };
 
 export const ItemTypeSchema = z.enum([
@@ -41,7 +53,11 @@ export const ItemStatBonusesSchema = z.object({
   bonusMagicalAtk: z.number().int().nonnegative().default(0),
   bonusCritChance: z.number().min(0).max(1).default(0),
   bonusDodgeChance: z.number().min(0).max(1).default(0),
-  bonusBlockChance: z.number().min(0).max(1).default(0)
+  bonusBlockChance: z.number().min(0).max(1).default(0),
+  bonusStr: z.number().int().nonnegative().optional(),
+  bonusAgi: z.number().int().nonnegative().optional(),
+  bonusVit: z.number().int().nonnegative().optional(),
+  bonusInt: z.number().int().nonnegative().optional()
 });
 export type ItemStatBonuses = z.infer<typeof ItemStatBonusesSchema>;
 

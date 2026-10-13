@@ -88,16 +88,16 @@ const DEMO_GOLD = 100_000;
 
 /** Amostra de itens épicos, lendários e imortais para teste imediato de lategame. */
 const DEMO_SHOWCASE_ITEMS: readonly ItemDefinition[] = [
-  MASTER_ITEMS.weapon_dragon_slayer_greatsword,
-  MASTER_ITEMS.weapon_kamish_wrath_daggers,
-  MASTER_ITEMS.weapon_glacial_scythe,
-  MASTER_ITEMS.weapon_frost_dagger,
-  MASTER_ITEMS.armor_dragon_scale_armor,
-  MASTER_ITEMS.armor_monarch_sanctum_cuirass,
-  MASTER_ITEMS.amulet_dragon_heart_gem,
-  MASTER_ITEMS.ring_ignis_fury,
-  MASTER_ITEMS.potion_red,
-  MASTER_ITEMS.potion_blue
+  MASTER_ITEMS.weapon_genesis_monarch_blade,
+  MASTER_ITEMS.weapon_god_slayer_greatsword,
+  MASTER_ITEMS.weapon_kamish_twin_wrath,
+  MASTER_ITEMS.weapon_void_heart_scythe,
+  MASTER_ITEMS.armor_divine_immortality_regalia,
+  MASTER_ITEMS.armor_void_sovereign_vestment,
+  MASTER_ITEMS.amulet_cosmic_singularity,
+  MASTER_ITEMS.ring_divine_domain_band,
+  MASTER_ITEMS.potion_celestial_ambrosia,
+  MASTER_ITEMS.potion_hp_immortal
 ].filter(Boolean);
 
 export type StepResult =

@@ -424,14 +424,45 @@
 .inv-slot-equipped-indicator {
   position: absolute;
   top: 2px;
-  left: 3px;
-  font-size: 0.55rem;
+  right: 2px;
+  font-size: 0.52rem;
   font-weight: 800;
   color: #22c55e;
   letter-spacing: 0.05em;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 1px 3px;
+  background: rgba(6, 78, 59, 0.9);
+  border: 1px solid #10b981;
+  padding: 0 4px;
   border-radius: 2px;
+  z-index: 3;
+}
+
+.inv-slot-rank-tag {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 0.52rem;
+  font-weight: 800;
+  padding: 0 4px;
+  border-radius: 2px;
+  line-height: 1.3;
+  letter-spacing: 0.03em;
+  z-index: 3;
+  border: 1px solid;
+  text-transform: uppercase;
+}
+
+.equip-slot-rank-tag {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: 0.52rem;
+  font-weight: 800;
+  padding: 0 4px;
+  border-radius: 2px;
+  line-height: 1.3;
+  letter-spacing: 0.03em;
+  z-index: 3;
+  border: 1px solid;
 }
 
 /* 3. Coluna Direita: Tooltip & Inspeção de Item */
@@ -581,13 +612,14 @@
 }
 
 /* =========================================================
-   AS 8 RARIDADES (CORES, BORDAS E GLOWS OTIMIZADOS)
+   AS 8 RARIDADES (CORES, BORDAS E GLOWS EM HARMONIA COM OS RANKS)
    ========================================================= */
 
-/* 1. Comum */
+/* 1. Comum · Rank E */
 .rarity-common {
   color: #94a3b8 !important;
   border-color: #475569 !important;
+  background: radial-gradient(circle at 50% 35%, rgba(148, 163, 184, 0.12) 0%, #030712 100%) !important;
 }
 .badge-common {
   background: rgba(148, 163, 184, 0.15);
@@ -595,11 +627,12 @@
   border: 1px solid #475569;
 }
 
-/* 2. Incomum */
+/* 2. Incomum · Rank D */
 .rarity-uncommon {
   color: #22c55e !important;
   border-color: #22c55e !important;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.3);
+  background: radial-gradient(circle at 50% 35%, rgba(34, 197, 94, 0.16) 0%, #030712 100%) !important;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.35);
 }
 .badge-uncommon {
   background: rgba(34, 197, 94, 0.15);
@@ -607,76 +640,195 @@
   border: 1px solid #22c55e;
 }
 
-/* 3. Raro */
+/* 3. Raro · Rank C */
 .rarity-rare {
-  color: #3b82f6 !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.35);
+  color: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+  background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, 0.20) 0%, #030712 100%) !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
 }
 .badge-rare {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
-  border: 1px solid #3b82f6;
+  background: rgba(56, 189, 248, 0.15);
+  color: #bae6fd;
+  border: 1px solid #38bdf8;
 }
 
-/* 4. Épico */
+/* 4. Épico · Rank B */
 .rarity-epic {
   color: #a855f7 !important;
   border-color: #a855f7 !important;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+  background: radial-gradient(circle at 50% 35%, rgba(168, 85, 247, 0.22) 0%, #030712 100%) !important;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
 }
 .badge-epic {
   background: rgba(168, 85, 247, 0.18);
-  color: #d8b4fe;
+  color: #e9d5ff;
   border: 1px solid #a855f7;
 }
 
-/* 5. Lendário */
+/* 5. Lendário · Rank A (Magma) */
 .rarity-legendary {
-  color: #f59e0b !important;
-  border-color: #f59e0b !important;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+  color: #f97316 !important;
+  border-color: #f97316 !important;
+  background: radial-gradient(circle at 50% 35%, rgba(249, 115, 22, 0.25) 0%, #030712 100%) !important;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.55);
 }
 .badge-legendary {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fde68a;
+  background: rgba(249, 115, 22, 0.2);
+  color: #ffedd5;
+  border: 1px solid #f97316;
+}
+
+/* 6. Imortal · Rank S (Ouro Radiante) */
+.rarity-immortal {
+  color: #f59e0b !important;
+  border-color: #f59e0b !important;
+  background: radial-gradient(circle at 50% 35%, rgba(245, 158, 11, 0.28) 0%, #030712 100%) !important;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.65);
+}
+.badge-immortal {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(120, 53, 15, 0.4));
+  color: #fef08a;
   border: 1px solid #f59e0b;
 }
 
-/* 6. Imortal */
-.rarity-immortal {
-  color: #ef4444 !important;
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 14px rgba(239, 68, 68, 0.55);
-}
-.badge-immortal {
-  background: rgba(239, 68, 68, 0.25);
-  color: #fca5a5;
-  border: 1px solid #ef4444;
-}
-
-/* 7. Cósmico */
+/* 7. Cósmico · Rank SS (Magenta Nebular) */
 .rarity-cosmic {
   color: #ec4899 !important;
   border-color: #ec4899 !important;
-  box-shadow: 0 0 16px rgba(236, 72, 153, 0.6);
+  background: radial-gradient(circle at 50% 35%, rgba(236, 72, 153, 0.32) 0%, #030712 100%) !important;
+  box-shadow: 0 0 18px rgba(236, 72, 153, 0.75);
+  animation: pulse-cosmic-slot 2.4s infinite alternate;
 }
 .badge-cosmic {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(139, 92, 246, 0.3));
-  color: #f5d0fe;
-  border: 1px solid #c084fc;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.35), rgba(139, 92, 246, 0.35));
+  color: #fdf2f8;
+  border: 1px solid #ec4899;
 }
 
-/* 8. Divino */
+/* 8. Divino · Rank SSS+ (Celestial Shimmer) */
 .rarity-divine {
-  color: #fde047 !important;
-  border-color: #fde047 !important;
-  box-shadow: 0 0 18px rgba(253, 224, 71, 0.7);
+  color: #06b6d4 !important;
+  border-color: #06b6d4 !important;
+  background: radial-gradient(circle at 50% 35%, rgba(6, 182, 212, 0.38) 0%, #030712 100%) !important;
+  box-shadow: 0 0 22px rgba(6, 182, 212, 0.85), inset 0 0 10px rgba(253, 224, 71, 0.3);
+  animation: shimmer-divine-slot 2s infinite ease-in-out;
 }
 .badge-divine {
-  background: linear-gradient(135deg, rgba(253, 224, 71, 0.35), rgba(255, 255, 255, 0.2));
-  color: #fffbeb;
-  border: 1px solid #fde047;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.4), rgba(253, 224, 71, 0.3));
+  color: #ecfeff;
+  border: 1px solid #06b6d4;
+  text-shadow: 0 0 6px rgba(6, 182, 212, 0.8);
+}
+
+@keyframes pulse-cosmic-slot {
+  0% { box-shadow: 0 0 12px rgba(236, 72, 153, 0.5); }
+  100% { box-shadow: 0 0 22px rgba(236, 72, 153, 0.9); }
+}
+
+@keyframes shimmer-divine-slot {
+  0% { box-shadow: 0 0 14px rgba(6, 182, 212, 0.6); }
+  50% { box-shadow: 0 0 24px rgba(6, 182, 212, 0.95), inset 0 0 8px rgba(253, 224, 71, 0.35); }
+  100% { box-shadow: 0 0 14px rgba(6, 182, 212, 0.6); }
+}
+
+/* Rank Tags nos Slots */
+.inv-slot-rank-tag.rank-e, .equip-slot-rank-tag.rank-e { background: #1e293b; color: #cbd5e1; border-color: #475569; }
+.inv-slot-rank-tag.rank-d, .equip-slot-rank-tag.rank-d { background: #064e3b; color: #86efac; border-color: #22c55e; }
+.inv-slot-rank-tag.rank-c, .equip-slot-rank-tag.rank-c { background: #0c4a6e; color: #7dd3fc; border-color: #0284c7; }
+.inv-slot-rank-tag.rank-b, .equip-slot-rank-tag.rank-b { background: #3b0764; color: #d8b4fe; border-color: #9333ea; }
+.inv-slot-rank-tag.rank-a, .equip-slot-rank-tag.rank-a { background: #431407; color: #fdba74; border-color: #ea580c; }
+.inv-slot-rank-tag.rank-s, .equip-slot-rank-tag.rank-s {
+  background: linear-gradient(135deg, #78350f, #451a03); color: #fde047; border-color: #d97706; box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+.inv-slot-rank-tag.rank-ss, .equip-slot-rank-tag.rank-ss {
+  background: linear-gradient(135deg, #701a75, #4a044e); color: #f472b6; border-color: #db2777; box-shadow: 0 0 8px rgba(236, 72, 153, 0.7);
+}
+.inv-slot-rank-tag.rank-sss-plus, .equip-slot-rank-tag.rank-sss-plus {
+  background: linear-gradient(135deg, #083344, #164e63); color: #67e8f9; border-color: #06b6d4; box-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+}
+
+/* Card de Inspeção Detalhado */
+.inspect-icon-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 4px;
+  background: #060913;
+  border: 1px solid #1e293b;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.inspect-icon-frame .item-img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+
+.inspect-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+
+.inspect-rank-pill {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid;
+  text-transform: uppercase;
+}
+
+.inspect-section-title {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+
+.inspect-primary-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  background: #060a14;
+  border: 1px solid #1a253a;
+  border-radius: 3px;
+  padding: 6px;
+}
+
+.primary-stat-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0b1120;
+  border: 1px solid #1e293b;
+  padding: 3px 6px;
+  border-radius: 2px;
+}
+
+.primary-stat-chip.stat-str { border-color: #ea580c55; color: #fdba74; }
+.primary-stat-chip.stat-agi { border-color: #0284c755; color: #7dd3fc; }
+.primary-stat-chip.stat-vit { border-color: #16a34a55; color: #86efac; }
+.primary-stat-chip.stat-int { border-color: #9333ea55; color: #d8b4fe; }
+
+.primary-stat-chip .stat-lbl {
+  font-weight: 700;
+  font-size: 0.63rem;
+}
+
+.primary-stat-chip .stat-num {
+  font-weight: 800;
+  font-size: 0.72rem;
 }
 
 .item-img,

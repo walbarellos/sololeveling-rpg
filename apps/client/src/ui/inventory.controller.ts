@@ -2,6 +2,7 @@ import {
   ClientEvents,
   getItemGoldValue,
   ITEM_RARITY_COLORS,
+  ITEM_RARITY_TO_RANK,
   type EquipmentSlotName,
   type InventorySlot,
   type ItemDefinition,
@@ -61,6 +62,7 @@ export class InventoryController {
   public readonly gearBonusMatk = document.querySelector<HTMLSpanElement>("#gear-bonus-matk");
   public readonly gearBonusDef = document.querySelector<HTMLSpanElement>("#gear-bonus-def");
   public readonly gearBonusHpmp = document.querySelector<HTMLSpanElement>("#gear-bonus-hpmp");
+  public readonly gearBonusAttrs = document.querySelector<HTMLSpanElement>("#gear-bonus-attrs");
 
   private selectedSlotIndex: number | null = null;
   private selectedEquipSlot: EquipmentSlotName | null = null;
@@ -174,6 +176,10 @@ export class InventoryController {
     let totalMp = 0;
     let totalBlock = 0;
     let totalDodge = 0;
+    let totalStr = 0;
+    let totalAgi = 0;
+    let totalVit = 0;
+    let totalInt = 0;
 
     for (const { el, slotName, fallbackIcon } of slots) {
       if (!el) continue;
@@ -190,10 +196,17 @@ export class InventoryController {
         totalMp += stats.bonusMp ?? 0;
         totalBlock += stats.bonusBlockChance ?? 0;
         totalDodge += stats.bonusDodgeChance ?? 0;
+        totalStr += stats.bonusStr ?? 0;
+        totalAgi += stats.bonusAgi ?? 0;
+        totalVit += stats.bonusVit ?? 0;
+        totalInt += stats.bonusInt ?? 0;
 
+        const rank = ITEM_RARITY_TO_RANK[item.rarity];
+        const rankClass = `rank-${rank.toLowerCase().replace('+', '-plus')}`;
         const rarityClass = this.getRarityClass(item.rarity);
         el.className = `equip-slot-box ${isSelected ? "selected" : ""} ${rarityClass}`;
         el.innerHTML = `
+          <span class="equip-slot-rank-tag ${rankClass}">${rank}</span>
           <span class="slot-type-label">${this.getSlotLabel(slotName)}</span>
           <div class="slot-content">
             <span class="inv-slot-icon">${itemImg(item.icon, item.rarity)}</span>
@@ -218,6 +231,14 @@ export class InventoryController {
       this.gearBonusDef.textContent = `+${(totalBlock * 100).toFixed(0)}% / +${(totalDodge * 100).toFixed(0)}%`;
     }
     if (this.gearBonusHpmp) this.gearBonusHpmp.textContent = `+${totalHp} / +${totalMp}`;
+    if (this.gearBonusAttrs) {
+      const parts: string[] = [];
+      if (totalStr > 0) parts.push(`+${totalStr} FOR`);
+      if (totalAgi > 0) parts.push(`+${totalAgi} AGI`);
+      if (totalVit > 0) parts.push(`+${totalVit} VIT`);
+      if (totalInt > 0) parts.push(`+${totalInt} INT`);
+      this.gearBonusAttrs.textContent = parts.length > 0 ? parts.join(" · ") : "+0";
+    }
   }
 
   private getSlotForType(type: ItemType): EquipmentSlotName | null {
@@ -289,7 +310,12 @@ export class InventoryController {
           indicatorHtml = `<span class="inv-slot-lock-badge">Lv ${item.minLevel}</span>`;
         }
 
+        const rank = ITEM_RARITY_TO_RANK[item.rarity];
+        const rankClass = `rank-${rank.toLowerCase().replace('+', '-plus')}`;
+        const rankTagHtml = `<span class="inv-slot-rank-tag ${rankClass}">${rank}</span>`;
+
         slotEl.innerHTML = `
+          ${rankTagHtml}
           ${indicatorHtml}
           <span class="inv-slot-icon">${itemImg(item.icon, item.rarity)}</span>
           ${qtyHtml}
@@ -369,6 +395,38 @@ export class InventoryController {
       return `<span style="color: ${color}; font-size: 0.7rem; font-weight: 700; margin-left: 6px;">(${text})</span>`;
     };
 
+    // Format primary attributes chips
+    const primaryChips: string[] = [];
+    if (s.bonusStr) {
+      const diff = currS ? diffBadge(s.bonusStr, currS.bonusStr ?? 0) : "";
+      primaryChips.push(`<div class="primary-stat-chip stat-str"><span class="stat-lbl">FOR</span><span class="stat-num">+${s.bonusStr}${diff}</span></div>`);
+    }
+    if (s.bonusAgi) {
+      const diff = currS ? diffBadge(s.bonusAgi, currS.bonusAgi ?? 0) : "";
+      primaryChips.push(`<div class="primary-stat-chip stat-agi"><span class="stat-lbl">AGI</span><span class="stat-num">+${s.bonusAgi}${diff}</span></div>`);
+    }
+    if (s.bonusVit) {
+      const diff = currS ? diffBadge(s.bonusVit, currS.bonusVit ?? 0) : "";
+      primaryChips.push(`<div class="primary-stat-chip stat-vit"><span class="stat-lbl">VIT</span><span class="stat-num">+${s.bonusVit}${diff}</span></div>`);
+    }
+    if (s.bonusInt) {
+      const diff = currS ? diffBadge(s.bonusInt, currS.bonusInt ?? 0) : "";
+      primaryChips.push(`<div class="primary-stat-chip stat-int"><span class="stat-lbl">INT</span><span class="stat-num">+${s.bonusInt}${diff}</span></div>`);
+    }
+
+    let primaryBlockHtml = "";
+    if (primaryChips.length > 0) {
+      primaryBlockHtml = `
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span class="inspect-section-title">[ATRIBUTOS PRIMÁRIOS]</span>
+          <div class="inspect-primary-stats-grid">${primaryChips.join("")}</div>
+        </div>
+      `;
+    }
+
+    const rank = ITEM_RARITY_TO_RANK[item.rarity];
+    const rankClass = `rank-${rank.toLowerCase().replace('+', '-plus')}`;
+
     if (s.bonusPhysicalAtk) {
       const diff = currS ? diffBadge(s.bonusPhysicalAtk, currS.bonusPhysicalAtk ?? 0) : "";
       statLines.push(`<div class="inspect-stat-row"><span>ATK Físico:</span><span class="inspect-stat-val">+${s.bonusPhysicalAtk}${diff}</span></div>`);
@@ -431,20 +489,32 @@ export class InventoryController {
     this.inspectCard.innerHTML = `
       <div class="inspect-header">
         <div class="inspect-name-row">
-          <span class="inspect-icon">${itemImg(item.icon, item.rarity)}</span>
-          <div style="display: flex; flex-direction: column;">
+          <div class="inspect-icon-frame rarity-${item.rarity.toLowerCase()}">
+            ${itemImg(item.icon, item.rarity)}
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
             <span class="inspect-name" style="color: ${rarityColor};">${item.name}</span>
-            <span class="inspect-rarity-badge ${badgeClass}">${rarityLabel}</span>
+            <div class="inspect-badges-row">
+              <span class="inspect-rank-pill ${rankClass}">RANK ${rank}</span>
+              <span class="inspect-rarity-badge ${badgeClass}">${rarityLabel}</span>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="inspect-type-row">
         <span>Categoria: <strong>${this.getItemKindLabel(item.type)}</strong></span>
-        <span style="color: ${reqColor};">Requer: <strong>Lv ${item.minLevel}</strong></span>
+        <span style="color: ${reqColor};">Requer: <strong>Lv ${item.minLevel} · Rank ${rank}</strong></span>
       </div>
 
-      ${statLines.length > 0 ? `<div class="inspect-stats-block">${statLines.join("")}</div>` : ""}
+      ${primaryBlockHtml}
+
+      ${statLines.length > 0 ? `
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span class="inspect-section-title">[PODER BÉLICO &amp; COMBATE]</span>
+          <div class="inspect-stats-block">${statLines.join("")}</div>
+        </div>
+      ` : ""}
 
       <p class="inspect-desc">"${item.description}"</p>
 

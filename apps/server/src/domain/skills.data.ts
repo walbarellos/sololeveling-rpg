@@ -209,15 +209,19 @@ export const CLASS_STATS: Record<HunterClass, ClassConfig> = {
   }
 };
 
-export function sumEquipmentStats(equipment?: PlayerEquipment): ItemStatBonuses {
-  const result: ItemStatBonuses = {
+export function sumEquipmentStats(equipment?: PlayerEquipment): Required<ItemStatBonuses> {
+  const result: Required<ItemStatBonuses> = {
     bonusHp: 0,
     bonusMp: 0,
     bonusPhysicalAtk: 0,
     bonusMagicalAtk: 0,
     bonusCritChance: 0,
     bonusDodgeChance: 0,
-    bonusBlockChance: 0
+    bonusBlockChance: 0,
+    bonusStr: 0,
+    bonusAgi: 0,
+    bonusVit: 0,
+    bonusInt: 0
   };
   if (!equipment) return result;
   for (const item of [equipment.weapon, equipment.shield, equipment.armor, equipment.amulet, equipment.ring]) {
@@ -229,6 +233,10 @@ export function sumEquipmentStats(equipment?: PlayerEquipment): ItemStatBonuses 
       result.bonusCritChance += item.stats.bonusCritChance ?? 0;
       result.bonusDodgeChance += item.stats.bonusDodgeChance ?? 0;
       result.bonusBlockChance += item.stats.bonusBlockChance ?? 0;
+      result.bonusStr += item.stats.bonusStr ?? 0;
+      result.bonusAgi += item.stats.bonusAgi ?? 0;
+      result.bonusVit += item.stats.bonusVit ?? 0;
+      result.bonusInt += item.stats.bonusInt ?? 0;
     }
   }
   return result;
@@ -244,10 +252,10 @@ export function calculatePlayerStats(
   const mult = statMult(level);
   const eq = sumEquipmentStats(equipment);
 
-  const bonusStr = attributes ? Math.max(0, attributes.str - 10) : 0;
-  const bonusAgi = attributes ? Math.max(0, attributes.agi - 10) : 0;
-  const bonusVit = attributes ? Math.max(0, attributes.vit - 10) : 0;
-  const bonusInt = attributes ? Math.max(0, attributes.int - 10) : 0;
+  const bonusStr = (attributes ? Math.max(0, attributes.str - 10) : 0) + eq.bonusStr;
+  const bonusAgi = (attributes ? Math.max(0, attributes.agi - 10) : 0) + eq.bonusAgi;
+  const bonusVit = (attributes ? Math.max(0, attributes.vit - 10) : 0) + eq.bonusVit;
+  const bonusInt = (attributes ? Math.max(0, attributes.int - 10) : 0) + eq.bonusInt;
 
   return {
     physicalAtk: Math.round(config.basePhysicalAtk * mult + bonusStr * 2 + eq.bonusPhysicalAtk),
@@ -266,9 +274,9 @@ export function calculatePlayerMaxHp(
 ): number {
   const config = CLASS_STATS[hunterClass] ?? CLASS_STATS.WARRIOR;
   const mult = statMult(level);
-  const bonusVit = Math.max(0, vit - 10);
   const eq = sumEquipmentStats(equipment);
-  return Math.floor(config.baseHp * mult + bonusVit * 10 + eq.bonusHp);
+  const totalBonusVit = Math.max(0, vit - 10) + eq.bonusVit;
+  return Math.floor(config.baseHp * mult + totalBonusVit * 10 + eq.bonusHp);
 }
 
 export function calculatePlayerMaxMp(
@@ -279,7 +287,7 @@ export function calculatePlayerMaxMp(
 ): number {
   const config = CLASS_STATS[hunterClass] ?? CLASS_STATS.WARRIOR;
   const mult = statMult(level);
-  const bonusInt = Math.max(0, int - 10);
   const eq = sumEquipmentStats(equipment);
-  return Math.floor(config.baseMp * mult + bonusInt * 8 + eq.bonusMp);
+  const totalBonusInt = Math.max(0, int - 10) + eq.bonusInt;
+  return Math.floor(config.baseMp * mult + totalBonusInt * 8 + eq.bonusMp);
 }
