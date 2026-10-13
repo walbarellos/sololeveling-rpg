@@ -81,7 +81,7 @@ A documentação completa sobre princípios OOP, Design Patterns e SOLID aplicad
 - **Reutilização** - Funções puas compartilhadas (`statMult`, `expToNext`, `mobExp`)
 - **Generics e Tipagem** - `Map<string, EnemySnapshot>`, TypeScript strict, zero `any`
 - **Imutabilidade** - Funções puras em `progression.ts`, `skills.data.ts`; mutação controlada no game loop
-- **Lei de Demeter** - Violções moderadas no client `world.scene.ts`; métodos seletores recomendados
+- **Lei de Demeter** - Violões moderadas no client `world.scene.ts`; métodos seletores recomendados
 - **Tell Don't Ask** - Lógica internalizada em `battle-engine.service`; queries no client ainda presentes
 - **Sobrecarga** - Não utilizada; optional parameters no lugar de TypeScript overloads
 - **Classes Abstratas** - Não usadas; abstração via interfaces + classes concretas
@@ -100,11 +100,4 @@ Confira o arquivo `docs/FAQ.md` para respostas rápidas sobre:
 - Identidade no jogo
 - Próximos incrementos
 
-### 📦 Links Úteis
-
-[GitHub](https://github.com/walbarellos/sololeveling-rpg)
-[🐦 Twitter](https://twitter.com/walbarellos)
-
----
-
-AUTHOR: WILLIAN ALBARELLO @walbarellos
+### AUTHOR: WILLIAN ALBARELLO @walbarellos
