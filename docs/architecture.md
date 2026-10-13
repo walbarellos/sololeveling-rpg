@@ -1,3 +1,5 @@
+> **Nota (2026-10-12):** descreve o *primeiro slice*. Hoje a grade do gate E é 48×28 (não 20×12), os ranks vão até SSS+ e há batalha por sessão, missões, inventário, academia e 8 mundos. Estado real e constantes: [domain-map.md](domain-map.md); eventos: [protocol.md](protocol.md). O texto abaixo foi mantido como registro de decisão.
+
 # Architecture overview
 
 ## Runtime boundaries

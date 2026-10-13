@@ -1,5 +1,32 @@
 # AGENTS.md — Hunter RPG Web Foundation (Tiles & Turnos)
 
+## Read order (token budget)
+1. This file (~7.5 KB). 2. [docs/INDEX.md](docs/INDEX.md) routes the task. 3. Open only the files the route names. Prefer `grep -n` + a line range over reading whole files.
+
+| Task | Read only |
+|---|---|
+| Add/change a socket event | [docs/protocol.md](docs/protocol.md), then the one schema in `packages/contracts/src` |
+| Change a rule, number or formula | [docs/domain-map.md](docs/domain-map.md) (constants table), then the named service |
+| Rank exams / progression | `packages/contracts/src/progression.ts`, `academy.ts`, `apps/server/src/domain/academy.service.ts` |
+| Items / loot / drops | `packages/contracts/src/items.ts`, `loot.service.ts`; `grep` the `*.data.ts` catalogs |
+| New gate/world/map | `apps/server/src/domain/worlds.ts`, `docs/domain-map.md#mundos-zonas-npcs-classes` |
+| UI / presentation | `apps/client/src/ui/<screen>.controller.ts` + `styles/<screen>.css` |
+| Persistence / SQL | `PlayerRepository` in `player.repository.ts`; `docs/schemas/schema.sql` is **stale** |
+
+## Commands
+`npm install` · `npm run dev:server` · `npm run dev:client` · `npm run typecheck` · `npm run test` · `npm run build` (declared in README/this file; the source zip had no `package.json`, so they were not executed during the docs pass).
+
+## Do not read (noise or generated)
+`node_modules/`, `dist/`, `coverage/`, `apps/client/public/assets/**` (binary art), `apps/server/src/domain/items.data.ts` and `items-high-tier.data.ts` (catalogs, ~41 KB + ~17 KB; `grep` by id), `apps/client/src/{assets,terrain,avatars,skillicons}.ts` (art data; only for visual tasks), `docs/schemas/schema.sql` and `world.example.json` (first-slice snapshots, out of date).
+
+## Context traps (code contradicts older prose)
+- Ranks are `E…SSS+` (9), not "E–S"; `MAX_LEVEL` is 200. Source: `packages/contracts/src/{base,progression}.ts`.
+- Grid of gate E is 48×28, not 20×12; respawn is 18 s. Source: `apps/server/src/domain/game.service.ts`.
+- Outside `NODE_ENV=test` new players are seeded at Lv 100 / rank S / 100k gold; run domain tests with `NODE_ENV=test`.
+- `game:dev:set-level` is registered without environment gating. Treat it as a known violation of the invariants below until it is gated or removed.
+- Two combat paths exist: legacy `game:attack` and turn-based `BattleSession`. ADR 4 describes only the first.
+Full list with file/line links: [docs/domain-map.md](docs/domain-map.md#lacunas-e-riscos-verificados). Event catalogue: [docs/protocol.md](docs/protocol.md).
+
 ## Mission
 Build a browser-based 2D grid/tile-based shared-world Hunter RPG with hybrid persistence and discrete turn-based mechanics:
 - References: Naruto Game (grid exploration, discrete steps, action cooldowns, turn-based combat) and Solo Leveling (Hunter Ranks E–S, Gates, 100-floor Tower, Shadow summons).

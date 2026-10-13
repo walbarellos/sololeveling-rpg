@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+apps/client/public/assets/
+*.png
+*.jpg
+*.zip

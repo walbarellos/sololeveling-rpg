@@ -1,3 +1,5 @@
+> **Nota (2026-10-12):** card histórico do primeiro slice; os critérios abaixo continuam válidos para passo/ataque, mas a grade e o combate evoluíram (ver [domain-map.md](../domain-map.md)).
+
 # Task card: First vertical slice (Tiles & Turnos)
 
 ## Goal

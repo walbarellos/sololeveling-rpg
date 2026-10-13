@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use or reference this software, please cite it as below."
+type: software
+title: "RPG Web Foundation"
+abstract: >-
+  Server-authoritative foundation for a grid-based (tile and turn) browser RPG
+  themed on Solo Leveling. TypeScript monorepo with a NestJS and Socket.IO
+  server, a Phaser and Vite client, and shared Zod contracts. The server
+  validates movement, combat, progression and rewards; the client only renders.
+authors:
+  - family-names: Albarello
+    given-names: Willian
+repository-code: "https://github.com/walbarellos/sololeveling-rpg"
+date-released: "2026-10-12"
+keywords:
+  - rpg
+  - server-authoritative
+  - typescript
+  - nestjs
+  - phaser
+  - socket.io
+  - zod
+  - game-development

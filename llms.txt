@@ -1,0 +1,20 @@
+# RPG Web Foundation
+
+> Server-authoritative, grid-based (tile + turn) browser RPG themed on Solo Leveling. TypeScript monorepo: NestJS + Socket.IO server, Phaser + Vite client, shared Zod contracts (`@rpg/contracts`). Server decides all outcomes; client only renders and sends intents. Ranks E…SSS+ (9), MAX_LEVEL 200, 8 gate worlds. State is in-memory (no database yet) and the demo seeds players at Lv 100.
+
+## Start here
+- [AGENTS.md](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/AGENTS.md): read order, commands, do-not-read list, invariants, ADRs 1-13
+- [Docs index](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/docs/INDEX.md): task-to-file router and source-of-truth table
+
+## Reference (open only what the task needs)
+- [Socket protocol](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/docs/protocol.md): all 26 client events and 14 server events with schema, handler and service links; 32 error codes
+- [Domain map](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/docs/domain-map.md): services, constants, rank-exam table, worlds/NPCs/classes, verified gaps and risks
+- [Contracts entry](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/packages/contracts/src/index.ts): schemas, `ClientEvents`, `ServerEvents`, `ServerErrorCode`
+- [Progression formulas](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/packages/contracts/src/progression.ts): `RANK_CAP`, `expToNext`, `mobExp`, `statMult`
+- [Gateway](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/apps/server/src/realtime/game.gateway.ts): Socket.IO handlers (transport only)
+- [GameService](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/apps/server/src/domain/game.service.ts): orchestrator of all rules
+
+## Optional
+- [Architecture (first slice, historical)](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/docs/architecture.md): original runtime boundaries and lazy world evaluation
+- [First vertical slice task card](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/docs/tasks/first-vertical-slice.md): original acceptance criteria
+- [SQL schema (stale)](https://github.com/walbarellos/sololeveling-rpg/blob/HEAD/docs/schemas/schema.sql): not used by code yet; ranks limited to E-S
