@@ -1,7 +1,7 @@
 # AGENTS.md — Hunter RPG Web Foundation (Tiles & Turnos)
 
 ## Read order (token budget)
-1. This file (~7.5 KB). 2. [docs/INDEX.md](docs/INDEX.md) routes the task. 3. Open only the files the route names. Prefer `grep -n` + a line range over reading whole files.
+1. This file (~5 KB). 2. [docs/INDEX.md](docs/INDEX.md) routes the task. 3. Open only the files the route names. Prefer `grep -n` + a line range over reading whole files.
 
 | Task | Read only |
 |---|---|

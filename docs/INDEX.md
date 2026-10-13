@@ -5,14 +5,12 @@
 ## Qual arquivo abrir
 | Preciso de… | Abrir | Custo |
 |---|---|---|
-| Regras de trabalho, ADRs 1-13, ownership de arquivos, checks de merge | [AGENTS.md](../AGENTS.md) | ~7,5 KB |
+| Regras de trabalho, ADRs 1-13, ownership de arquivos, checks de merge | [AGENTS.md](../AGENTS.md) | ~7 KB |
 | Saber "quem trata o evento X" / payload / código de erro | [protocol.md](protocol.md) | ~12 KB |
-| Constantes, fórmulas, tabela de exames, mundos, NPCs, riscos | [domain-map.md](domain-map.md) | ~11 KB |
-| Como rodar, controles, progressão, identidade, limitações | [README.md](../README.md) | ~7 KB |
+| Constantes, fórmulas, tabela de exames, mundos, NPCs, riscos | [domain-map.md](domain-map.md) | ~10 KB |
+| Como rodar, controles, progressão, identidade, limitações | [README.md](../README.md) | ~8 KB |
 | Racional do primeiro slice e mundo vivo por lazy evaluation | [architecture.md](architecture.md) | 2 KB, histórico |
 | Critérios de aceite do primeiro slice | [tasks/first-vertical-slice.md](tasks/first-vertical-slice.md) | 1 KB, histórico |
-| Princípios OOP, Design Patterns e SOLID | [principles/README.md](principles/README.md) | ~2 KB |
-| Perguntas frequentes (FAQ) sobre mecânicas | [FAQ.md](FAQ.md) | ~2 KB |
 
 ## Fonte da verdade por assunto
 | Assunto | Fonte | Não confiar em |
